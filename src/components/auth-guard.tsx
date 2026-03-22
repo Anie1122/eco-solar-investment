@@ -28,7 +28,7 @@ type UserRow = {
   referral_awarded?: boolean | null;
 };
 
-const DEFAULT_SIGNUP_BONUS_NGN = 1500;
+const DEFAULT_SIGNUP_BONUS_USDT = 1500;
 
 function makeInviteCode(userId: string) {
   return userId.replace(/-/g, '').slice(0, 10).toUpperCase();
@@ -61,9 +61,9 @@ async function ensureUserRowExists(params: {
       full_name: fullName ?? 'New User',
       phone_number: '',
       country: '',
-      currency: 'NGN',
+      currency: 'USDT',
       wallet_balance: 0,
-      bonus_balance: DEFAULT_SIGNUP_BONUS_NGN,
+      bonus_balance: DEFAULT_SIGNUP_BONUS_USDT,
       has_invested: false,
       profile_completed: false,
       status: 'active',

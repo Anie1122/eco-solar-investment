@@ -106,7 +106,7 @@ export default function InvestmentPlans() {
     run();
   }, [sessionUserId]);
 
-  const currencyCode = userRow?.currency ?? 'NGN';
+  const currencyCode = userRow?.currency ?? 'USDT';
   const { convert, format } = useCurrencyConverter(currencyCode);
 
   const isProfileCompleted = Boolean(userRow?.profile_completed);

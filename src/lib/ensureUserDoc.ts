@@ -6,7 +6,7 @@ const DEFAULT_USER_DATA = {
   phoneNumber: '',
   country: 'Nigeria',
   countryCode: 'NG',
-  currency: 'NGN',
+  currency: 'USDT',
   walletBalance: 0,
   bonusBalance: 1500,
   hasInvested: false,

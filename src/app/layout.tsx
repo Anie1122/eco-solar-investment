@@ -34,7 +34,7 @@ export default function RootLayout({
       </head>
 
       <body className={`${inter.variable} font-body antialiased`}>
-        <ThemeProvider attribute="class" defaultTheme="light" enableSystem disableTransitionOnChange>
+        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           <FirebaseClientProvider>
             {/* Main content */}
             <div className="min-h-screen pb-24">{children}</div>
