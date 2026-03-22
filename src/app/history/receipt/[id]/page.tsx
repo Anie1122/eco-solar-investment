@@ -43,7 +43,7 @@ type TxRow = {
   id: string; // ✅ real ID in table (primary key)
   user_id: string;
   transaction_type: string;
-  amount: number; // NGN base
+  amount: number; // USDT base
   currency: string | null;
   status: string;
   description: string | null;
@@ -58,10 +58,10 @@ function formatDateTime(date: any): string {
   return d.toLocaleString();
 }
 
-const formatNGN = (amount: number) =>
-  `₦${Number(amount || 0).toLocaleString(undefined, {
+const formatBaseUSDT = (amount: number) =>
+  `USDT ${Number(amount || 0).toLocaleString(undefined, {
     minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
+    maximumFractionDigits: 8,
   })}`;
 
 function getTransactionIcon(type: string) {
@@ -124,7 +124,7 @@ export default function ReceiptPage() {
   const [tx, setTx] = useState<TxRow | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const userCurrency = user?.currency || 'NGN';
+  const userCurrency = user?.currency || 'USDT';
   const { format, convert } = useCurrencyConverter(userCurrency);
 
   useEffect(() => {
@@ -336,7 +336,7 @@ export default function ReceiptPage() {
 
               <div className="text-center">
                 <div className="text-4xl font-extrabold tracking-tight">{format(paidUser)}</div>
-                <div className="mt-1 text-xs text-muted-foreground">Base NGN: {formatNGN(paidNGN)}</div>
+                <div className="mt-1 text-xs text-muted-foreground">Base USDT: {formatBaseUSDT(paidNGN)}</div>
               </div>
 
               <Separator />

@@ -87,7 +87,7 @@ type UserRow = {
   country: string | null;
   currency: string | null;
 
-  // IMPORTANT: these are assumed to be NGN base in your project
+  // IMPORTANT: these are assumed to be USDT base in your project
   wallet_balance: number | null;
   bonus_balance: number | null;
 
@@ -110,7 +110,7 @@ const DepositDialog = ({
   children: React.ReactNode;
 }) => {
   const { toast } = useToast();
-  const currencyCode = userProfile?.currency || 'NGN';
+  const currencyCode = userProfile?.currency || 'USDT';
   const { convert, format } = useCurrencyConverter(currencyCode);
 
   const [isDepositing, setIsDepositing] = useState(false);
@@ -176,7 +176,7 @@ const DepositDialog = ({
         fullName: userProfile.full_name,
         phoneNumber: userProfile.phone_number,
         userId: userProfile.id,
-        currency: userProfile.currency || 'NGN',
+        currency: userProfile.currency || 'USDT',
       };
 
       const response = await fetch('/api/flutterwave/create-deposit-session', {
@@ -352,7 +352,7 @@ async function clearWithdrawalPin() {
 }
 
 async function requestWithdrawal(payload: {
-  amount: number; // NGN base (fixed)
+  amount: number; // USDT base (fixed)
   bankName: string;
   accountNumber: string;
   accountName: string;
@@ -551,10 +551,10 @@ const WithdrawalDialogContent = ({
 }) => {
   const { toast } = useToast();
 
-  const currencyCode = userProfile.currency || 'NGN';
+  const currencyCode = userProfile.currency || 'USDT';
   const { convert, format, currency } = useCurrencyConverter(currencyCode);
 
-  // ✅ helper: convert a user-currency amount back to NGN base safely
+  // ✅ helper: convert a user-currency amount back to USDT base safely
   const toNGN = (amountUserCurrency: number) => {
     const oneNgnInUser = convert(1);
     if (!Number.isFinite(oneNgnInUser) || oneNgnInUser <= 0) return amountUserCurrency;
@@ -744,7 +744,7 @@ const WithdrawalDialogContent = ({
 
     setBusy(true);
     try {
-      // ✅ send NGN base to backend (so DB stays consistent)
+      // ✅ send USDT base to backend (so DB stays consistent)
       const amountNGN = toNGN(Number(pendingWithdrawal.amount));
 
       await requestWithdrawal({
@@ -1268,7 +1268,7 @@ export default function WalletCard({ userProfile, isLoading }: WalletCardProps) 
 
   const profileToUse = useMemo(() => liveProfile, [liveProfile]);
 
-  const currencyCode = profileToUse?.currency || 'NGN';
+  const currencyCode = profileToUse?.currency || 'USDT';
   const { convert, format } = useCurrencyConverter(currencyCode);
 
   if (isLoading || loadingProfile || !profileToUse) {
@@ -1304,7 +1304,7 @@ export default function WalletCard({ userProfile, isLoading }: WalletCardProps) 
     );
   }
 
-  // ✅ Treat DB values as NGN base
+  // ✅ Treat DB values as USDT base
   const walletBalanceNGN = Number(profileToUse.wallet_balance ?? 0);
   const bonusBalanceNGN = Number(profileToUse.bonus_balance ?? 0);
 

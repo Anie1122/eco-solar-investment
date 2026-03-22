@@ -11,6 +11,7 @@
     "start": "next start",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
+    "check:merge-markers": "rg -n \"<<<<<<<|=======|>>>>>>>\" src && exit 1 || exit 0",
     "genkit:dev": "genkit start -- tsx src/ai/dev.ts",
     "genkit:watch": "genkit start -- tsx --watch src/ai/dev.ts",
     "postinstall": "next telemetry disable || true"

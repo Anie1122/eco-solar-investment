@@ -29,7 +29,7 @@ type TxRow = {
   user_id: string;
   transaction_type: string;
   status: string;
-  amount: number; // NGN base
+  amount: number; // USDT base
   currency: string | null;
   description: string | null;
   created_at: string;
@@ -93,7 +93,7 @@ const formatDate = (date: any): string => {
 
 export default function TransactionHistory() {
   const [userId, setUserId] = useState<string | null>(null);
-  const [userCurrency, setUserCurrency] = useState<string>('NGN');
+  const [userCurrency, setUserCurrency] = useState<string>('USDT');
 
   const [transactions, setTransactions] = useState<TxRow[]>([]);
   const [loading, setLoading] = useState(true);
