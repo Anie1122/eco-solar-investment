@@ -25,6 +25,8 @@ const FALLBACK_RATES: Record<SupportedCryptoCurrency, number> = {
 const REFRESH_MS = 45_000;
 
 export function useCurrencyConverter(_userCurrency: string = BASE_CURRENCY) {
+  // Product rule: all users are normalized to a single display/base currency (USDT).
+  // We intentionally ignore userCurrency to avoid country/local-currency drift.
   const currency = BASE_CURRENCY;
 
   const [state, setState] = useState<ConverterState>({

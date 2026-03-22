@@ -53,6 +53,7 @@ async function ensureUserRowExists(params: {
 
   if (!existing) {
     const inviteCode = makeInviteCode(userId);
+    // Merge-resolution choice: keep live converted bonus (not fixed 1500 USDT).
     const bonusUsdt = await getSignupBonusUsdtToday();
 
     const { error: insertError } = await supabase.from('users').insert({

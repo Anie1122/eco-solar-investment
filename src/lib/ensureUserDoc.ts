@@ -3,6 +3,7 @@ import { Firestore } from 'firebase/firestore';
 import { getSignupBonusUsdtToday } from '@/lib/bonus';
 
 async function buildDefaultUserData() {
+  // Keep signup bonus aligned with live NGN->USDT conversion used across Supabase flows.
   const bonusUsdt = await getSignupBonusUsdtToday();
   return {
     fullName: '',

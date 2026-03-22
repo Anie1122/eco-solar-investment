@@ -158,6 +158,7 @@ export default function CompleteProfilePage() {
       }
 
       const currency = BASE_CURRENCY;
+      // Merge-resolution choice: keep live converted bonus in USDT for all users.
       const signupBonusUsdt = await getSignupBonusUsdtToday();
 
       const phone_number = `${values.dial} ${values.phone}`.trim();
