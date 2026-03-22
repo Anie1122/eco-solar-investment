@@ -50,6 +50,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { motion } from 'framer-motion';
 import NotificationBell from '@/components/notification-bell';
+import CurrencySwitcher from '@/components/currency-switcher';
 
 import {
   Dialog,
@@ -80,6 +81,7 @@ type UserRow = {
   id: string;
   email: string | null;
   full_name: string | null;
+  currency?: string | null;
 };
 
 const passwordFormSchema = z.object({
@@ -123,7 +125,7 @@ function useSupabaseUserRow(userId: string | null) {
 
       const { data, error } = await supabase
         .from('users')
-        .select('id,email,full_name')
+        .select('id,email,full_name,currency')
         .eq('id', userId)
         .maybeSingle();
 
@@ -506,6 +508,12 @@ const SettingsPage: NextPage = () => {
                       </AlertDialogContent>
                     </AlertDialog>
                   </div>
+                  {userId ? (
+                    <div className="rounded-lg border border-border/60 bg-muted/20 p-4">
+                      <h3 className="mb-2 text-sm font-semibold">Trading Preferences</h3>
+                      <CurrencySwitcher userId={userId} value={row?.currency} />
+                    </div>
+                  ) : null}
                 </CardContent>
               </Card>
             </main>

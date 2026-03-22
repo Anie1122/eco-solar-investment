@@ -47,7 +47,7 @@ export default function AiSuggestionCard({
   }, []);
 
   const buildPlansTextForAI = () => {
-    // Plans in /lib/data are NGN base, convert to user's currency for display
+    // Plans in /lib/data are USDT base, convert to user's currency for display
     return investmentPlans
       .map((plan) => {
         const amount = convert(plan.amount);
@@ -83,7 +83,7 @@ export default function AiSuggestionCard({
           country: userProfile.country,
           currency: userProfile.currency,
 
-          // ✅ NGN base (server uses this to check affordability)
+          // ✅ USDT base (server uses this to check affordability)
           walletBalance: walletBalanceNGN,
 
           // ✅ NEW: user-currency display values

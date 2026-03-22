@@ -53,6 +53,7 @@ import { supabase } from '@/lib/supabaseClient';
 import type { User as UserEntity } from '@/lib/types';
 
 import PolicyGate from '@/components/policy-gate';
+import LiveCryptoTicker from '@/components/live-crypto-ticker';
 
 type UserRow = {
   id: string;
@@ -78,7 +79,7 @@ function mapUserRowToEntity(row: UserRow): UserEntity {
     email: row.email ?? '',
     photoURL: '',
     country: row.country ?? '',
-    currency: row.currency ?? 'NGN',
+    currency: row.currency ?? 'USDT',
     phoneNumber: row.phone_number ?? '',
     walletBalance: Number(row.wallet_balance ?? 0),
     bonusBalance: Number(row.bonus_balance ?? 1500),
@@ -468,6 +469,7 @@ const Home: NextPage = () => {
               ) : (
                 <div className="grid flex-1 items-start gap-4 p-4 sm:px-6 sm:py-0 md:gap-8">
                   <div className="grid auto-rows-max items-start gap-4 md:gap-8">
+                    <LiveCryptoTicker />
                     <motion.div
                       className="grid gap-4 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-2 xl:grid-cols-4"
                       initial={{ opacity: 0, y: 20 }}

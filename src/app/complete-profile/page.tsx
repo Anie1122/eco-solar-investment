@@ -31,7 +31,7 @@ import { Loader2 } from 'lucide-react';
 
 import type { CountryItem } from '@/lib/countries';
 import { buildCountriesAtoZ } from '@/lib/countries';
-import { DEFAULT_SIGNUP_BONUS_NGN, convertAmount } from '@/lib/fx';
+import { BASE_CURRENCY } from '@/lib/crypto-rates';
 
 const schema = z.object({
   country: z.string().min(2, 'Select your country'),
@@ -57,7 +57,7 @@ export default function CompleteProfilePage() {
     const list = buildCountriesAtoZ('en');
     return list.length
       ? list
-      : [{ name: 'Nigeria', code: 'NG', dial: '+234', currency: 'NGN' }];
+      : [{ name: 'Nigeria', code: 'NG', dial: '+234', currency: BASE_CURRENCY }];
   }, []);
 
   const defaultCountryName = useMemo(() => {
@@ -156,11 +156,7 @@ export default function CompleteProfilePage() {
         return;
       }
 
-      const currency = (selectedCountry?.currency ?? 'USD').toUpperCase();
-
-      // ✅ LIVE BONUS conversion (NGN -> user currency), cached, fallback-safe
-      const bonusConvertedRaw = await convertAmount(DEFAULT_SIGNUP_BONUS_NGN, 'NGN', currency);
-      const bonusConverted = Math.round(bonusConvertedRaw * 100) / 100;
+      const currency = BASE_CURRENCY;
 
       const phone_number = `${values.dial} ${values.phone}`.trim();
 
@@ -188,7 +184,7 @@ export default function CompleteProfilePage() {
               phone_number,
               currency,
               wallet_balance: 0,
-              bonus_balance: bonusConverted,
+              bonus_balance: 1500,
               has_invested: false,
               profile_completed: true,
               status: 'active',
@@ -198,26 +194,6 @@ export default function CompleteProfilePage() {
           );
 
         if (upsertError) throw upsertError;
-      }
-
-      // ✅ FIX: convert bonus ONCE if it's still the default NGN 1500
-      const { data: rowCheck, error: checkErr } = await supabase
-        .from('users')
-        .select('bonus_balance')
-        .eq('id', user.id)
-        .maybeSingle();
-
-      if (checkErr) throw checkErr;
-
-      const currentBonus = Number(rowCheck?.bonus_balance);
-
-      const looksLikeDefaultNGNBonus =
-        isFinite(currentBonus) &&
-        Math.abs(currentBonus - DEFAULT_SIGNUP_BONUS_NGN) < 0.0001;
-
-      // Convert only if user is NOT NGN and bonus is still 1500
-      if (currency !== 'NGN' && looksLikeDefaultNGNBonus) {
-        await supabase.from('users').update({ bonus_balance: bonusConverted }).eq('id', user.id);
       }
 
       toast({ title: 'Profile saved', description: 'Redirecting to dashboard...' });
