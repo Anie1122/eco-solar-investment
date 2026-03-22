@@ -1,0 +1,421 @@
+{
+  "entities": {
+    "User": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "User",
+      "type": "object",
+      "description": "Represents a user in the EcoSolar Invest application.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the user.",
+          "format": "uuid"
+        },
+        "fullName": {
+          "type": "string",
+          "description": "The user's full name."
+        },
+        "email": {
+          "type": "string",
+          "description": "The user's email address.",
+          "format": "email"
+        },
+        "photoURL": {
+            "type": "string",
+            "description": "URL of the user's profile picture.",
+            "format": "uri"
+        },
+        "country": {
+          "type": "string",
+          "description": "The user's selected country."
+        },
+        "currency": {
+          "type": "string",
+          "description": "The user's currency."
+        },
+        "phoneNumber": {
+          "type": "string",
+          "description": "The user's phone number."
+        },
+        "walletBalance": {
+          "type": "number",
+          "description": "The user's wallet balance."
+        },
+        "bonusBalance": {
+          "type": "number",
+          "description": "The user's bonus balance."
+        },
+        "hasInvested": {
+          "type": "boolean",
+          "description": "Indicates whether the user has made an investment."
+        },
+        "profileCompleted": {
+          "type": "boolean",
+          "description": "Indicates whether the user has completed their profile."
+        },
+        "status": {
+          "type": "string",
+          "description": "The status of the user account (e.g., active, inactive).",
+          "enum": ["active", "inactive"]
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "The timestamp when the user was created.",
+          "format": "date-time"
+        },
+        "withdrawalAccount": {
+          "$ref": "#/backend/entities/WithdrawalAccount",
+          "description": "The user's primary withdrawal account details."
+        }
+      },
+      "required": [
+        "id",
+        "fullName",
+        "email",
+        "walletBalance",
+        "bonusBalance",
+        "hasInvested",
+        "profileCompleted",
+        "status",
+        "createdAt"
+      ]
+    },
+    "WithdrawalAccount": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "WithdrawalAccount",
+      "type": "object",
+      "description": "Represents a user's bank account for withdrawals.",
+      "properties": {
+        "bankName": {
+          "type": "string",
+          "description": "The name of the user's bank."
+        },
+        "accountNumber": {
+          "type": "string",
+          "description": "The user's bank account number."
+        },
+        "accountName": {
+          "type": "string",
+          "description": "The name on the bank account."
+        },
+        "country": {
+          "type": "string",
+          "description": "The country of the bank account."
+        },
+        "lastUsedAt": {
+          "type": "string",
+          "description": "Timestamp of the last successful withdrawal with this account.",
+          "format": "date-time"
+        }
+      },
+      "required": ["bankName", "accountNumber", "accountName", "country"]
+    },
+    "InvestmentPlan": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "InvestmentPlan",
+      "type": "object",
+      "description": "Represents an investment plan.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the investment plan.",
+          "format": "uuid"
+        },
+        "name": {
+          "type": "string",
+          "description": "The name of the investment plan."
+        },
+        "investmentAmount": {
+          "type": "number",
+          "description": "The amount required to invest in this plan."
+        },
+        "durationDays": {
+          "type": "number",
+          "description": "The duration of the investment plan in days."
+        },
+        "dailyProfit": {
+          "type": "number",
+          "description": "The daily profit earned from the investment."
+        },
+        "totalReturn": {
+          "type": "number",
+          "description": "The total return from the investment plan."
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "investmentAmount",
+        "durationDays",
+        "dailyProfit",
+        "totalReturn"
+      ]
+    },
+    "Investment": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Investment",
+      "type": "object",
+      "description": "Represents a user's investment in a specific plan.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the investment.",
+          "format": "uuid"
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to User. (Relationship: User 1:N Investment)"
+        },
+        "investmentPlanId": {
+          "type": "string",
+          "description": "Reference to InvestmentPlan. (Relationship: InvestmentPlan 1:N Investment)"
+        },
+        "startDate": {
+          "type": "string",
+          "description": "The start date of the investment.",
+          "format": "date-time"
+        },
+        "endDate": {
+          "type": "string",
+          "description": "The end date of the investment.",
+          "format": "date-time"
+        },
+        "status": {
+          "type": "string",
+          "description": "The status of the investment (e.g., active, completed)."
+        },
+        "initialInvestment": {
+          "type": "number",
+          "description": "The initial investment amount."
+        },
+        "lastProfitCreditedAt": {
+            "type": "string",
+            "description": "The timestamp of the last time profit was credited.",
+            "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "investmentPlanId",
+        "startDate",
+        "endDate",
+        "status",
+        "initialInvestment"
+      ]
+    },
+    "Transaction": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Transaction",
+      "type": "object",
+      "description": "Represents a financial transaction, including withdrawals.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the transaction.",
+          "format": "uuid"
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to User. (Relationship: User 1:N Transaction)"
+        },
+        "transactionType": {
+          "type": "string",
+          "description": "The type of transaction (e.g., deposit, withdrawal, bonus, profit)."
+        },
+        "amount": {
+          "type": "number",
+          "description": "The amount of the transaction in the user's currency."
+        },
+        "transactionDate": {
+          "type": "string",
+          "description": "The date and time of the transaction.",
+          "format": "date-time"
+        },
+        "description": {
+          "type": "string",
+          "description": "A description of the transaction."
+        },
+        "status": {
+            "type": "string",
+            "description": "The status of the transaction (e.g., pending, completed, failed, rejected)."
+        },
+        "withdrawalDetails": {
+          "$ref": "#/backend/entities/WithdrawalAccount",
+          "description": "Bank details for withdrawal transactions."
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "transactionType",
+        "amount",
+        "transactionDate",
+        "status"
+      ]
+    },
+    "Notification": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Notification",
+      "type": "object",
+      "description": "Represents a notification sent to a user.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the notification."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to User. (Relationship: User 1:N Notification)"
+        },
+        "title": {
+          "type": "string",
+          "description": "The title of the notification."
+        },
+        "message": {
+          "type": "string",
+          "description": "The content of the notification."
+        },
+        "type": {
+          "type": "string",
+          "description": "The type of notification (e.g., deposit, investment, profit, withdrawal, bonus, error, info)."
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "The timestamp when the notification was created.",
+          "format": "date-time"
+        },
+        "read": {
+          "type": "boolean",
+          "description": "Indicates whether the notification has been read by the user."
+        },
+        "amount": {
+          "type": "number",
+          "description": "Optional monetary amount associated with the notification."
+        },
+        "currency": {
+          "type": "string",
+          "description": "Optional currency code for the amount."
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "title",
+        "message",
+        "type",
+        "createdAt",
+        "read"
+      ]
+    },
+    "WithdrawalRequest": {
+      "title": "WithdrawalRequest",
+      "type": "object",
+      "description": "Represents a user's request to withdraw funds, intended for admin review. This entity is now implicitly part of the Transaction entity.",
+      "properties": {}
+    }
+  },
+  "auth": {
+    "providers": [
+      "password",
+      "anonymous"
+    ]
+  },
+  "firestore": {
+    "structure": [
+      {
+        "path": "/users/{userId}",
+        "definition": {
+          "entityName": "User",
+          "schema": {
+            "$ref": "#/backend/entities/User"
+          },
+          "description": "Stores user profile information. The userId parameter corresponds to the Firebase Auth UID, ensuring path-based ownership.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The Firebase Auth UID of the user."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/investments/{investmentId}",
+        "definition": {
+          "entityName": "Investment",
+          "schema": {
+            "$ref": "#/backend/entities/Investment"
+          },
+          "description": "Stores user investments. Path-based ownership is enforced via the userId parameter.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The Firebase Auth UID of the user."
+            },
+            {
+              "name": "investmentId",
+              "description": "The unique ID of the investment."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/transactions/{transactionId}",
+        "definition": {
+          "entityName": "Transaction",
+          "schema": {
+            "$ref": "#/backend/entities/Transaction"
+          },
+          "description": "Stores user transactions, including withdrawal requests. Path-based ownership is enforced via the userId parameter.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The Firebase Auth UID of the user."
+            },
+            {
+              "name": "transactionId",
+              "description": "The unique ID of the transaction."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/notifications/{notificationId}",
+        "definition": {
+          "entityName": "Notification",
+          "schema": {
+            "$ref": "#/backend/entities/Notification"
+          },
+          "description": "Stores user notifications. Path-based ownership is enforced via the userId parameter.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The Firebase Auth UID of the user."
+            },
+            {
+              "name": "notificationId",
+              "description": "The unique ID of the notification."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/investment_plans/{investmentPlanId}",
+        "definition": {
+          "entityName": "InvestmentPlan",
+          "schema": {
+            "$ref": "#/backend/entities/InvestmentPlan"
+          },
+          "description": "Stores investment plans, accessible to all authenticated users.",
+          "params": [
+            {
+              "name": "investmentPlanId",
+              "description": "The unique ID of the investment plan."
+            }
+          ]
+        }
+      }
+    ],
+    "reasoning": "The Firestore structure is designed for a single-user security model. All user-specific data (investments, transactions, notifications) is nested within that user's document in a subcollection (e.g., `/users/{userId}/investments/{investmentId}`). This enforces path-based ownership, making security rules simple and effective, as access can be granted by matching the authenticated user's UID (`request.auth.uid`) with the `{userId}` in the document path. Public data like investment plans are stored in a top-level collection. This design is secure, scalable, and prevents data leakage by ensuring users can only ever access their own information."
+  }
+}

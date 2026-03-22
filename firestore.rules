@@ -1,0 +1,59 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(uid) {
+      return isSignedIn() && request.auth.uid == uid;
+    }
+
+    // USERS
+    match /users/{uid} {
+
+      // Owner can read their own profile
+      allow read: if isOwner(uid);
+
+      // Owner can create their doc (important!)
+      allow create: if isOwner(uid);
+
+      // Owner can update only safe fields (prevents wallet hacking from client)
+      allow update: if isOwner(uid)
+        && request.resource.data.diff(resource.data).changedKeys().hasOnly([
+          "fullName",
+          "photoURL",
+          "country",
+          "countryCode",
+          "phoneNumber",
+          "currency",
+          "profileCompleted"
+        ]);
+
+      // Nobody deletes users from client
+      allow delete: if false;
+    }
+
+    // WALLET / TRANSACTIONS (optional structure)
+    // If you use /users/{uid}/transactions/{id}
+    match /users/{uid}/transactions/{txId} {
+      allow read: if isOwner(uid);
+      allow create: if isOwner(uid); // ok if you create a pending tx from client
+      allow update, delete: if false; // keep updates server-only
+    }
+
+    // INVESTMENTS (optional)
+    match /users/{uid}/investments/{invId} {
+      allow read: if isOwner(uid);
+      allow create: if isOwner(uid); // ok if you create pending investment client-side
+      allow update, delete: if false; // server-only
+    }
+
+    // Default: lock everything else
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

@@ -1,0 +1,97 @@
+// src/app/api/cron/credit-profits/route.ts
+import { NextRequest, NextResponse } from 'next/server';
+import { createClient } from '@supabase/supabase-js';
+
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
+
+const supabaseAdmin = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!,
+  { auth: { persistSession: false } }
+);
+
+async function safeNotify(userId: string, amountNgN: number, meta: any) {
+  const nowIso = new Date().toISOString();
+
+  const first = await supabaseAdmin.from('notifications').insert({
+    user_id: userId,
+    title: 'Profit Credited',
+    message: `Your daily profit has been credited to your wallet.`,
+    type: 'profit',
+    is_read: false,
+    created_at: nowIso,
+    amount: amountNgN,
+    currency: 'NGN',
+    metadata: meta,
+  } as any);
+
+  if (!first.error) return;
+
+  // fallback minimal insert
+  await supabaseAdmin.from('notifications').insert({
+    user_id: userId,
+    title: 'Profit Credited',
+    message: `Your daily profit has been credited to your wallet.`,
+    type: 'profit',
+    is_read: false,
+    created_at: nowIso,
+  } as any);
+}
+
+export async function GET(req: NextRequest) {
+  try {
+    const url = new URL(req.url);
+    const secret = url.searchParams.get('secret');
+
+    if (!process.env.CRON_SECRET || secret !== process.env.CRON_SECRET) {
+      return NextResponse.json({ ok: false, message: 'Unauthorized' }, { status: 401 });
+    }
+
+    const nowIso = new Date().toISOString();
+
+    // ✅ Call your RPC
+    const { data, error } = await supabaseAdmin.rpc('credit_due_profits', {
+      p_now: nowIso,
+    });
+
+    if (error) throw error;
+
+    // Supports two possible return shapes:
+    // A) [{ credited: number }]
+    // B) [{ credited: number, credited_rows: [{ user_id, amount, investment_id? }, ...] }]
+    const firstRow: any = Array.isArray(data) && data.length ? data[0] : null;
+
+    const credited =
+      firstRow && typeof firstRow.credited !== 'undefined'
+        ? Number(firstRow.credited)
+        : 0;
+
+    const creditedRows: any[] = Array.isArray(firstRow?.credited_rows)
+      ? firstRow.credited_rows
+      : [];
+
+    // ✅ Create notifications if your RPC returns the credited rows
+    if (creditedRows.length) {
+      // Group by user (optional)
+      for (const r of creditedRows) {
+        const userId = String(r.user_id || '');
+        const amount = Number(r.amount ?? 0);
+        if (!userId) continue;
+        await safeNotify(userId, Number.isFinite(amount) ? amount : 0, r);
+      }
+    }
+
+    return NextResponse.json({
+      ok: true,
+      credited,
+      notifications_created: creditedRows.length,
+    });
+  } catch (e: any) {
+    console.error('cron credit profits error:', e);
+    return NextResponse.json(
+      { ok: false, message: e?.message || 'Server error' },
+      { status: 500 }
+    );
+  }
+}
