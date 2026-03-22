@@ -1,55 +1,104 @@
-// src/lib/currency.ts
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { getLiveRate } from '@/lib/fx';
+import {
+  BASE_CURRENCY,
+  clampToPrecision,
+  fetchCryptoMarketSnapshot,
+  type SupportedCryptoCurrency,
+} from '@/lib/crypto-rates';
 
-export function useCurrencyConverter(userCurrency: string = 'NGN') {
-  const currency = (userCurrency || 'NGN').toUpperCase();
+type ConverterState = {
+  ratesFromUsdt: Record<SupportedCryptoCurrency, number>;
+  fetchedAt: number;
+};
 
-  const [rate, setRate] = useState<number>(1);
+const FALLBACK_RATES: Record<SupportedCryptoCurrency, number> = {
+  USDT: 1,
+  USDC: 1,
+  ETH: 0.0004,
+  BNB: 0.0018,
+  BTC: 0.000015,
+  SOL: 0.006,
+};
+
+const REFRESH_MS = 45_000;
+
+export function useCurrencyConverter(_userCurrency: string = BASE_CURRENCY) {
+  const currency = BASE_CURRENCY;
+
+  const [state, setState] = useState<ConverterState>({
+    ratesFromUsdt: FALLBACK_RATES,
+    fetchedAt: 0,
+  });
   const [loading, setLoading] = useState<boolean>(true);
 
   useEffect(() => {
     let mounted = true;
+    let timer: ReturnType<typeof setTimeout> | null = null;
 
-    const run = async () => {
-      setLoading(true);
-      const r = await getLiveRate('NGN', currency);
-      if (!mounted) return;
-      setRate(r || 1);
-      setLoading(false);
+    const load = async () => {
+      try {
+        const snapshot = await fetchCryptoMarketSnapshot();
+        if (!mounted) return;
+
+        setState({
+          ratesFromUsdt: snapshot.ratesFromUsdt,
+          fetchedAt: snapshot.fetchedAt,
+        });
+      } catch (error) {
+        console.error('currency rate fetch failed:', error);
+      } finally {
+        if (mounted) {
+          setLoading(false);
+          timer = setTimeout(load, REFRESH_MS);
+        }
+      }
     };
 
-    run();
+    load();
 
     return () => {
       mounted = false;
+      if (timer) clearTimeout(timer);
     };
-  }, [currency]);
+  }, []);
+
+  const rate = state.ratesFromUsdt[currency] || 1;
 
   const convert = useMemo(() => {
-    return (amountNGN: number) => {
-      const n = Number(amountNGN || 0);
-      return n * (rate || 1);
+    return (amountBaseUsdt: number) => {
+      const n = Number(amountBaseUsdt || 0);
+      return clampToPrecision(n * rate);
+    };
+  }, [rate]);
+
+  const toBase = useMemo(() => {
+    return (amountInUserCurrency: number) => {
+      const n = Number(amountInUserCurrency || 0);
+      if (!Number.isFinite(n) || rate <= 0) return 0;
+      return clampToPrecision(n / rate);
     };
   }, [rate]);
 
   const format = useMemo(() => {
     return (amountInUserCurrency: number) => {
       const n = Number(amountInUserCurrency || 0);
-      try {
-        return new Intl.NumberFormat(undefined, {
-          style: 'currency',
-          currency,
-          maximumFractionDigits: 2,
-        }).format(n);
-      } catch {
-        // if Intl doesn't like the currency, still show a safe string
-        return `${currency} ${n.toFixed(2)}`;
-      }
+      const decimals = currency === 'USDT' || currency === 'USDC' ? 2 : 6;
+      return `${currency} ${n.toLocaleString(undefined, {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: decimals,
+      })}`;
     };
   }, [currency]);
 
-  return { convert, format, rate, currency, loading };
-                                  }
+  return {
+    convert,
+    toBase,
+    format,
+    rate,
+    currency,
+    loading,
+    fetchedAt: state.fetchedAt,
+  };
+}

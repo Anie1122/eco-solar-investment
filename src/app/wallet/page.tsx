@@ -264,8 +264,8 @@ const WalletPage: NextPage = () => {
   );
   const { data: userData, isLoading } = useDoc<UserEntity>(userDocRef);
 
-  // ✅ Convert NGN base balances → user currency BEFORE passing to WalletCard
-  const currency = (userData as any)?.currency || 'NGN';
+  // ✅ Convert USDT base balances → user currency BEFORE passing to WalletCard
+  const currency = (userData as any)?.currency || 'USDT';
   const { convert } = useCurrencyConverter(currency);
 
   const walletNGN =
@@ -273,7 +273,7 @@ const WalletPage: NextPage = () => {
   const bonusNGN =
     Number((userData as any)?.bonus_balance ?? (userData as any)?.bonusBalance ?? 0) || 0;
 
-  // IMPORTANT: We only convert for DISPLAY. DB stays NGN base.
+  // IMPORTANT: We only convert for DISPLAY. DB stays USDT base.
   const walletDisplay = convert(walletNGN);
   const bonusDisplay = convert(bonusNGN);
 

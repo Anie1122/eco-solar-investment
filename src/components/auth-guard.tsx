@@ -4,6 +4,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import AccountRestrictedPage from './account-restricted-page';
 import { supabase } from '@/lib/supabaseClient';
+import { getSignupBonusUsdtToday } from '@/lib/bonus';
 
 const publicRoutes = ['/login', '/register', '/reset-password'];
 
@@ -28,8 +29,6 @@ type UserRow = {
   referral_awarded?: boolean | null;
 };
 
-const DEFAULT_SIGNUP_BONUS_NGN = 1500;
-
 function makeInviteCode(userId: string) {
   return userId.replace(/-/g, '').slice(0, 10).toUpperCase();
 }
@@ -43,7 +42,7 @@ async function ensureUserRowExists(params: {
 
   const { data: existing, error: selectError } = await supabase
     .from('users')
-    .select('id, invite_code')
+    .select('id, invite_code, currency')
     .eq('id', userId)
     .maybeSingle();
 
@@ -54,6 +53,7 @@ async function ensureUserRowExists(params: {
 
   if (!existing) {
     const inviteCode = makeInviteCode(userId);
+    const bonusUsdt = await getSignupBonusUsdtToday();
 
     const { error: insertError } = await supabase.from('users').insert({
       id: userId,
@@ -61,9 +61,9 @@ async function ensureUserRowExists(params: {
       full_name: fullName ?? 'New User',
       phone_number: '',
       country: '',
-      currency: 'NGN',
+      currency: 'USDT',
       wallet_balance: 0,
-      bonus_balance: DEFAULT_SIGNUP_BONUS_NGN,
+      bonus_balance: bonusUsdt,
       has_invested: false,
       profile_completed: false,
       status: 'active',
@@ -79,10 +79,16 @@ async function ensureUserRowExists(params: {
     const inviteCode = makeInviteCode(userId);
     const { error: updErr } = await supabase
       .from('users')
-      .update({ invite_code: inviteCode })
+      .update({ invite_code: inviteCode, currency: 'USDT' })
       .eq('id', userId);
 
     if (updErr) console.error('❌ Failed to set invite_code:', updErr);
+  } else if (existing.currency !== 'USDT') {
+    const { error: curErr } = await supabase
+      .from('users')
+      .update({ currency: 'USDT' })
+      .eq('id', userId);
+    if (curErr) console.error('❌ Failed to enforce USDT currency:', curErr);
   }
 }
 
