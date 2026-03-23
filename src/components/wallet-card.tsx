@@ -65,6 +65,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '@/lib/supabaseClient';
 import { cn } from '@/lib/utils';
 import { useRouter } from 'next/navigation';
+import CurrencySwitcher from '@/components/currency-switcher';
 
 interface WalletCardProps {
   userProfile: any | null;
@@ -555,10 +556,10 @@ const WithdrawalDialogContent = ({
   const { convert, format, currency } = useCurrencyConverter(currencyCode);
 
   // ✅ helper: convert a user-currency amount back to USDT base safely
-  const toNGN = (amountUserCurrency: number) => {
-    const oneNgnInUser = convert(1);
-    if (!Number.isFinite(oneNgnInUser) || oneNgnInUser <= 0) return amountUserCurrency;
-    return amountUserCurrency / oneNgnInUser;
+  const toBaseUsdt = (amountUserCurrency: number) => {
+    const oneUsdtInUser = convert(1);
+    if (!Number.isFinite(oneUsdtInUser) || oneUsdtInUser <= 0) return amountUserCurrency;
+    return amountUserCurrency / oneUsdtInUser;
   };
 
   const savedAccount = (userProfile.withdrawal_account ?? null) as
@@ -568,11 +569,11 @@ const WithdrawalDialogContent = ({
     savedAccount ? 'saved' : 'new'
   );
 
-  const minWithdrawalNGN = 15000;
-  const minWithdrawalUserCurrency = convert(minWithdrawalNGN);
+  const minWithdrawalUSDT = 15;
+  const minWithdrawalUserCurrency = convert(minWithdrawalUSDT);
 
-  const walletBalanceNGN = Number(userProfile.wallet_balance ?? 0);
-  const walletBalanceUserCurrency = convert(walletBalanceNGN);
+  const walletBalanceUSDT = Number(userProfile.wallet_balance ?? 0);
+  const walletBalanceUserCurrency = convert(walletBalanceUSDT);
 
   const [pinSet, setPinSet] = useState(false);
   const [checkingPin, setCheckingPin] = useState(true);
@@ -745,10 +746,10 @@ const WithdrawalDialogContent = ({
     setBusy(true);
     try {
       // ✅ send USDT base to backend (so DB stays consistent)
-      const amountNGN = toNGN(Number(pendingWithdrawal.amount));
+      const amountUSDT = toBaseUsdt(Number(pendingWithdrawal.amount));
 
       await requestWithdrawal({
-        amount: Number(amountNGN),
+        amount: Number(amountUSDT),
         bankName: pendingWithdrawal.bankName,
         accountNumber: pendingWithdrawal.accountNumber,
         accountName: pendingWithdrawal.accountName,
@@ -1336,8 +1337,23 @@ export default function WalletCard({ userProfile, isLoading }: WalletCardProps) 
             whileHover={{ y: -1 }}
             transition={{ duration: 0.15 }}
           >
-            <div className="text-sm font-medium text-muted-foreground">
-              Total Balance
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+              <div className="text-sm font-medium text-muted-foreground">
+                Total Balance
+              </div>
+              {profileToUse?.id ? (
+                <div className="w-full sm:w-[220px]">
+                  <CurrencySwitcher
+                    userId={profileToUse.id}
+                    value={currencyCode}
+                    onChanged={(next) => {
+                      setLiveProfile((prev) =>
+                        prev ? ({ ...prev, currency: next } as UserRow) : prev
+                      );
+                    }}
+                  />
+                </div>
+              ) : null}
             </div>
             <div className="text-4xl font-bold text-primary">
               {format(walletBalanceUser)}

@@ -71,16 +71,19 @@ function slugifyNetwork(name: string) {
 
 function normalizeCurrency(input: string) {
   const v = String(input || '').trim().toUpperCase();
-  if (v === '₦' || v === 'NAIRA' || v === 'NIGERIAN NAIRA') return 'NGN';
-  if (v === '$' || v === 'DOLLAR' || v === 'US DOLLAR') return 'USD';
-  if (v === '£' || v === 'POUND' || v === 'BRITISH POUND') return 'GBP';
-  if (v === '€' || v === 'EURO') return 'EUR';
-  return v || 'NGN';
+  if (v === '₦' || v === 'NAIRA' || v === 'NIGERIAN NAIRA') return 'USDT';
+  if (v === '$' || v === 'DOLLAR' || v === 'US DOLLAR') return 'USDT';
+  if (v === '£' || v === 'POUND' || v === 'BRITISH POUND') return 'USDT';
+  if (v === '€' || v === 'EURO') return 'USDT';
+  return v || 'USDT';
 }
 
 function round2(n: number) {
   return Math.round((Number(n) || 0) * 100) / 100;
 }
+
+const LEGACY_NGN_TO_USDT = 0.0011;
+const ngnToUsdt = (value: number) => round2((Number(value) || 0) * LEGACY_NGN_TO_USDT);
 
 async function getAccessToken() {
   const { data } = await supabase.auth.getSession();
@@ -416,9 +419,9 @@ export default function DataPage() {
 
   const detailsRef = useRef<HTMLDivElement | null>(null);
 
-  // ✅ walletBalanceNGN is NGN base from DB
-  const [userCurrency, setUserCurrency] = useState('NGN');
-  const [walletBalanceNGN, setWalletBalanceNGN] = useState<number>(0);
+  // ✅ walletBalance is USDT base from DB
+  const [userCurrency, setUserCurrency] = useState('USDT');
+  const [walletBalanceUSDT, setWalletBalanceUSDT] = useState<number>(0);
   const [loadingWallet, setLoadingWallet] = useState(true);
 
   // ✅ SAME converter used in wallet page
@@ -469,21 +472,21 @@ export default function DataPage() {
   const DISCOUNT_PERCENT = 80;
   const PAY_FACTOR = 0.2;
 
-  // ✅ NGN BASE amounts
-  const payNGN = useMemo(() => {
+  // ✅ USDT base amounts (converted from legacy NGN bundle table)
+  const payUSDT = useMemo(() => {
     if (!selectedBundle) return 0;
-    return Math.round(selectedBundle.baseNGN * PAY_FACTOR);
+    return ngnToUsdt(selectedBundle.baseNGN * PAY_FACTOR);
   }, [selectedBundle]);
 
-  const realNGN = useMemo(() => {
+  const realUSDT = useMemo(() => {
     if (!selectedBundle) return 0;
-    return selectedBundle.baseNGN;
+    return ngnToUsdt(selectedBundle.baseNGN);
   }, [selectedBundle]);
 
   // ✅ DISPLAY values using SAME converter as Wallet page
-  const walletDisplay = useMemo(() => convert(walletBalanceNGN), [walletBalanceNGN, convert]);
-  const payDisplay = useMemo(() => convert(payNGN), [payNGN, convert]);
-  const realDisplay = useMemo(() => convert(realNGN), [realNGN, convert]);
+  const walletDisplay = useMemo(() => convert(walletBalanceUSDT), [walletBalanceUSDT, convert]);
+  const payDisplay = useMemo(() => convert(payUSDT), [payUSDT, convert]);
+  const realDisplay = useMemo(() => convert(realUSDT), [realUSDT, convert]);
 
   useEffect(() => {
     const run = async () => {
@@ -505,11 +508,11 @@ export default function DataPage() {
 
         if (uerr) throw uerr;
 
-        const cur = normalizeCurrency(String((urow as any)?.currency || 'NGN'));
+        const cur = normalizeCurrency(String((urow as any)?.currency || 'USDT'));
         setUserCurrency(cur);
 
-        // ✅ base stored in NGN
-        setWalletBalanceNGN(Number((urow as any)?.wallet_balance ?? 0));
+        // ✅ base stored in USDT
+        setWalletBalanceUSDT(Number((urow as any)?.wallet_balance ?? 0));
 
         setPinSet(Boolean(isSet));
       } catch (e: any) {
@@ -528,11 +531,10 @@ export default function DataPage() {
     if (loadingWallet) return false;
     if (!selectedBundle) return false;
 
-    // ✅ compare NGN base vs NGN base (correct)
-    if ((Number(walletBalanceNGN) || 0) < (Number(payNGN) || 0)) return false;
+    if ((Number(walletBalanceUSDT) || 0) < (Number(payUSDT) || 0)) return false;
 
     return !busy;
-  }, [form.formState.isValid, loadingWallet, selectedBundle, walletBalanceNGN, payNGN, busy]);
+  }, [form.formState.isValid, loadingWallet, selectedBundle, walletBalanceUSDT, payUSDT, busy]);
 
   const onSelectNetwork = (name: string) => {
     form.setValue('network', name, { shouldValidate: true });
@@ -571,7 +573,7 @@ export default function DataPage() {
     }
 
     const plan = `${selectedBundle.label} • ${selectedBundle.days}`;
-    const amountToChargeNGN = Number(payNGN) || 0;
+    const amountToChargeUSDT = Number(payUSDT) || 0;
 
     setBusy(true);
     try {
@@ -582,12 +584,12 @@ export default function DataPage() {
           network: values.network,
           phone: values.phone,
           plan,
-          amount: amountToChargeNGN, // ✅ NGN base
-          currency: 'NGN',
+          amount: amountToChargeUSDT,
+          currency: 'USDT',
           pin: cleanPin,
           meta: {
-            real_price_ngn: realNGN,
-            pay_price_ngn: payNGN,
+            real_price_usdt: realUSDT,
+            pay_price_usdt: payUSDT,
             discount_percent: DISCOUNT_PERCENT,
             user_currency: userCurrency,
           },
@@ -602,7 +604,7 @@ export default function DataPage() {
       const uid = sess.session?.user?.id;
       if (uid) {
         const { data: urow } = await supabase.from('users').select('wallet_balance').eq('id', uid).maybeSingle();
-        setWalletBalanceNGN(Number((urow as any)?.wallet_balance ?? walletBalanceNGN));
+        setWalletBalanceUSDT(Number((urow as any)?.wallet_balance ?? walletBalanceUSDT));
       }
 
       setPinEntryOpen(false);
@@ -610,7 +612,7 @@ export default function DataPage() {
       const txId = String(json.txId || '');
       const createdAt = new Date().toLocaleString();
 
-      const payText = format(convert(amountToChargeNGN));
+      const payText = format(convert(amountToChargeUSDT));
 
       const receiptText = buildReceiptText({
         appName: 'Eco-solar-Investments',
@@ -858,8 +860,8 @@ export default function DataPage() {
                             {bundles.map((b) => {
                               const active = field.value === b.id;
 
-                              const realUser = convert(b.baseNGN);
-                              const payUser = convert(Math.round(b.baseNGN * PAY_FACTOR));
+                              const realUser = convert(ngnToUsdt(b.baseNGN));
+                              const payUser = convert(ngnToUsdt(b.baseNGN * PAY_FACTOR));
 
                               return (
                                 <motion.button
@@ -930,7 +932,7 @@ export default function DataPage() {
                   </AlertDescription>
                 </Alert>
 
-                {selectedBundle && Number(walletBalanceNGN) < Number(payNGN) ? (
+                {selectedBundle && Number(walletBalanceUSDT) < Number(payUSDT) ? (
                   <Alert className="rounded-2xl">
                     <AlertDescription className="text-destructive">
                       Insufficient wallet balance for this purchase.

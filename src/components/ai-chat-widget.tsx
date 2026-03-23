@@ -119,7 +119,7 @@ ${plansText}
         relative
         h-14 w-14           /* 🔥 smaller size */
         rounded-full
-        shadow-[0_14px_35px_rgba(6,182,212,0.35)]
+        shadow-[0_14px_35px_rgba(245,158,11,0.45)]
         ring-1 ring-white/30
         overflow-hidden
         active:scale-[0.97]
@@ -127,7 +127,7 @@ ${plansText}
       "
       style={{
         background:
-          'linear-gradient(135deg, rgba(6,182,212,1) 0%, rgba(59,130,246,1) 100%)',
+          'linear-gradient(135deg, rgba(245,158,11,1) 0%, rgba(217,119,6,1) 100%)',
       }}
     >
       {/* Bot icon */}
@@ -147,7 +147,7 @@ ${plansText}
           flex items-center justify-center
         "
       >
-        <Sparkles className="h-3.5 w-3.5 text-sky-500" />
+        <Sparkles className="h-3.5 w-3.5 text-amber-500" />
       </div>
     </motion.button>
   </motion.div>
