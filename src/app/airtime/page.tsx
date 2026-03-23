@@ -10,6 +10,7 @@ import { supabase } from '@/lib/supabaseClient';
 import { useToast } from '@/hooks/use-toast';
 import { useCurrencyConverter } from '@/lib/currency';
 import { cn } from '@/lib/utils';
+import { exportElementAsPdf, exportElementAsPng } from '@/lib/receipt-export';
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -265,6 +266,7 @@ export default function AirtimePage() {
 
   const [txId, setTxId] = useState<string | null>(null);
   const [receipt, setReceipt] = useState<ReceiptData | null>(null);
+  const receiptCardRef = useRef<HTMLDivElement | null>(null);
 
   const detailsRef = useRef<HTMLDivElement | null>(null);
 
@@ -442,33 +444,14 @@ export default function AirtimePage() {
     }
   };
 
-  const doDownloadPDF = () => {
-    // ✅ Best no-library solution: phone print dialog => "Save as PDF"
-    window.print();
+  const doDownloadPNG = async () => {
+    if (!receiptCardRef.current || !receipt) return;
+    await exportElementAsPng(receiptCardRef.current, `airtime-receipt-${receipt.id}.png`);
   };
-
-  const doShare = async () => {
-    if (!receipt) return;
-    const network = receipt.metadata?.network || selectedNetwork;
-    const phone = receipt.metadata?.phone || phoneVal;
-
-    // ✅ receipt amount is stored in USDT base, display in selected currency
-    const amountUser = convert(Number(receipt.amount || 0));
-
-    const text = `Receipt\nType: Airtime\nNetwork: ${network}\nRecipient: ${phone}\nAmount: ${format(amountUser)}\nStatus: Successful\nTransaction ID: ${
-      receipt.id
-    }\nDate: ${formatDateNice(receipt.created_at)}`;
-
-    try {
-      if (navigator.share) {
-        await navigator.share({ title: 'Receipt', text });
-      } else {
-        await navigator.clipboard.writeText(text);
-        toast({ title: 'Copied', description: 'Receipt details copied to clipboard.' });
-      }
-    } catch {
-      // ignore
-    }
+  
+  const doDownloadPDF = async () => {
+    if (!receiptCardRef.current || !receipt) return;
+    await exportElementAsPdf(receiptCardRef.current, `airtime-receipt-${receipt.id}.pdf`);
   };
 
   // ✅ RECEIPT PAGE (OPay style)
@@ -504,7 +487,7 @@ export default function AirtimePage() {
         {/* ✅ OPay-style receipt */}
         <div id="receipt-print" className="space-y-4">
           <Card className="overflow-hidden border-muted/60 shadow-xl rounded-3xl bg-[#141414] text-white">
-            <CardContent className="p-5">
+            <CardContent className="p-5" ref={receiptCardRef}>
               <div className="flex items-center justify-center">
                 <NetworkLogo name={network} size={62} circle />
               </div>
@@ -569,13 +552,13 @@ export default function AirtimePage() {
           </Card>
 
           <div className="grid grid-cols-2 gap-3">
-            <Button className="rounded-2xl h-12" onClick={doDownloadPDF}>
+            <Button className="rounded-2xl h-12" onClick={doDownloadPNG}>
               <Download className="mr-2 h-4 w-4" />
-              Save Receipt
+              Save PNG
             </Button>
-            <Button variant="outline" className="rounded-2xl h-12" onClick={doShare}>
+            <Button variant="outline" className="rounded-2xl h-12" onClick={doDownloadPDF}>
               <Share2 className="mr-2 h-4 w-4" />
-              Share
+              Save PDF
             </Button>
           </div>
 

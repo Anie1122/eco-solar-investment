@@ -30,6 +30,7 @@ import {
   Copy,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { exportElementAsPdf, exportElementAsPng } from '@/lib/receipt-export';
 
 // ✅ IMPORTANT: use same converter as Wallet page
 import { useCurrencyConverter } from '@/lib/currency';
@@ -418,6 +419,7 @@ export default function DataPage() {
   const { toast } = useToast();
 
   const detailsRef = useRef<HTMLDivElement | null>(null);
+  const receiptCardRef = useRef<HTMLDivElement | null>(null);
 
   // ✅ walletBalance is USDT base from DB
   const [userCurrency, setUserCurrency] = useState('USDT');
@@ -680,7 +682,7 @@ export default function DataPage() {
           </div>
 
           <Card className="overflow-hidden border-muted/60 shadow-xl bg-neutral-950 text-white">
-            <div className="p-6">
+            <div className="p-6" ref={receiptCardRef}>
               <div className="flex flex-col items-center text-center">
                 <div className="mb-3">
                   <NetworkLogo name={success.network} size={60} />
@@ -711,18 +713,24 @@ export default function DataPage() {
               <div className="mt-6 grid grid-cols-2 gap-3">
                 <Button
                   className="rounded-2xl h-12 bg-emerald-500 hover:bg-emerald-600 text-white"
-                  onClick={() => downloadTextFile(`receipt-${success.txId}.txt`, success.receiptText)}
+                  onClick={async () => {
+                    if (!receiptCardRef.current) return;
+                    await exportElementAsPng(receiptCardRef.current, `data-receipt-${success.txId}.png`);
+                  }}
                 >
                   <Download className="mr-2 h-4 w-4" />
-                  Save Receipt
+                  Save PNG
                 </Button>
 
                 <Button
                   className="rounded-2xl h-12 bg-white/10 hover:bg-white/15 text-white"
-                  onClick={() => copyToClipboard(success.receiptText)}
+                  onClick={async () => {
+                    if (!receiptCardRef.current) return;
+                    await exportElementAsPdf(receiptCardRef.current, `data-receipt-${success.txId}.pdf`);
+                  }}
                 >
                   <Share2 className="mr-2 h-4 w-4" />
-                  Share / Copy
+                  Save PDF
                 </Button>
               </div>
 
