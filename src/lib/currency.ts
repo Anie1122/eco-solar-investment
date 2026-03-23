@@ -14,7 +14,7 @@ type ConverterState = {
   fetchedAt: number;
 };
 
-const FALLBACK_RATES: Record<SupportedCryptoCurrency, number> = {
+const FIXED_USDT_PER_COIN: Record<SupportedCryptoCurrency, number> = {
   USDT: 1,
   USDC: 1,
   ETH: 3500,
@@ -23,24 +23,26 @@ const FALLBACK_RATES: Record<SupportedCryptoCurrency, number> = {
   SOL: 150,
 };
 
+const FIXED_RATES_FROM_USDT: Record<SupportedCryptoCurrency, number> = {
+  USDT: 1,
+  USDC: 1,
+  ETH: clampToPrecision(1 / FIXED_USDT_PER_COIN.ETH),
+  BNB: clampToPrecision(1 / FIXED_USDT_PER_COIN.BNB),
+  BTC: clampToPrecision(1 / FIXED_USDT_PER_COIN.BTC),
+  SOL: clampToPrecision(1 / FIXED_USDT_PER_COIN.SOL),
+};
+
 const REFRESH_MS = 45_000;
 
 export function useCurrencyConverter(userCurrency: string = BASE_CURRENCY) {
   const currency = toSupportedCurrency(userCurrency);
 
-  const [state, setState] = useState<ConverterState>(() => ({
-    ratesFromUsdt: {
-      USDT: 1,
-      USDC: 1,
-      ETH: clampToPrecision(FALLBACK_RATES.ETH / FALLBACK_RATES.USDT),
-      BNB: clampToPrecision(FALLBACK_RATES.BNB / FALLBACK_RATES.USDT),
-      BTC: clampToPrecision(FALLBACK_RATES.BTC / FALLBACK_RATES.USDT),
-      SOL: clampToPrecision(FALLBACK_RATES.SOL / FALLBACK_RATES.USDT),
-    },
+  const [state, setState] = useState<ConverterState>({
+    ratesFromUsdt: FIXED_RATES_FROM_USDT,
     fetchedAt: 0,
-  }));
+  });
 
-  const [loading, setLoading] = useState<boolean>(true);
+  const [loading, setLoading] = useState<boolean>(false);
 
   useEffect(() => {
     let mounted = true;
@@ -49,17 +51,23 @@ export function useCurrencyConverter(userCurrency: string = BASE_CURRENCY) {
     const load = async () => {
       try {
         const snapshot = await fetchCryptoMarketSnapshot();
-        if (!mounted) return;
+        if (!mounted || !snapshot?.ratesFromUsdt) return;
 
         setState({
           ratesFromUsdt: snapshot.ratesFromUsdt,
           fetchedAt: snapshot.fetchedAt,
         });
       } catch (error) {
-        console.error('currency rate fetch failed:', error);
+        console.error('currency rate fetch failed, using fixed rates:', error);
+
+        if (mounted) {
+          setState({
+            ratesFromUsdt: FIXED_RATES_FROM_USDT,
+            fetchedAt: Date.now(),
+          });
+        }
       } finally {
         if (mounted) {
-          setLoading(false);
           timer = setTimeout(load, REFRESH_MS);
         }
       }
