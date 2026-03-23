@@ -2,7 +2,7 @@
 // Live FX with caching + safe fallback.
 // Source: Frankfurter (ECB-based). Fallback: manual NGN_TO map.
 
-export const DEFAULT_SIGNUP_BONUS_NGN = 1500;
+export const DEFAULT_SIGNUP_BONUS_USDT = 1.5;
 
 // Your fallback rates (NGN -> currency). Keep updating anytime.
 export const NGN_TO_FALLBACK: Record<string, number> = {

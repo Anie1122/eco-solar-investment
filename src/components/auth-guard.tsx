@@ -28,7 +28,7 @@ type UserRow = {
   referral_awarded?: boolean | null;
 };
 
-const DEFAULT_SIGNUP_BONUS_USDT = 1500;
+const DEFAULT_SIGNUP_BONUS_USDT = 1.5;
 
 function makeInviteCode(userId: string) {
   return userId.replace(/-/g, '').slice(0, 10).toUpperCase();
