@@ -65,6 +65,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '@/lib/supabaseClient';
 import { cn } from '@/lib/utils';
 import { useRouter } from 'next/navigation';
+import CurrencySwitcher from '@/components/currency-switcher';
 
 interface WalletCardProps {
   userProfile: any | null;
@@ -1336,8 +1337,23 @@ export default function WalletCard({ userProfile, isLoading }: WalletCardProps) 
             whileHover={{ y: -1 }}
             transition={{ duration: 0.15 }}
           >
-            <div className="text-sm font-medium text-muted-foreground">
-              Total Balance
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+              <div className="text-sm font-medium text-muted-foreground">
+                Total Balance
+              </div>
+              {profileToUse?.id ? (
+                <div className="w-full sm:w-[220px]">
+                  <CurrencySwitcher
+                    userId={profileToUse.id}
+                    value={currencyCode}
+                    onChanged={(next) => {
+                      setLiveProfile((prev) =>
+                        prev ? ({ ...prev, currency: next } as UserRow) : prev
+                      );
+                    }}
+                  />
+                </div>
+              ) : null}
             </div>
             <div className="text-4xl font-bold text-primary">
               {format(walletBalanceUser)}
