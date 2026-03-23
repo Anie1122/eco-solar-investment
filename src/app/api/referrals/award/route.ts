@@ -4,7 +4,7 @@ export const runtime = 'nodejs';
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
-const REFERRAL_BONUS_NGN = 300;
+const REFERRAL_BONUS_USDT = 0.2175; // 300 NGN × 0.000725
 
 function json(status: number, payload: any) {
   return NextResponse.json(payload, { status });
@@ -68,7 +68,7 @@ export async function POST(req: Request) {
     }
 
     const inviterId = String(inviter.id);
-    const inviterCurrency = upperTrim((inviter as any).currency || 'NGN');
+    const inviterCurrency = upperTrim((inviter as any).currency || 'USDT');
 
     // 3) Idempotency check
     const { data: existingRef, error: exErr } = await supabaseAdmin
@@ -92,17 +92,17 @@ export async function POST(req: Request) {
       inviter_id: inviterId,
       referred_user_id: newUserId,
       ref_code: refCode,
-      bonus_ngn: REFERRAL_BONUS_NGN,
-      bonus_paid: REFERRAL_BONUS_NGN,
-      currency: inviterCurrency,
+      bonus_ngn: REFERRAL_BONUS_USDT, // legacy column name, USDT base value
+      bonus_paid: REFERRAL_BONUS_USDT,
+      currency: 'USDT',
       created_at: nowIso,
     } as any);
 
     if (insErr) throw insErr;
 
-    // 5) Credit wallet in NGN base
+    // 5) Credit wallet in USDT base
     const currentWallet = Number((inviter as any).wallet_balance ?? 0);
-    const newWallet = (Number.isFinite(currentWallet) ? currentWallet : 0) + REFERRAL_BONUS_NGN;
+    const newWallet = (Number.isFinite(currentWallet) ? currentWallet : 0) + REFERRAL_BONUS_USDT;
 
     const { error: upWalletErr } = await supabaseAdmin
       .from('users')
@@ -124,13 +124,13 @@ export async function POST(req: Request) {
       user_id: inviterId,
       transaction_type: 'bonus',
       status: 'success',
-      amount: REFERRAL_BONUS_NGN,
-      currency: 'NGN',
+      amount: REFERRAL_BONUS_USDT,
+      currency: 'USDT',
       description: 'Referral Bonus',
       created_at: nowIso,
       metadata: {
         kind: 'referral_bonus',
-        base_ngn: REFERRAL_BONUS_NGN,
+        base_usdt: REFERRAL_BONUS_USDT,
         ref_code: refCode,
         referred_user_id: newUserId,
         inviter_currency: inviterCurrency,
@@ -149,12 +149,12 @@ export async function POST(req: Request) {
     const { error: nErr } = await supabaseAdmin.from('notifications').insert({
       user_id: inviterId,
       title: 'Referral Bonus Credited',
-      message: `You earned ₦${REFERRAL_BONUS_NGN} for a successful referral.`,
+      message: `You earned ${REFERRAL_BONUS_USDT} USDT for a successful referral.`,
       type: 'bonus',
       is_read: false,
       created_at: nowIso,
-      amount: REFERRAL_BONUS_NGN,
-      currency: 'NGN',
+      amount: REFERRAL_BONUS_USDT,
+      currency: 'USDT',
       metadata: { kind: 'referral_bonus', ref_code: refCode, referred_user_id: newUserId },
     } as any);
 
@@ -163,7 +163,7 @@ export async function POST(req: Request) {
       await supabaseAdmin.from('notifications').insert({
         user_id: inviterId,
         title: 'Referral Bonus Credited',
-        message: `You earned ₦${REFERRAL_BONUS_NGN} for a successful referral.`,
+        message: `You earned ${REFERRAL_BONUS_USDT} USDT for a successful referral.`,
         type: 'bonus',
         is_read: false,
         created_at: nowIso,
@@ -172,9 +172,9 @@ export async function POST(req: Request) {
 
     return json(200, {
       ok: true,
-      credited_ngn: REFERRAL_BONUS_NGN,
+      credited_usdt: REFERRAL_BONUS_USDT,
       inviter_id: inviterId,
-      new_wallet_balance_ngn: newWallet,
+      new_wallet_balance_usdt: newWallet,
     });
   } catch (e: any) {
     return json(500, { ok: false, message: e?.message || 'Server error' });
