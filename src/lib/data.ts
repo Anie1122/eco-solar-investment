@@ -5,68 +5,71 @@ import { serverTimestamp } from 'firebase/firestore';
 // NOTE: The 'transactions' array is now just for type reference and examples.
 // The actual transaction data will be fetched from Firestore.
 
+type PlanSeed = Omit<InvestmentPlan, 'totalReturn'>;
+
+const toMoney = (value: number) =>
+  Number((Number.isFinite(value) ? value : 0).toFixed(6));
+
+const withComputedReturn = (plan: PlanSeed): InvestmentPlan => {
+  const totalReturn = plan.amount + plan.dailyProfit * plan.duration;
+  return { ...plan, totalReturn: toMoney(totalReturn) };
+};
+
 export const investmentPlans: InvestmentPlan[] = [
-  {
+  withComputedReturn({
     id: 'plan-1',
     name: 'Starter Solar Kit',
-    amount: 5000,
+    amount: 10,
     duration: 30,
-    dailyProfit: 500,
-    totalReturn: 20000,
+    dailyProfit: 1,
     image: 'solar-panel-1',
-  },
-  {
+  }),
+  withComputedReturn({
     id: 'plan-2',
     name: 'Home Power Solution',
-    amount: 12000,
+    amount: 30.45,
     duration: 30,
-    dailyProfit: 1300,
-    totalReturn: 51000,
+    dailyProfit: 3.29875,
     image: 'solar-panel-2',
-  },
-  {
+  }),
+  withComputedReturn({
     id: 'plan-3',
     name: 'Business Basic',
-    amount: 25000,
+    amount: 63.4375,
     duration: 30,
-    dailyProfit: 2500,
-    totalReturn: 100000,
+    dailyProfit: 6.34375,
     image: 'solar-panel-3',
-  },
-  {
+  }),
+  withComputedReturn({
     id: 'plan-4',
     name: 'Commercial Power',
-    amount: 50000,
+    amount: 126.875,
     duration: 30,
-    dailyProfit: 4500,
-    totalReturn: 185000,
+    dailyProfit: 11.41875,
     image: 'solar-panel-4',
-  },
-  {
+  }),
+  withComputedReturn({
     id: 'plan-5',
     name: 'Industrial Unit',
-    amount: 130000,
+    amount: 329.875,
     duration: 30,
-    dailyProfit: 12000,
-    totalReturn: 490000,
+    dailyProfit: 30.45,
     image: 'solar-panel-5',
-  },
-  {
+  }),
+  withComputedReturn({
     id: 'plan-6',
     name: 'Power Grid',
-    amount: 260000,
+    amount: 659.75,
     duration: 20,
-    dailyProfit: 27000,
-    totalReturn: 800000,
+    dailyProfit: 68.5125,
     image: 'solar-panel-6',
-  },
-  {
+  }),
+  withComputedReturn({
     id: 'plan-7',
     name: 'Solar Farm',
-    amount: 500000,
+    amount: 1268.75,
     duration: 20,
-    dailyProfit: 48000,
-    totalReturn: 1460000,
+    dailyProfit: 121.8,
     image: 'solar-panel-7',
-  },
+  }),
 ];
