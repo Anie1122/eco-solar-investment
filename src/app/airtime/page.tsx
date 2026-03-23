@@ -448,7 +448,7 @@ export default function AirtimePage() {
     if (!receiptCardRef.current || !receipt) return;
     await exportElementAsPng(receiptCardRef.current, `airtime-receipt-${receipt.id}.png`);
   };
-
+  
   const doDownloadPDF = async () => {
     if (!receiptCardRef.current || !receipt) return;
     await exportElementAsPdf(receiptCardRef.current, `airtime-receipt-${receipt.id}.pdf`);
