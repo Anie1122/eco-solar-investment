@@ -17,10 +17,10 @@ type ConverterState = {
 const FALLBACK_RATES: Record<SupportedCryptoCurrency, number> = {
   USDT: 1,
   USDC: 1,
-  ETH: 0.0004,
-  BNB: 0.0018,
-  BTC: 0.000015,
-  SOL: 0.006,
+  ETH: 3500,
+  BNB: 550,
+  BTC: 65000,
+  SOL: 150,
 };
 
 const REFRESH_MS = 45_000;
@@ -28,10 +28,18 @@ const REFRESH_MS = 45_000;
 export function useCurrencyConverter(userCurrency: string = BASE_CURRENCY) {
   const currency = toSupportedCurrency(userCurrency);
 
-  const [state, setState] = useState<ConverterState>({
-    ratesFromUsdt: FALLBACK_RATES,
+  const [state, setState] = useState<ConverterState>(() => ({
+    ratesFromUsdt: {
+      USDT: 1,
+      USDC: 1,
+      ETH: clampToPrecision(FALLBACK_RATES.ETH / FALLBACK_RATES.USDT),
+      BNB: clampToPrecision(FALLBACK_RATES.BNB / FALLBACK_RATES.USDT),
+      BTC: clampToPrecision(FALLBACK_RATES.BTC / FALLBACK_RATES.USDT),
+      SOL: clampToPrecision(FALLBACK_RATES.SOL / FALLBACK_RATES.USDT),
+    },
     fetchedAt: 0,
-  });
+  }));
+
   const [loading, setLoading] = useState<boolean>(true);
 
   useEffect(() => {
@@ -70,6 +78,7 @@ export function useCurrencyConverter(userCurrency: string = BASE_CURRENCY) {
   const convert = useMemo(() => {
     return (amountBaseUsdt: number) => {
       const n = Number(amountBaseUsdt || 0);
+      if (!Number.isFinite(n)) return 0;
       return clampToPrecision(n * rate);
     };
   }, [rate]);
@@ -85,8 +94,10 @@ export function useCurrencyConverter(userCurrency: string = BASE_CURRENCY) {
   const format = useMemo(() => {
     return (amountInUserCurrency: number) => {
       const n = Number(amountInUserCurrency || 0);
+      const safeAmount = Number.isFinite(n) ? n : 0;
       const decimals = currency === 'USDT' || currency === 'USDC' ? 2 : 6;
-      return `${currency} ${n.toLocaleString(undefined, {
+
+      return `${currency} ${safeAmount.toLocaleString(undefined, {
         minimumFractionDigits: 2,
         maximumFractionDigits: decimals,
       })}`;
