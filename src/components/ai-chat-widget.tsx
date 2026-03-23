@@ -16,11 +16,27 @@ type ChatMsg = {
   text: string;
 };
 
-export default function AIChatWidget() {
-  const [open, setOpen] = useState(false);
+type AIChatWidgetProps = {
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+};
+
+type ApiHistoryMsg = {
+  role: 'user' | 'model';
+  content: { text: string }[];
+};
+
+export default function AIChatWidget({ open, onOpenChange }: AIChatWidgetProps) {
+  const [internalOpen, setInternalOpen] = useState(false);
   const [messages, setMessages] = useState<ChatMsg[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
+  const isOpen = typeof open === 'boolean' ? open : internalOpen;
+
+  const setOpen = (next: boolean) => {
+    if (typeof open !== 'boolean') setInternalOpen(next);
+    onOpenChange?.(next);
+  };
 
   const suggestedQuestions = [
     'Which plan is best for a beginner?',
@@ -58,17 +74,19 @@ ${plansText}
   const handleClose = () => setOpen(false);
 
   const askAI = async (question: string) => {
+    const history: ApiHistoryMsg[] = messages.map((m) => ({
+      role: m.role === 'assistant' ? 'model' : 'user',
+      content: [{ text: m.text }],
+    }));
+
     const res = await fetch('/api/ai/chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        prompt: question,
+        question,
+        history,
+        plans: plansText,
         system: systemPrompt,
-        // send a light history (optional)
-        messages: messages.map((m) => ({
-          role: m.role === 'assistant' ? 'assistant' : 'user',
-          content: m.text,
-        })),
       }),
     });
 
@@ -83,7 +101,7 @@ ${plansText}
     const content = (text ?? input).trim();
     if (!content || loading) return;
 
-    const nextMessages = [...messages, { role: 'user', text: content }];
+    const nextMessages: ChatMsg[] = [...messages, { role: 'user', text: content }];
     setMessages(nextMessages);
     setInput('');
     setLoading(true);
@@ -105,7 +123,7 @@ ${plansText}
   return (
     <>
       {/* ✅ SMALLER MODERN FLOATING BOT BUTTON (hidden when chat open) */}
-      {!open && (<motion.div
+      {!isOpen && (<motion.div
     className="fixed right-4 bottom-[82px] z-[9999]"
     initial={{ opacity: 0, y: 10, scale: 0.98 }}
     animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -154,7 +172,7 @@ ${plansText}
 )}
 
       {/* ✅ Sheet Chat (no Link, no navigation) */}
-      <Sheet open={open} onOpenChange={setOpen}>
+      <Sheet open={isOpen} onOpenChange={setOpen}>
         <SheetContent className="flex flex-col p-0 z-[10000]">
           <SheetHeader className="p-4 border-b">
             <div className="flex items-center justify-between">
