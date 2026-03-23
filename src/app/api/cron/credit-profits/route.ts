@@ -50,6 +50,20 @@ export async function GET(req: NextRequest) {
 
     const nowIso = new Date().toISOString();
 
+    // ✅ Hard stop profits for matured plans before crediting routine runs.
+    // Any investment that has reached/passed its end date is marked completed
+    // and next profit timestamp is cleared.
+    const { error: closeErr } = await supabaseAdmin
+      .from('investments')
+      .update({
+        status: 'completed',
+        next_profit_at: null,
+      })
+      .eq('status', 'active')
+      .lte('ends_at', nowIso);
+
+    if (closeErr) throw closeErr;
+
     // ✅ Call your RPC
     const { data, error } = await supabaseAdmin.rpc('credit_due_profits', {
       p_now: nowIso,
