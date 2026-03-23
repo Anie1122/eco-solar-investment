@@ -57,7 +57,7 @@ export async function POST(req: Request) {
 
     if (uerr) throw uerr;
 
-    const currency = (urow as any)?.currency || 'NGN';
+    const currency = (urow as any)?.currency || 'USDT';
 
     // ✅ Atomic RPC
     const { data: txId, error: rpcErr } = await supabaseAdmin.rpc('purchase_airtime', {
