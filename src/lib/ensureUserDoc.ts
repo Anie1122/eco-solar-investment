@@ -8,7 +8,7 @@ const DEFAULT_USER_DATA = {
   countryCode: 'NG',
   currency: 'USDT',
   walletBalance: 0,
-  bonusBalance: 1500,
+  bonusBalance: 1.5,
   hasInvested: false,
   profileCompleted: false,
   createdAt: serverTimestamp(),

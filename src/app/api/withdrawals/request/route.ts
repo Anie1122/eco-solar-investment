@@ -70,9 +70,10 @@ export async function POST(req: Request) {
       return NextResponse.json({ ok: false, message: 'Insufficient balance.' }, { status: 400 });
     }
 
-    const currency = row.currency ?? 'NGN';
-    if (currency === 'NGN' && amount < 15000) {
-      return NextResponse.json({ ok: false, message: 'Minimum withdrawal is NGN 15000.' }, { status: 400 });
+    const currency = row.currency ?? 'USDT';
+    const minWithdrawalUsdt = 10.875; // 15,000 NGN × 0.000725
+    if (amount < minWithdrawalUsdt) {
+      return NextResponse.json({ ok: false, message: `Minimum withdrawal is ${minWithdrawalUsdt} USDT.` }, { status: 400 });
     }
 
     const withdrawalAccount = {
@@ -113,7 +114,7 @@ export async function POST(req: Request) {
       is_read: false,
       created_at: nowIso,
       amount,
-      currency: 'NGN',
+      currency: 'USDT',
       metadata: { bankName, accountNumber },
     } as any);
 
