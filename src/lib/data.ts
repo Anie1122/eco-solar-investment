@@ -11,7 +11,7 @@ const toMoney = (value: number) =>
   Number((Number.isFinite(value) ? value : 0).toFixed(6));
 
 const withComputedReturn = (plan: PlanSeed): InvestmentPlan => {
-  const totalReturn = plan.amount + plan.dailyProfit * plan.duration;
+  const totalReturn = plan.dailyProfit * plan.duration;
   return { ...plan, totalReturn: toMoney(totalReturn) };
 };
 
