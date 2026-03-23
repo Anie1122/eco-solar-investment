@@ -31,13 +31,13 @@ export default function CustomerServiceWidget({ hidden }: { hidden?: boolean }) 
           rel="noopener noreferrer"
           aria-label="Customer support on WhatsApp"
         >
-          {/* ✅ WHITE CIRCLE EXACT LOOK */}
+          {/* Gold app-themed floating support button */}
           <div
             className="
               h-14 w-14 rounded-full
-              bg-white/95
-              border border-black/5
-              shadow-[0_14px_30px_rgba(0,0,0,0.18)]
+              bg-gradient-to-br from-amber-400 to-amber-600
+              border border-amber-300/60
+              shadow-[0_14px_30px_rgba(245,158,11,0.38)]
               backdrop-blur-xl
               flex items-center justify-center
               active:scale-[0.97]
@@ -50,7 +50,7 @@ export default function CustomerServiceWidget({ hidden }: { hidden?: boolean }) 
               height="26"
               viewBox="0 0 24 24"
               fill="none"
-              stroke="#0ea5e9"
+              stroke="#ffffff"
               strokeWidth="2.2"
               strokeLinecap="round"
               strokeLinejoin="round"
