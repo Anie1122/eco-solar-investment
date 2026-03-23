@@ -82,7 +82,7 @@ function mapUserRowToEntity(row: UserRow): UserEntity {
     currency: row.currency ?? 'USDT',
     phoneNumber: row.phone_number ?? '',
     walletBalance: Number(row.wallet_balance ?? 0),
-    bonusBalance: Number(row.bonus_balance ?? 1500),
+    bonusBalance: Number(row.bonus_balance ?? 1.5),
     hasInvested: Boolean(row.has_invested ?? false),
     profileCompleted: Boolean(row.profile_completed ?? false),
     status: (row.status ?? 'active') as any,
