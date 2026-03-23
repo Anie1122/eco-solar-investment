@@ -33,9 +33,9 @@ export default function AIChatWidget() {
     return investmentPlans
       .map(
         (p) =>
-          `- ${p.name}: Invest NGN ${Number(p.amount).toLocaleString()} for ${
+          `- ${p.name}: Invest USDT ${Number(p.amount).toLocaleString()} for ${
             p.duration
-          } days, earn NGN ${Number(p.dailyProfit).toLocaleString()} daily, total return NGN ${Number(
+          } days, earn USDT ${Number(p.dailyProfit).toLocaleString()} daily, total return USDT ${Number(
             p.totalReturn
           ).toLocaleString()}`
       )
@@ -49,7 +49,7 @@ Only answer investment-related questions about the plans and safe investing tips
 Be concise, clear, and helpful.
 Do NOT promise guaranteed profits or guaranteed returns.
 
-Available investment plans (NGN base):
+Available investment plans (USDT base):
 ${plansText}
     `.trim();
   }, [plansText]);

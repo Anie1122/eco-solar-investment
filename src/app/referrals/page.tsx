@@ -39,7 +39,7 @@ type ReferralRowAny = {
 
 type MiniUser = { id: string; full_name: string | null; email: string | null };
 
-const BONUS_PER_REF_USDT = 0.3;
+const BONUS_PER_REF_USDT = 0.2175; // 300 NGN × 0.000725
 
 function formatDateTime(date: any) {
   try {

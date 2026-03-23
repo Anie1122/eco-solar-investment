@@ -117,10 +117,10 @@ const DepositDialog = ({
   const [isDepositing, setIsDepositing] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
 
-  const minDepositNGN = 5000;
-  const maxDepositNGN = 1000000;
-  const minDepositUserCurrency = convert(minDepositNGN);
-  const maxDepositUserCurrency = convert(maxDepositNGN);
+  const minDepositUSDT = 3.625; // 5000 NGN × 0.000725
+  const maxDepositUSDT = 725; // 1,000,000 NGN × 0.000725
+  const minDepositUserCurrency = convert(minDepositUSDT);
+  const maxDepositUserCurrency = convert(maxDepositUSDT);
 
   const form = useForm<z.infer<typeof depositFormSchema>>({
     resolver: zodResolver(depositFormSchema),
@@ -569,7 +569,7 @@ const WithdrawalDialogContent = ({
     savedAccount ? 'saved' : 'new'
   );
 
-  const minWithdrawalUSDT = 15;
+  const minWithdrawalUSDT = 10.875; // 15,000 NGN × 0.000725
   const minWithdrawalUserCurrency = convert(minWithdrawalUSDT);
 
   const walletBalanceUSDT = Number(userProfile.wallet_balance ?? 0);

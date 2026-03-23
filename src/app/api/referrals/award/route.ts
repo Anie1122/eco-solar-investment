@@ -4,7 +4,7 @@ export const runtime = 'nodejs';
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
-const REFERRAL_BONUS_USDT = 0.3;
+const REFERRAL_BONUS_USDT = 0.2175; // 300 NGN × 0.000725
 
 function json(status: number, payload: any) {
   return NextResponse.json(payload, { status });

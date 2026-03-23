@@ -71,7 +71,9 @@ export async function POST(req: Request) {
     }
 
     const currency = row.currency ?? 'USDT';
-    const minWithdrawalUsdt = 15;
+  
+    const minWithdrawalUsdt = 10.875; // 15,000 NGN × 0.000725
+
     if (amount < minWithdrawalUsdt) {
       return NextResponse.json({ ok: false, message: `Minimum withdrawal is ${minWithdrawalUsdt} USDT.` }, { status: 400 });
     }

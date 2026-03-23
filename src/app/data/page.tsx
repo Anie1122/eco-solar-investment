@@ -82,7 +82,7 @@ function round2(n: number) {
   return Math.round((Number(n) || 0) * 100) / 100;
 }
 
-const LEGACY_NGN_TO_USDT = 0.0011;
+const LEGACY_NGN_TO_USDT = 0.000725;
 const ngnToUsdt = (value: number) => round2((Number(value) || 0) * LEGACY_NGN_TO_USDT);
 
 async function getAccessToken() {
