@@ -238,8 +238,8 @@ type ReceiptData = {
   created_at: string;
   transaction_type?: string;
   status?: string;
-  amount: number; // (stored in NGN in DB)
-  currency: string; // (NGN in DB)
+  amount: number; // (stored in USDT base in DB)
+  currency: string; // (USDT in DB)
   metadata: any;
 };
 
@@ -247,26 +247,16 @@ export default function AirtimePage() {
   const router = useRouter();
   const { toast } = useToast();
 
-  const [userCurrency, setUserCurrency] = useState('NGN');
+  const [userCurrency, setUserCurrency] = useState('USDT');
 
-  // ✅ We will show wallet in user currency (same as wallet page),
-  // but wallet_balance stays in NGN in the database.
+  // ✅ We show wallet in user currency, while wallet_balance is stored in USDT base.
   const currencyApi: any = useCurrencyConverter(userCurrency);
   const format: (n: number) => string = currencyApi.format;
-  const convert: (ngn: number) => number = currencyApi.convert;
+  const convert: (usdt: number) => number = currencyApi.convert;
+  const toBase: (userAmt: number) => number = currencyApi.toBase;
 
-  // ✅ If your hook has convertBack, we’ll use it.
-  // If not, we’ll derive an inverse rate from convert(1).
-  const convertBack: (userAmt: number) => number =
-    currencyApi.convertBack ||
-    ((userAmt: number) => {
-      const one = Number(convert(1));
-      if (!Number.isFinite(one) || one <= 0) return Number(userAmt) || 0;
-      return (Number(userAmt) || 0) / one;
-    });
-
-  // ✅ wallet stored in NGN base
-  const [walletBalanceNGN, setWalletBalanceNGN] = useState<number>(0);
+  // ✅ wallet stored in USDT base
+  const [walletBalanceUSDT, setWalletBalanceUSDT] = useState<number>(0);
   const [loadingWallet, setLoadingWallet] = useState(true);
 
   const [pinDialogOpen, setPinDialogOpen] = useState(false);
@@ -299,9 +289,8 @@ export default function AirtimePage() {
         const { data: urow, error } = await supabase.from('users').select('wallet_balance,currency').eq('id', uid).maybeSingle();
         if (error) throw error;
 
-        // ✅ NGN stored
-        setWalletBalanceNGN(Number((urow as any)?.wallet_balance ?? 0));
-        setUserCurrency(String((urow as any)?.currency || 'NGN'));
+        setWalletBalanceUSDT(Number((urow as any)?.wallet_balance ?? 0));
+        setUserCurrency(String((urow as any)?.currency || 'USDT'));
       } catch (e: any) {
         toast({ variant: 'destructive', title: 'Error', description: e?.message || 'Could not load wallet.' });
       } finally {
@@ -319,21 +308,20 @@ export default function AirtimePage() {
   // ✅ user-entered amount (in user currency)
   const amountVal = Number(form.watch('amount') || 0);
 
-  // ✅ convert user-entered amount back to NGN base (for checks + API)
-  const amountNGN = useMemo(() => {
-    const ngn = convertBack(amountVal || 0);
-    return Math.round(Number(ngn) || 0);
-  }, [amountVal, convertBack]);
+  // ✅ convert user-entered amount back to USDT base (for checks + API)
+  const amountUSDT = useMemo(() => {
+    const usdt = toBase(amountVal || 0);
+    return Number(usdt) || 0;
+  }, [amountVal, toBase]);
 
   const canOpenPin = useMemo(() => {
     if (!form.formState.isValid) return false;
     if (!Number.isFinite(amountVal) || amountVal <= 0) return false;
 
-    // ✅ compare NGN vs NGN
-    if (amountNGN > walletBalanceNGN) return false;
+    if (amountUSDT > walletBalanceUSDT) return false;
 
     return true;
-  }, [form.formState.isValid, amountVal, amountNGN, walletBalanceNGN]);
+  }, [form.formState.isValid, amountVal, amountUSDT, walletBalanceUSDT]);
 
   const scrollToDetails = () => {
     requestAnimationFrame(() => {
@@ -348,7 +336,7 @@ export default function AirtimePage() {
 
   const openPinDialog = async () => {
     if (!canOpenPin) {
-      if (amountNGN > walletBalanceNGN) {
+      if (amountUSDT > walletBalanceUSDT) {
         toast({
           variant: 'destructive',
           title: 'Insufficient balance',
@@ -377,7 +365,7 @@ export default function AirtimePage() {
       transaction_type: (data as any).transaction_type,
       status: (data as any).status,
       amount: Number((data as any).amount ?? 0),
-      currency: String((data as any).currency ?? 'NGN'),
+      currency: String((data as any).currency ?? 'USDT'),
       metadata: (data as any).metadata ?? {},
     });
   };
@@ -392,15 +380,14 @@ export default function AirtimePage() {
       const token = await getAccessToken();
       if (!token) throw new Error('Session expired. Please login again.');
 
-      // ✅ Send NGN base to backend (because DB is NGN)
       const res = await fetch('/api/airtime/purchase', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({
           network: values.network,
           phone: values.phone,
-          amount: amountNGN, // ✅ NGN base
-          currency: 'NGN',
+          amount: amountUSDT,
+          currency: 'USDT',
           pin: cleanPin,
         }),
       });
@@ -411,12 +398,12 @@ export default function AirtimePage() {
       const newTxId = String(json.txId);
       setTxId(newTxId);
 
-      // refresh wallet (still NGN in DB)
+      // refresh wallet (USDT base in DB)
       const { data: sess } = await supabase.auth.getSession();
       const uid = sess.session?.user?.id;
       if (uid) {
         const { data: urow } = await supabase.from('users').select('wallet_balance').eq('id', uid).maybeSingle();
-        setWalletBalanceNGN(Number((urow as any)?.wallet_balance ?? 0));
+        setWalletBalanceUSDT(Number((urow as any)?.wallet_balance ?? 0));
       }
 
       // ✅ store metadata for receipt display
@@ -465,7 +452,7 @@ export default function AirtimePage() {
     const network = receipt.metadata?.network || selectedNetwork;
     const phone = receipt.metadata?.phone || phoneVal;
 
-    // ✅ receipt amount is stored in NGN, display converted in share text
+    // ✅ receipt amount is stored in USDT base, display in selected currency
     const amountUser = convert(Number(receipt.amount || 0));
 
     const text = `Receipt\nType: Airtime\nNetwork: ${network}\nRecipient: ${phone}\nAmount: ${format(amountUser)}\nStatus: Successful\nTransaction ID: ${
@@ -489,7 +476,7 @@ export default function AirtimePage() {
     const network = receipt.metadata?.network || selectedNetwork;
     const phone = receipt.metadata?.phone || phoneVal;
 
-    // ✅ convert receipt amount (NGN) to user currency for display
+    // ✅ convert receipt amount (USDT base) to user currency for display
     const receiptAmountUser = convert(Number(receipt.amount || 0));
 
     return (
@@ -533,9 +520,9 @@ export default function AirtimePage() {
                   <span className="font-semibold">Successful</span>
                 </div>
 
-                {/* optional: show base NGN line */}
+                {/* optional: show base USDT line */}
                 <div className="mt-2 text-xs text-white/50">
-                  Base NGN: ₦{Number(receipt.amount || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  Base USDT: {Number(receipt.amount || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 6 })}
                 </div>
               </div>
 
@@ -636,7 +623,7 @@ export default function AirtimePage() {
 
             {/* ✅ show converted wallet balance EXACTLY like wallet page */}
             <div className="text-3xl font-extrabold text-primary">
-              {loadingWallet ? 'Loading...' : format(convert(walletBalanceNGN))}
+              {loadingWallet ? 'Loading...' : format(convert(walletBalanceUSDT))}
             </div>
           </div>
 
@@ -715,10 +702,10 @@ export default function AirtimePage() {
                 className="rounded-2xl h-12"
               />
 
-              {/* optional: show base NGN preview */}
+              {/* optional: show base USDT preview */}
               {amountVal > 0 ? (
                 <div className="text-[11px] text-muted-foreground">
-                  Base NGN: ₦{Number(amountNGN || 0).toLocaleString()}
+                  Base USDT: {Number(amountUSDT || 0).toLocaleString(undefined, { maximumFractionDigits: 6 })}
                 </div>
               ) : null}
 
@@ -732,8 +719,7 @@ export default function AirtimePage() {
               </AlertDescription>
             </Alert>
 
-            {/* ✅ compare NGN vs NGN */}
-            {amountNGN > walletBalanceNGN ? (
+            {amountUSDT > walletBalanceUSDT ? (
               <Alert className="rounded-2xl">
                 <Info className="h-4 w-4" />
                 <AlertDescription className="text-destructive">Insufficient balance for this purchase.</AlertDescription>
