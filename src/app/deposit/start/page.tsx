@@ -219,7 +219,7 @@ export default function DepositStartPage() {
                       <ChevronDown className={`h-4 w-4 transition-transform ${cardPickerOpen ? 'rotate-180' : ''}`} />
                     </button>
                     {cardPickerOpen ? (
-                      <div className="absolute z-20 mt-2 w-full rounded-2xl border bg-card shadow-2xl overflow-hidden">
+                      <div className="absolute z-20 mt-2 w-full rounded-2xl border bg-card shadow-2xl max-h-72 overflow-y-auto">
                         {CARD_TYPES.map((card) => {
                           const active = cardType === card.value;
                           return (
