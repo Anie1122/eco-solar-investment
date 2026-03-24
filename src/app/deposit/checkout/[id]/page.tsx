@@ -212,7 +212,6 @@ export default function DepositCheckoutPage() {
 
               <div className="mx-auto w-fit rounded-2xl bg-white p-3">
                 <img src={qrForAddress(selectedChain.address)} alt={`${selectedChain.label} QR`} width={280} height={280} />
-
               </div>
 
               <div>
@@ -223,6 +222,20 @@ export default function DepositCheckoutPage() {
               <Button onClick={copyAddress} className="w-full" variant="secondary">
                 <Copy className="mr-2 h-4 w-4" /> Copy address
               </Button>
+
+              <div className="flex gap-2">
+                <Button variant="outline" onClick={cancelTx} className="flex-1">Cancel Transaction</Button>
+                <Button onClick={() => setShowUpload(true)} className="flex-1">I&apos;ve made my payment</Button>
+              </div>
+
+              {showUpload ? (
+                <div className="space-y-2">
+                  <Input type="file" accept="image/*,.pdf" onChange={(e) => setFile(e.target.files?.[0] || null)} />
+                  <Button onClick={uploadReceipt} disabled={!file || uploading} className="w-full">
+                    {uploading ? 'Sending request...' : 'Send Request'}
+                  </Button>
+                </div>
+              ) : null}
             </CardContent>
           </Card>
         ) : null}
