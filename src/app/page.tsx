@@ -420,8 +420,20 @@ const Home: NextPage = () => {
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
-    sessionStorage.clear();
-    localStorage.clear();
+
+    // Clear only app-scoped volatile keys to avoid breaking other client state.
+    try {
+      Object.keys(sessionStorage)
+        .filter((key) => key.startsWith('eco_'))
+        .forEach((key) => sessionStorage.removeItem(key));
+
+      Object.keys(localStorage)
+        .filter((key) => key.startsWith('eco_'))
+        .forEach((key) => localStorage.removeItem(key));
+    } catch {
+      // no-op for restricted storage environments
+    }
+
     router.push('/login');
   };
 

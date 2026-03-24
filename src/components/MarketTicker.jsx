@@ -17,22 +17,51 @@ const formatPrice = (value) =>
 
 export default function MarketTicker() {
   const [markets, setMarkets] = useState(BASE_MARKETS);
-  const [prevPrices, setPrevPrices] = useState(
-    Object.fromEntries(BASE_MARKETS.map((m) => [m.symbol, m.price]))
-  );
   const [flashState, setFlashState] = useState({});
   const clearTimers = useRef({});
+  const prevPricesRef = useRef(
+    Object.fromEntries(BASE_MARKETS.map((m) => [m.symbol, m.price]))
+  );
 
   useEffect(() => {
     const interval = setInterval(() => {
-      setMarkets((prev) =>
-        prev.map((m) => {
+      setMarkets((prev) => {
+        const next = prev.map((m) => {
           const drift = (Math.random() - 0.5) * 2 * m.volatility;
           const nextPrice = Math.max(0.0001, m.price * (1 + drift));
           const nextChange = m.change + drift * 100;
-          return { ...m, price: Number(nextPrice.toFixed(6)), change: Number(nextChange.toFixed(2)) };
-        })
-      );
+          return {
+            ...m,
+            price: Number(nextPrice.toFixed(6)),
+            change: Number(nextChange.toFixed(2)),
+          };
+        });
+
+        setFlashState((flashPrev) => {
+          const flashNext = { ...flashPrev };
+
+          next.forEach((m) => {
+            const oldPrice = prevPricesRef.current[m.symbol];
+            if (typeof oldPrice !== 'number' || oldPrice === m.price) return;
+
+            const direction = m.price > oldPrice ? 'up' : 'down';
+            flashNext[m.symbol] = direction;
+
+            if (clearTimers.current[m.symbol]) {
+              clearTimeout(clearTimers.current[m.symbol]);
+            }
+
+            clearTimers.current[m.symbol] = setTimeout(() => {
+              setFlashState((current) => ({ ...current, [m.symbol]: null }));
+            }, 520);
+          });
+
+          return flashNext;
+        });
+
+        prevPricesRef.current = Object.fromEntries(next.map((m) => [m.symbol, m.price]));
+        return next;
+      });
     }, 2000);
 
     return () => {
@@ -41,31 +70,9 @@ export default function MarketTicker() {
     };
   }, []);
 
-  useEffect(() => {
-    setFlashState((prev) => {
-      const next = { ...prev };
-
-      markets.forEach((m) => {
-        const oldPrice = prevPrices[m.symbol];
-        if (typeof oldPrice !== 'number' || oldPrice === m.price) return;
-        const direction = m.price > oldPrice ? 'up' : 'down';
-        next[m.symbol] = direction;
-
-        if (clearTimers.current[m.symbol]) clearTimeout(clearTimers.current[m.symbol]);
-        clearTimers.current[m.symbol] = setTimeout(() => {
-          setFlashState((f) => ({ ...f, [m.symbol]: null }));
-        }, 520);
-      });
-
-      return next;
-    });
-
-    setPrevPrices(Object.fromEntries(markets.map((m) => [m.symbol, m.price])));
-  }, [markets, prevPrices]);
-
   const rows = useMemo(() => markets, [markets]);
 
-  return (
+   return (
     <div className="rounded-2xl border border-white/10 bg-[#0b1221] text-white shadow-[0_20px_60px_rgba(2,6,23,0.45)]">
       <div className="flex items-center justify-between px-4 py-3 border-b border-white/10">
         <h3 className="text-base font-semibold tracking-wide">Market</h3>
@@ -91,10 +98,7 @@ export default function MarketTicker() {
                 <p className="font-semibold">{row.symbol}</p>
                 <p className="text-xs text-zinc-400">{row.name}</p>
               </div>
-
-              <p className="font-mono text-right tabular-nums">
-                {formatPrice(row.price)}
-              </p>
+              <p className="font-mono text-right tabular-nums">{formatPrice(row.price)}</p>
 
               <div
                 className={`ml-auto inline-flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-semibold ${
