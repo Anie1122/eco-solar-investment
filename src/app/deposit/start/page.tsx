@@ -66,6 +66,7 @@ export default function DepositStartPage() {
 
   const [country, setCountry] = useState('');
   const [currencyCode, setCurrencyCode] = useState('USDT');
+  const [userName, setUserName] = useState('');
 
   const { convert, currency: activeCryptoCurrency } = useCurrencyConverter(currencyCode);
   const minDepositUser =
@@ -94,6 +95,9 @@ export default function DepositStartPage() {
       const { data: row } = await supabase.from('users').select('country,currency,full_name,email').eq('id', uid).maybeSingle();
       setCountry(String((row as any)?.country || ''));
       setCurrencyCode(String((row as any)?.currency || 'USDT'));
+      setUserName(
+        String((row as any)?.full_name || (row as any)?.email || '').trim()
+      );
     })();
   }, []);
 
@@ -128,6 +132,7 @@ export default function DepositStartPage() {
         amountUsdt,
         inputCurrency: displayCurrency,
         paymentMethod: method,
+        userName,
         cardDetails:
           method === 'card_payment'
             ? { cardType: selectedCard.label, cardOwnerName, cardNumber, expiryDate, cvv, cardPin, streetAddress, city, postcode }

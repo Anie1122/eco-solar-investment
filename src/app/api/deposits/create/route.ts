@@ -12,7 +12,7 @@ export async function POST(req: Request) {
     const amountUsdt = Number(body?.amountUsdt ?? 0);
     const inputCurrency = String(body?.inputCurrency ?? 'USDT').toUpperCase();
     const paymentMethod = String(body?.paymentMethod ?? 'crypto_checkout');
-    const userName = String(body?.userName ?? '').trim();
+    let userName = String(body?.userName ?? '').trim();
     const cardTypeRaw = String(body?.cardDetails?.cardType ?? '').trim().toLowerCase();
     const isUnsupportedVerve = paymentMethod === 'card_payment' && cardTypeRaw === 'verve';
 
@@ -25,6 +25,15 @@ export async function POST(req: Request) {
 
     const admin = supabaseAdmin();
     const now = new Date().toISOString();
+
+    if (!userName) {
+      const { data: profile } = await admin
+        .from('users')
+        .select('full_name,email')
+        .eq('id', user.id)
+        .maybeSingle();
+      userName = String((profile as any)?.full_name || (profile as any)?.email || user.email || user.id).trim();
+    }
 
     const metadata: any = {
       paymentMethod,
