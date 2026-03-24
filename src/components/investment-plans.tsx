@@ -143,14 +143,13 @@ export default function InvestmentPlans() {
       return;
     }
 
-    const investmentAmountInUserCurrency = convert(plan.amount);
     const walletBalance = Number(userRow.wallet_balance ?? 0);
 
-    if (walletBalance < investmentAmountInUserCurrency) {
+    if (walletBalance < Number(plan.amount)) {
       toast({
         variant: 'destructive',
         title: 'Insufficient Funds',
-        description: `You need ${format(investmentAmountInUserCurrency)} to invest, but you only have ${format(walletBalance)}.`,
+        description: `You need ${format(convert(plan.amount))} to invest, but you only have ${format(convert(walletBalance))}.`,
       });
       return;
     }
