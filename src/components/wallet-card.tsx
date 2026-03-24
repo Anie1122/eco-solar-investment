@@ -74,6 +74,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '@/lib/supabaseClient';
 import { cn } from '@/lib/utils';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import CurrencySwitcher from '@/components/currency-switcher';
 
 interface WalletCardProps {
@@ -1799,12 +1800,12 @@ export default function WalletCard({ userProfile, isLoading }: WalletCardProps) 
             whileTap={{ scale: 0.99 }}
             transition={{ duration: 0.1 }}
           >
-            <DepositDialog userProfile={profileToUse}>
+            <Link href="/deposit/start">
               <Button className="w-full min-w-0 justify-center gap-2 rounded-xl">
                 <ArrowDownToLine className="h-4 w-4 shrink-0" />
                 <span className="truncate">Deposit</span>
               </Button>
-            </DepositDialog>
+            </Link>
           </motion.div>
 
           <motion.div

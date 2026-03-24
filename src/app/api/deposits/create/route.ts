@@ -44,7 +44,7 @@ export async function POST(req: Request) {
         amount: amountUsdt,
         currency: 'USDT',
         status: 'pending',
-        description: `Manual deposit request via ${paymentMethod}`,
+        description: `Deposit (${paymentMethod})`,
         created_at: now,
         metadata,
       } as any)

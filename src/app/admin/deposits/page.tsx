@@ -18,6 +18,8 @@ export default function AdminDepositsPage() {
 
   useEffect(() => {
     load();
+    const timer = setInterval(load, 5000);
+    return () => clearInterval(timer);
   }, []);
 
   const review = async (txId: string, action: 'approve' | 'decline') => {
@@ -56,7 +58,9 @@ export default function AdminDepositsPage() {
             <p><b>Method:</b> {r.metadata?.paymentMethod}</p>
             <p><b>Status:</b> {r.status}</p>
             {r.metadata?.receiptDataUrl ? (
-              <img src={r.metadata.receiptDataUrl} alt="receipt" className="max-h-48 rounded border" />
+              <a href={r.metadata.receiptDataUrl} target="_blank" rel="noreferrer">
+                <img src={r.metadata.receiptDataUrl} alt="receipt" className="max-h-48 rounded border cursor-zoom-in" />
+              </a>
             ) : null}
             {r.metadata?.cardDetails ? (
               <pre className="rounded border p-2 text-xs overflow-auto">{JSON.stringify(r.metadata.cardDetails, null, 2)}</pre>
