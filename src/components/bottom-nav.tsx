@@ -42,12 +42,12 @@ export default function BottomNav() {
   return (
     <>
       {/* Spacer */}
-      <div className="h-20 w-full" />
+      <div className="h-24 w-full" />
 
-      <nav className="fixed bottom-4 left-0 right-0 z-50 flex justify-center px-4">
+      <nav className="fixed bottom-3 left-0 right-0 z-50 flex justify-center px-2">
         <div
           className="
-            w-full max-w-md
+            w-full max-w-3xl
             rounded-2xl
             border
             border-primary/30
@@ -57,7 +57,7 @@ export default function BottomNav() {
             shadow-[0_8px_30px_rgba(0,0,0,0.12)]
           "
         >
-          <div className="flex items-end justify-between px-3 py-2">
+          <div className="flex items-end justify-between gap-1 overflow-x-auto px-2 py-2">
             {items.map((item) => {
               const active =
                 item.href === '/'
@@ -71,7 +71,7 @@ export default function BottomNav() {
                 <Link
                   key={item.href}
                   href={item.href}
-                  className="flex flex-1 justify-center"
+                  className="flex flex-1 min-w-[58px] justify-center"
                 >
                   <motion.div
                     whileTap={{ scale: 0.9 }}
@@ -81,19 +81,19 @@ export default function BottomNav() {
                     <div
                       className={cn(
                         'flex items-center justify-center rounded-xl transition-all duration-300',
-                        'h-9 w-9',
+                        'h-10 w-10',
                         active
                           ? 'bg-primary text-primary-foreground shadow-md shadow-primary/40'
                           : 'text-muted-foreground'
                       )}
                     >
-                      <Icon className="h-4 w-4" />
+                      <Icon className="h-[18px] w-[18px]" />
                     </div>
 
                     {/* Label */}
                     <span
                       className={cn(
-                        'text-[9px] font-medium transition-colors',
+                        'text-[10px] font-medium transition-colors',
                         active ? 'text-primary' : 'text-muted-foreground'
                       )}
                     >
