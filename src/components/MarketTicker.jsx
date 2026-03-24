@@ -72,7 +72,7 @@ export default function MarketTicker() {
 
   const rows = useMemo(() => markets, [markets]);
 
-  return (
+   return (
     <div className="rounded-2xl border border-white/10 bg-[#0b1221] text-white shadow-[0_20px_60px_rgba(2,6,23,0.45)]">
       <div className="flex items-center justify-between px-4 py-3 border-b border-white/10">
         <h3 className="text-base font-semibold tracking-wide">Market</h3>
@@ -98,7 +98,6 @@ export default function MarketTicker() {
                 <p className="font-semibold">{row.symbol}</p>
                 <p className="text-xs text-zinc-400">{row.name}</p>
               </div>
-
               <p className="font-mono text-right tabular-nums">{formatPrice(row.price)}</p>
 
               <div
