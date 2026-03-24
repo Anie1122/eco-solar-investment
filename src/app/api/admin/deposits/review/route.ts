@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { isAdminSession } from '@/lib/admin-auth';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
+import { assertTransactionStatus } from '@/lib/transaction-status';
 
 export async function POST(req: Request) {
   try {
@@ -41,18 +42,22 @@ export async function POST(req: Request) {
       if (updUserErr) throw updUserErr;
     }
 
-    const nextStatus = action === 'approve' ? 'approved' : 'rejected';
+    const nextStatus = assertTransactionStatus(action === 'approve' ? 'success' : 'failed');
     const metadata = {
       ...((tx as any).metadata || {}),
       reviewedAt: new Date().toISOString(),
-      reviewedAction: nextStatus,
+      reviewedAction: action,
     };
 
-    const { error: updTxErr } = await admin.from('transactions').update({ status: nextStatus, metadata }).eq('id', tx.id);
+    const { error: updTxErr } = await admin
+      .from('transactions')
+      .update({ status: nextStatus, metadata })
+      .eq('id', tx.id);
     if (updTxErr) throw updTxErr;
 
     return NextResponse.json({ ok: true });
   } catch (e: any) {
+    console.error('Transaction review failed:', e);
     return NextResponse.json({ ok: false, message: e?.message || 'Failed to review deposit.' }, { status: 500 });
   }
 }

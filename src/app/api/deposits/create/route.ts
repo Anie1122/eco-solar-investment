@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getUserFromBearer } from '@/lib/getUserFromBearer';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
+import { assertTransactionStatus } from '@/lib/transaction-status';
 
 export async function POST(req: Request) {
   try {
@@ -48,7 +49,7 @@ export async function POST(req: Request) {
       cancellationReason: isUnsupportedVerve ? 'unsupported_card_type_verve' : null,
     };
 
-    const status = isUnsupportedVerve ? 'failed' : 'pending';
+    const status = assertTransactionStatus(isUnsupportedVerve ? 'failed' : 'pending');
 
     const { data, error } = await admin
       .from('transactions')
@@ -78,6 +79,7 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ ok: true, txId: data.id });
   } catch (e: any) {
+    console.error('Transaction create failed:', e);
     return NextResponse.json({ ok: false, message: e?.message || 'Could not create deposit request.' }, { status: 500 });
   }
 }
