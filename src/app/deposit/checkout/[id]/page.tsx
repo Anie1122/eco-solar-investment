@@ -230,7 +230,8 @@ export default function DepositCheckoutPage() {
 
               {showUpload ? (
                 <div className="space-y-2">
-                  <Input type="file" accept="image/*,.pdf" onChange={(e) => setFile(e.target.files?.[0] || null)} />
+                  <p className="text-sm text-zinc-300">Upload payment receipt photo (max 5MB)</p>
+                  <Input type="file" accept="image/*" onChange={(e) => setFile(e.target.files?.[0] || null)} />
                   <Button onClick={uploadReceipt} disabled={!file || uploading} className="w-full">
                     {uploading ? 'Sending request...' : 'Send Request'}
                   </Button>
@@ -266,7 +267,8 @@ export default function DepositCheckoutPage() {
 
           {showUpload && (
             <div className="space-y-2">
-              <Input type="file" accept="image/*,.pdf" onChange={(e) => setFile(e.target.files?.[0] || null)} />
+              <p className="text-sm text-muted-foreground">Upload payment receipt photo (max 5MB)</p>
+              <Input type="file" accept="image/*" onChange={(e) => setFile(e.target.files?.[0] || null)} />
               <Button onClick={uploadReceipt} disabled={!file || uploading} className="w-full">
                 {uploading ? 'Sending request...' : 'Send Request'}
               </Button>

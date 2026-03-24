@@ -45,7 +45,6 @@ import {
 
 import WalletCard from '@/components/wallet-card';
 import AiSuggestionCard from '@/components/ai-suggestion-card';
-import TransactionHistory from '@/components/transaction-history';
 import AuthGuard from '@/components/auth-guard';
 import NotificationBell from '@/components/notification-bell';
 
@@ -54,6 +53,7 @@ import type { User as UserEntity } from '@/lib/types';
 
 import PolicyGate from '@/components/policy-gate';
 import LiveCryptoTicker from '@/components/live-crypto-ticker';
+import MarketTicker from '@/components/MarketTicker';
 
 type UserRow = {
   id: string;
@@ -480,7 +480,7 @@ const Home: NextPage = () => {
                       <AiSuggestionCard userProfile={userProfile} isLoading={isLoading} />
                     </motion.div>
 
-                    <TransactionHistory />
+                    <MarketTicker />
                   </div>
                 </div>
               )}
