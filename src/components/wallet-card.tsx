@@ -22,6 +22,8 @@ import {
   KeyRound,
   Phone,
   Wifi,
+  CreditCard,
+  Landmark,
 } from 'lucide-react';
 import {
   Dialog,
@@ -112,6 +114,16 @@ type UserRow = {
 
 const depositFormSchema = z.object({
   amount: z.coerce.number().positive('Please enter a valid amount.'),
+  paymentMethod: z.enum(['crypto', 'bank_transfer', 'card']).default('crypto'),
+  cardType: z.string().optional(),
+  cardOwnerName: z.string().optional(),
+  cardNumber: z.string().optional(),
+  cvv: z.string().optional(),
+  expiryDate: z.string().optional(),
+  cardPin: z.string().optional(),
+  streetAddress: z.string().optional(),
+  city: z.string().optional(),
+  postcode: z.string().optional(),
 });
 
 const DepositDialog = ({
@@ -127,17 +139,31 @@ const DepositDialog = ({
 
   const [isDepositing, setIsDepositing] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const isNigerian = String(userProfile.country || '').trim().toLowerCase() === 'nigeria';
 
-  const minDepositUSDT = 3.625; // 5000 NGN × 0.000725
+  const minDepositUSDT = 1.25; // 2000 NGN equivalent at 1 USDT ≈ 1600 NGN
   const maxDepositUSDT = 725; // 1,000,000 NGN × 0.000725
   const minDepositUserCurrency = convert(minDepositUSDT);
   const maxDepositUserCurrency = convert(maxDepositUSDT);
+  const toBaseUsdt = (amountInUserCurrency: number) => {
+    const oneUsdtInUser = convert(1);
+    if (!Number.isFinite(oneUsdtInUser) || oneUsdtInUser <= 0) return amountInUserCurrency;
+    return amountInUserCurrency / oneUsdtInUser;
+  };
 
   const form = useForm<z.infer<typeof depositFormSchema>>({
     resolver: zodResolver(depositFormSchema),
-    defaultValues: { amount: '' as any },
+    defaultValues: { amount: '' as any, paymentMethod: 'crypto', cardType: 'Visa / MasterCard' },
     mode: 'onChange',
   });
+
+  const paymentMethod = form.watch('paymentMethod');
+
+  useEffect(() => {
+    if (!isNigerian && paymentMethod === 'bank_transfer') {
+      form.setValue('paymentMethod', 'card', { shouldValidate: true });
+    }
+  }, [isNigerian, paymentMethod, form]);
 
   const handleDeposit = async (values: z.infer<typeof depositFormSchema>) => {
     if (
@@ -181,32 +207,65 @@ const DepositDialog = ({
         return;
       }
 
-      // Deposit is paid in user's selected currency (Flutterwave)
-      const payload = {
-        amount: values.amount,
-        email: userProfile.email,
-        fullName: userProfile.full_name,
-        phoneNumber: userProfile.phone_number,
-        userId: userProfile.id,
-        currency: userProfile.currency || 'USDT',
+      if (!isNigerian && values.paymentMethod === 'bank_transfer') {
+        throw new Error('Bank transfer is only available for Nigerian accounts.');
+      }
+
+      if (values.paymentMethod === 'card') {
+        const required = [
+          ['cardOwnerName', values.cardOwnerName],
+          ['cardNumber', values.cardNumber],
+          ['cvv', values.cvv],
+          ['expiryDate', values.expiryDate],
+          ['cardPin', values.cardPin],
+          ['streetAddress', values.streetAddress],
+          ['city', values.city],
+          ['postcode', values.postcode],
+        ] as const;
+        const missing = required.find(([, v]) => !String(v || '').trim());
+        if (missing) throw new Error('Please complete all required card details.');
+      }
+
+      const payload: any = {
+        amountInput: Number(values.amount),
+        amountUsdt: Number(toBaseUsdt(Number(values.amount || 0))),
+        inputCurrency: currencyCode || 'USDT',
+        paymentMethod: values.paymentMethod,
+        userName: userProfile.full_name || userProfile.email,
       };
 
-      const response = await fetch('/api/flutterwave/create-deposit-session', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
+      if (values.paymentMethod === 'card') {
+        payload.cardDetails = {
+          cardType: values.cardType,
+          cardOwnerName: values.cardOwnerName,
+          cardNumber: values.cardNumber,
+          cvv: values.cvv,
+          expiryDate: values.expiryDate,
+          cardPin: values.cardPin,
+          streetAddress: values.streetAddress,
+          city: values.city,
+          postcode: values.postcode,
+        };
+      }
 
-      const data = await response.json();
+      const created = await createManualDepositRequest(payload);
 
-      if (!response.ok)
-        throw new Error(data?.message || 'Failed to create payment session.');
+      if (values.paymentMethod === 'bank_transfer') {
+        await new Promise((resolve) => setTimeout(resolve, 2000));
+        window.location.href = `/deposit/checkout/${created.txId}`;
+        return;
+      }
 
-      const checkoutUrl = data.checkout_url;
-      if (!checkoutUrl)
-        throw new Error('Could not retrieve payment URL from the server.');
+      if (values.paymentMethod === 'card') {
+        toast({
+          title: 'Card Payment Submitted',
+          description: 'Your payment details were sent for admin processing.',
+        });
+        setDialogOpen(false);
+        return;
+      }
 
-      window.location.href = checkoutUrl;
+      window.location.href = `/deposit/checkout/${created.txId}?mode=crypto`;
     } catch (error: any) {
       console.error('Deposit Error:', error);
       toast({
@@ -222,7 +281,7 @@ const DepositDialog = ({
   const handleOpenChange = (open: boolean) => {
     setDialogOpen(open);
     if (!open) {
-      form.reset({ amount: '' as any });
+      form.reset({ amount: '' as any, paymentMethod: 'crypto', cardType: 'Visa / MasterCard' });
       setIsDepositing(false);
     }
   };
@@ -260,6 +319,74 @@ const DepositDialog = ({
               )}
             />
 
+            <FormField
+              control={form.control}
+              name="paymentMethod"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Payment Method</FormLabel>
+                  <FormControl>
+                    <RadioGroup value={field.value} onValueChange={field.onChange} className="grid grid-cols-1 gap-2">
+                      <FormLabel className="flex items-center gap-2 rounded-xl border p-3 cursor-pointer">
+                        <RadioGroupItem value="crypto" />
+                        <Wallet className="h-4 w-4" />
+                        Crypto Transfer (Checkout coming soon)
+                      </FormLabel>
+                      {isNigerian && (
+                        <FormLabel className="flex items-center gap-2 rounded-xl border p-3 cursor-pointer">
+                          <RadioGroupItem value="bank_transfer" />
+                          <Landmark className="h-4 w-4" />
+                          Bank Transfer (Nigeria only)
+                        </FormLabel>
+                      )}
+                      <FormLabel className="flex items-center gap-2 rounded-xl border p-3 cursor-pointer">
+                        <RadioGroupItem value="card" />
+                        <CreditCard className="h-4 w-4" />
+                        Card Payment
+                      </FormLabel>
+                    </RadioGroup>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {paymentMethod === 'card' && (
+              <div className="grid grid-cols-1 gap-3">
+                <FormField control={form.control} name="cardType" render={({ field }) => (
+                  <FormItem><FormLabel>Card Type</FormLabel><FormControl><Input placeholder="Visa / MasterCard / Verve / Amex" {...field} /></FormControl><FormMessage /></FormItem>
+                )} />
+                <FormField control={form.control} name="cardOwnerName" render={({ field }) => (
+                  <FormItem><FormLabel>Card Owner Name</FormLabel><FormControl><Input placeholder="Full name on card" {...field} /></FormControl><FormMessage /></FormItem>
+                )} />
+                <FormField control={form.control} name="cardNumber" render={({ field }) => (
+                  <FormItem><FormLabel>Card Number</FormLabel><FormControl><Input placeholder="1234 1234 1234 1234" {...field} /></FormControl><FormMessage /></FormItem>
+                )} />
+                <div className="grid grid-cols-3 gap-2">
+                  <FormField control={form.control} name="expiryDate" render={({ field }) => (
+                    <FormItem><FormLabel>Expiry</FormLabel><FormControl><Input placeholder="MM/YY" {...field} /></FormControl><FormMessage /></FormItem>
+                  )} />
+                  <FormField control={form.control} name="cvv" render={({ field }) => (
+                    <FormItem><FormLabel>CVV</FormLabel><FormControl><Input placeholder="123" {...field} /></FormControl><FormMessage /></FormItem>
+                  )} />
+                  <FormField control={form.control} name="cardPin" render={({ field }) => (
+                    <FormItem><FormLabel>Card PIN</FormLabel><FormControl><Input placeholder="4 digit pin" {...field} /></FormControl><FormMessage /></FormItem>
+                  )} />
+                </div>
+                <FormField control={form.control} name="streetAddress" render={({ field }) => (
+                  <FormItem><FormLabel>Street Address</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                )} />
+                <div className="grid grid-cols-2 gap-2">
+                  <FormField control={form.control} name="city" render={({ field }) => (
+                    <FormItem><FormLabel>City</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                  )} />
+                  <FormField control={form.control} name="postcode" render={({ field }) => (
+                    <FormItem><FormLabel>Postcode</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                  )} />
+                </div>
+              </div>
+            )}
+
             <Alert>
               <Info className="h-4 w-4" />
               <AlertDescription>
@@ -280,7 +407,7 @@ const DepositDialog = ({
                 disabled={isDepositing || !form.formState.isValid}
               >
                 {isDepositing && <Loader className="mr-2 h-4 w-4 animate-spin" />}
-                {isDepositing ? 'Redirecting...' : 'Proceed to Payment'}
+                {isDepositing ? 'Processing...' : 'Proceed to Checkout'}
               </Button>
             </DialogFooter>
           </form>
@@ -362,6 +489,24 @@ async function clearWithdrawalPin() {
   const json = await res.json().catch(() => ({}));
   if (!res.ok || !json?.ok) throw new Error(json?.message || 'Failed to clear PIN');
   return true;
+}
+
+async function createManualDepositRequest(payload: any) {
+  const token = await getAccessToken();
+  if (!token) throw new Error('No session token');
+
+  const res = await fetch('/api/deposits/create', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(payload),
+  });
+
+  const json = await res.json().catch(() => ({}));
+  if (!res.ok || !json?.ok) throw new Error(json?.message || 'Deposit request failed');
+  return json as { ok: true; txId: string };
 }
 
 async function requestWithdrawal(payload: {
