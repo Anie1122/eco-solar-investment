@@ -9,7 +9,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import { createSupportSession } from '@/lib/support-chat';
-const MIN_LEN = 74;
+
+const MAX_LEN = 74;
 
 export default function SupportRequestPage() {
   const router = useRouter();
@@ -18,8 +19,8 @@ export default function SupportRequestPage() {
   const [phase, setPhase] = useState<'form' | 'waiting' | 'joined'>('form');
   const [agentName, setAgentName] = useState('');
 
-  const remaining = useMemo(() => Math.max(0, MIN_LEN - message.trim().length), [message]);
-  const canSubmit = !submitting && message.trim().length >= MIN_LEN;
+  const remaining = useMemo(() => Math.max(0, MAX_LEN - message.trim().length), [message]);
+  const canSubmit = !submitting && message.trim().length > 0 && message.trim().length <= MAX_LEN;
 
   const submitRequest = async () => {
     if (!canSubmit) return;
@@ -53,7 +54,7 @@ export default function SupportRequestPage() {
             Customer Service Request
           </CardTitle>
           <CardDescription>
-            Describe your complaint clearly. Minimum of {MIN_LEN} characters so support can help faster.
+            Describe your complaint clearly. Maximum of {MAX_LEN} characters.
           </CardDescription>
         </CardHeader>
 
@@ -66,12 +67,13 @@ export default function SupportRequestPage() {
                 placeholder="Please explain your issue in detail (transaction ID, date, amount, and what happened)..."
                 className="min-h-[190px] rounded-2xl"
                 disabled={submitting}
+                maxLength={MAX_LEN}
               />
               <div className="flex items-center justify-between text-sm">
-                <span className={remaining > 0 ? 'text-amber-600' : 'text-emerald-600'}>
-                  {remaining > 0 ? `${remaining} more characters required` : 'Good detail level ✅'}
+                <span className={remaining > 0 ? 'text-muted-foreground' : 'text-amber-600'}>
+                  {remaining > 0 ? `${remaining} characters left` : 'Maximum reached'}
                 </span>
-                <span className="text-muted-foreground">{message.trim().length}/{MIN_LEN} min</span>
+                <span className="text-muted-foreground">{message.trim().length}/{MAX_LEN} max</span>
               </div>
 
               <Button className="w-full rounded-2xl h-12" onClick={submitRequest} disabled={!canSubmit}>
