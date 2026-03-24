@@ -599,16 +599,6 @@ const WithdrawalDialogContent = ({
 }) => {
   const { toast } = useToast();
 
-  const currencyCode = userProfile.currency || 'USDT';
-  const { convert, format, currency } = useCurrencyConverter(currencyCode);
-
-  // ✅ helper: convert a user-currency amount back to USDT base safely
-  const toBaseUsdt = (amountUserCurrency: number) => {
-    const oneUsdtInUser = convert(1);
-    if (!Number.isFinite(oneUsdtInUser) || oneUsdtInUser <= 0) return amountUserCurrency;
-    return amountUserCurrency / oneUsdtInUser;
-  };
-
   const savedAccount = (userProfile.withdrawal_account ?? null) as
     | WithdrawalAccount
     | null;
@@ -624,7 +614,6 @@ const WithdrawalDialogContent = ({
   );
 
   const minWithdrawalUSDT = 10.875; // 15,000 NGN × 0.000725
-  const minWithdrawalUserCurrency = convert(minWithdrawalUSDT);
 
   const walletBalanceUSDT = Number(userProfile.wallet_balance ?? 0);
 
@@ -665,6 +654,15 @@ const WithdrawalDialogContent = ({
       accountName: savedAccount?.accountName ?? '',
     },
   });
+  const selectedPayoutCurrency =
+    formMethods.watch('payoutCurrency') ?? (detectedLocalCurrency ?? 'USD');
+  const selectedRate =
+    LOCAL_PAYOUT_OPTIONS.find((x) => x.code === selectedPayoutCurrency)?.perUsdt ?? 1;
+  const minWithdrawalInCurrentMode =
+    withdrawalType === 'bank' ? minWithdrawalUSDT * selectedRate : minWithdrawalUSDT;
+  const modeCurrencyCode = withdrawalType === 'bank' ? selectedPayoutCurrency : 'USDT';
+  const formatModeAmount = (n: number) =>
+    `${Number(n || 0).toLocaleString(undefined, { maximumFractionDigits: 4 })} ${modeCurrencyCode}`;
 
   useEffect(() => {
     const run = async () => {
@@ -777,18 +775,12 @@ const WithdrawalDialogContent = ({
     const amountUSDT =
       withdrawalType === 'bank'
         ? Number(values.amount || 0) / Number(localRate || 1)
-        : toBaseUsdt(Number(values.amount || 0));
+        : Number(values.amount || 0);
 
     if (!Number.isFinite(amountUSDT) || amountUSDT <= 0) {
+
       formMethods.setError('amount', {
         message: 'Invalid amount.',
-      });
-      return;
-    }
-
-    if (amountUSDT < minWithdrawalUSDT) {
-      formMethods.setError('amount', {
-        message: `Minimum withdrawal is ${format(minWithdrawalUserCurrency)}.`,
       });
       return;
     }
@@ -875,7 +867,7 @@ const WithdrawalDialogContent = ({
       const amountUSDT =
         withdrawalType === 'bank'
           ? Number(pendingWithdrawal.amount || 0) / Number(localRate || 1)
-          : toBaseUsdt(Number(pendingWithdrawal.amount || 0));
+          : Number(pendingWithdrawal.amount || 0);
 
       await requestWithdrawal({
         amount: Number(amountUSDT),
@@ -1094,13 +1086,13 @@ const WithdrawalDialogContent = ({
                   Amount (
                   {withdrawalType === 'bank'
                     ? formMethods.watch('payoutCurrency') || 'USD'
-                    : currency}
+                    : 'USDT'}
                   )
                 </FormLabel>
                 <FormControl>
                   <Input
                     type="number"
-                    placeholder={`e.g., ${minWithdrawalUserCurrency.toFixed(0)}`}
+                    placeholder={`e.g., ${minWithdrawalInCurrentMode.toFixed(2)}`}
                     {...field}
                   />
                 </FormControl>
@@ -1242,7 +1234,7 @@ const WithdrawalDialogContent = ({
           <Alert>
             <Info className="h-4 w-4" />
             <AlertDescription>
-              Minimum withdrawal is {format(minWithdrawalUserCurrency)}.
+              Minimum withdrawal is {formatModeAmount(minWithdrawalInCurrentMode)}.
             </AlertDescription>
           </Alert>
 
