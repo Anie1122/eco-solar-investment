@@ -68,12 +68,23 @@ export default function DepositStartPage() {
   const [currencyCode, setCurrencyCode] = useState('USDT');
 
   const { convert, currency: activeCryptoCurrency } = useCurrencyConverter(currencyCode);
-  const minDepositUser = method === 'local_bank_transfer' ? MIN_DEPOSIT_NGN_LOCAL : convert(MIN_DEPOSIT_USDT);
-  const maxDepositUser = method === 'local_bank_transfer' ? MAX_DEPOSIT_USDT * NGN_PER_USDT : convert(MAX_DEPOSIT_USDT);
+  const minDepositUser =
+    method === 'local_bank_transfer'
+      ? MIN_DEPOSIT_NGN_LOCAL
+      : method === 'crypto_checkout'
+        ? MIN_DEPOSIT_USDT
+        : convert(MIN_DEPOSIT_USDT);
+  const maxDepositUser =
+    method === 'local_bank_transfer'
+      ? MAX_DEPOSIT_USDT * NGN_PER_USDT
+      : method === 'crypto_checkout'
+        ? MAX_DEPOSIT_USDT
+        : convert(MAX_DEPOSIT_USDT);
 
   const isNigerian = useMemo(() => country.trim().toLowerCase() === 'nigeria', [country]);
   const selectedCard = CARD_TYPES.find((x) => x.value === cardType) || CARD_TYPES[0];
-  const displayCurrency = method === 'local_bank_transfer' ? 'NGN' : activeCryptoCurrency;
+  const displayCurrency =
+    method === 'local_bank_transfer' ? 'NGN' : method === 'crypto_checkout' ? 'USDT' : activeCryptoCurrency;
 
   useEffect(() => {
     (async () => {
@@ -108,6 +119,8 @@ export default function DepositStartPage() {
       const amountUsdt =
         method === 'local_bank_transfer'
           ? amountNum / NGN_PER_USDT
+          : method === 'crypto_checkout'
+            ? amountNum
           : amountNum / (convert(1) > 0 ? convert(1) : 1);
 
       const txId = await createDeposit({
