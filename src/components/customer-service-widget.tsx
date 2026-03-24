@@ -5,11 +5,6 @@ import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 
 export default function CustomerServiceWidget({ hidden }: { hidden?: boolean }) {
-  const phone = '12816923156'; // ✅ +1 (281) 692-3156
-  const text = encodeURIComponent(
-    'Hi, I need help with Eco Solar Investment. Please assist me.'
-  );
-
   return (
     <motion.div
       className={cn(
@@ -26,10 +21,8 @@ export default function CustomerServiceWidget({ hidden }: { hidden?: boolean }) 
         transition={{ duration: 2.4, repeat: Infinity, ease: 'easeInOut' }}
       >
         <Link
-          href={`https://wa.me/${phone}?text=${text}`}
-          target="_blank"
-          rel="noopener noreferrer"
-          aria-label="Customer support on WhatsApp"
+          href="/support/request"
+          aria-label="Open customer support"
         >
           {/* Gold app-themed floating support button */}
           <div
