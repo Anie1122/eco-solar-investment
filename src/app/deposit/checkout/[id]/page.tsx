@@ -2,11 +2,62 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
+import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/lib/supabaseClient';
+import { AlertTriangle, Copy } from 'lucide-react';
+
+type CryptoChain = {
+  key: 'erc20' | 'trc20' | 'bep20' | 'polygon' | 'sol' | 'ton';
+  label: string;
+  logo: string;
+  address: string;
+};
+
+const qrForAddress = (address: string) =>
+  `https://api.qrserver.com/v1/create-qr-code/?size=320x320&ecc=M&data=${encodeURIComponent(address)}`;
+
+const CRYPTO_CHAINS: CryptoChain[] = [
+  {
+    key: 'erc20',
+    label: 'Ethereum (ERC20)',
+    logo: '/chains/erc20.svg',
+    address: '0x97787f5bf12893a27c952eaf8c3adc26155efb59',
+  },
+  {
+    key: 'trc20',
+    label: 'TRON (TRC20)',
+    logo: '/chains/trc20.svg',
+    address: 'TKzDxo5dE4s9kXKmv1gD7c9KvaX52hhWxg',
+  },
+  {
+    key: 'bep20',
+    label: 'BSC (BEP20)',
+    logo: '/chains/bep20.svg',
+    address: '0x97787f5bf12893a27c952eaf8c3adc26155efb59',
+  },
+  {
+    key: 'polygon',
+    label: 'Polygon PoS',
+    logo: '/chains/polygon.svg',
+    address: '0x97787f5bf12893a27c952eaf8c3adc26155efb59',
+  },
+  {
+    key: 'sol',
+    label: 'SOL',
+    logo: '/chains/sol.svg',
+    address: '9vcKZHJ3LJmGk1tBhSDxikdiSf8yxqgaEwv4rnkuEPTq',
+  },
+  {
+    key: 'ton',
+    label: 'TON',
+    logo: '/chains/ton.svg',
+    address: 'UQA61_9EJ3Zkd45sl7QFycyIlUavcjichdYWhidGlcwJ1G2j',
+  },
+];
 
 export default function DepositCheckoutPage() {
   const params = useParams<{ id: string }>();
@@ -14,13 +65,15 @@ export default function DepositCheckoutPage() {
   const router = useRouter();
   const { toast } = useToast();
   const id = String(params?.id || '');
-  const mode = String(search.get('mode') || 'bank_transfer');
+  const mode = String(search.get('mode') || 'local_bank_transfer');
 
   const [amountText, setAmountText] = useState('');
   const [countdown, setCountdown] = useState(20 * 60);
   const [file, setFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const [showUpload, setShowUpload] = useState(false);
+  const [selectedChain, setSelectedChain] = useState<CryptoChain | null>(null);
+  const [chainLoading, setChainLoading] = useState(false);
 
   useEffect(() => {
     const run = async () => {
@@ -39,6 +92,10 @@ export default function DepositCheckoutPage() {
     };
     run();
   }, [id]);
+
+  useEffect(() => {
+    setCountdown(mode === 'crypto_checkout' || mode === 'crypto' ? 30 * 60 : 20 * 60);
+  }, [mode]);
 
   useEffect(() => {
     const t = setInterval(() => setCountdown((x) => Math.max(0, x - 1)), 1000);
@@ -94,18 +151,80 @@ export default function DepositCheckoutPage() {
     }
   };
 
-  if (mode === 'crypto') {
+  const selectChain = async (chain: CryptoChain) => {
+    setChainLoading(true);
+    setSelectedChain(null);
+    await new Promise((r) => setTimeout(r, 5000));
+    setSelectedChain(chain);
+    setChainLoading(false);
+  };
+
+  const copyAddress = async () => {
+    if (!selectedChain?.address) return;
+    await navigator.clipboard.writeText(selectedChain.address);
+    toast({ title: 'Copied', description: 'Wallet address copied successfully.' });
+  };
+
+  if (mode === 'crypto_checkout' || mode === 'crypto') {
     return (
-      <div className="mx-auto max-w-xl px-4 py-8">
+      <div className="mx-auto max-w-xl px-4 py-8 space-y-4">
         <Card>
           <CardHeader>
-            <CardTitle>Crypto Transfer Checkout</CardTitle>
-            <CardDescription>Coming soon. Your request is created and pending for admin review.</CardDescription>
+            <CardTitle>Deposit USDT (Crypto Checkout)</CardTitle>
+            <CardDescription>Select a chain before sending funds. Timer: <b>{timeLabel}</b>.</CardDescription>
           </CardHeader>
-          <CardContent>
-            <Button onClick={() => router.push('/history')}>Go to History</Button>
+          <CardContent className="space-y-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              {CRYPTO_CHAINS.map((chain) => (
+                <button
+                  key={chain.key}
+                  onClick={() => selectChain(chain)}
+                  disabled={chainLoading}
+                  className={`rounded-xl border p-3 text-left flex items-center gap-3 ${selectedChain?.key === chain.key ? 'border-primary bg-primary/10' : 'hover:bg-muted/50'}`}
+                >
+                  <Image src={chain.logo} alt={chain.label} width={32} height={32} className="rounded-md" />
+                  <span className="font-medium">{chain.label}</span>
+                </button>
+              ))}
+            </div>
+            {chainLoading ? (
+              <div className="rounded-xl border p-4 flex items-center gap-3">
+                <div className="h-6 w-6 rounded-full border-2 border-primary/40 border-t-primary animate-spin" />
+                <p className="text-sm">Preparing deposit details for your selected chain...</p>
+              </div>
+            ) : null}
           </CardContent>
         </Card>
+
+        {selectedChain ? (
+          <Card className="bg-black text-white border-white/10">
+            <CardContent className="pt-6 space-y-4">
+              <h3 className="text-3xl font-bold">Deposit USDT</h3>
+              <p className="text-2xl"><span className="text-zinc-400">Network:</span> {selectedChain.label}</p>
+
+              {selectedChain.key === 'bep20' ? (
+                <div className="rounded-lg border border-yellow-500/50 bg-yellow-500/10 p-3 text-yellow-200 text-sm">
+                  <p className="font-semibold flex items-center gap-2"><AlertTriangle className="h-4 w-4" /> Caution for BEP20</p>
+                  <p className="mt-1">Do not deposit USDT via opBNB chain. Use BSC (BEP20) only, otherwise funds may be permanently lost.</p>
+                  <p className="mt-1">Ensure your withdrawal chain matches this exact network type before sending.</p>
+                </div>
+              ) : null}
+
+              <div className="mx-auto w-fit rounded-2xl bg-white p-3">
+                <img src={qrForAddress(selectedChain.address)} alt={`${selectedChain.label} QR`} width={280} height={280} />
+              </div>
+
+              <div>
+                <p className="text-zinc-400 text-xl mb-1">Wallet Address</p>
+                <p className="text-3xl break-all font-medium">{selectedChain.address}</p>
+              </div>
+
+              <Button onClick={copyAddress} className="w-full" variant="secondary">
+                <Copy className="mr-2 h-4 w-4" /> Copy address
+              </Button>
+            </CardContent>
+          </Card>
+        ) : null}
       </div>
     );
   }
