@@ -34,10 +34,12 @@ export default function RootLayout({
       </head>
 
       <body className={`${inter.variable} font-body antialiased`}>
-        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+        <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
           <FirebaseClientProvider>
             {/* Main content */}
-            <div className="min-h-screen pb-24">{children}</div>
+            <div className="min-h-screen pb-24 fintech-shell">
+              <div className="fintech-page-animate">{children}</div>
+            </div>
 
             {/* ✅ New Modern Floating Buttons (AI + Support) */}
             <FloatingActions />
