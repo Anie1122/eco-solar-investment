@@ -41,7 +41,7 @@ export async function POST(req: Request) {
       if (updUserErr) throw updUserErr;
     }
 
-    const nextStatus = action === 'approve' ? 'successful' : 'declined';
+    const nextStatus = action === 'approve' ? 'approved' : 'rejected';
     const metadata = {
       ...((tx as any).metadata || {}),
       reviewedAt: new Date().toISOString(),
