@@ -41,6 +41,13 @@ export default function AdminDepositsPage() {
     }
   };
 
+  const formatMethod = (value: string) => {
+    if (value === 'crypto_checkout' || value === 'crypto') return 'Crypto payment checkout';
+    if (value === 'local_bank_transfer' || value === 'bank_transfer') return "Local bank transfer (Nigerians only)";
+    if (value === 'card_payment' || value === 'card') return 'Card payment';
+    return value || '-';
+  };
+
   return (
     <div className="mx-auto max-w-5xl px-4 py-8 space-y-4">
       <Card>
@@ -55,8 +62,13 @@ export default function AdminDepositsPage() {
           <CardContent className="pt-4 space-y-2">
             <p><b>User:</b> {r.metadata?.userName || r.user_id}</p>
             <p><b>Amount:</b> {r.metadata?.amountInput} {r.metadata?.inputCurrency} ({r.amount} USDT base)</p>
-            <p><b>Method:</b> {r.metadata?.paymentMethod}</p>
+            <p><b>Method:</b> {formatMethod(String(r.metadata?.paymentMethod || ''))}</p>
             <p><b>Status:</b> {r.status}</p>
+            {r.metadata?.cancellationReason === 'unsupported_card_type_verve' ? (
+              <p className="text-sm text-red-500">
+                This card transaction was auto-cancelled: Verve is currently unsupported.
+              </p>
+            ) : null}
             {r.metadata?.receiptDataUrl ? (
               <a href={r.metadata.receiptDataUrl} target="_blank" rel="noreferrer">
                 <img src={r.metadata.receiptDataUrl} alt="receipt" className="max-h-48 rounded border cursor-zoom-in" />
@@ -66,10 +78,12 @@ export default function AdminDepositsPage() {
               <pre className="rounded border p-2 text-xs overflow-auto">{JSON.stringify(r.metadata.cardDetails, null, 2)}</pre>
             ) : null}
 
-            <div className="flex gap-2">
-              <Button onClick={() => review(r.id, 'approve')} disabled={busyId === r.id + 'approve'}>Accept</Button>
-              <Button variant="destructive" onClick={() => review(r.id, 'decline')} disabled={busyId === r.id + 'decline'}>Decline</Button>
-            </div>
+            {r.status === 'pending' ? (
+              <div className="flex gap-2">
+                <Button onClick={() => review(r.id, 'approve')} disabled={busyId === r.id + 'approve'}>Accept</Button>
+                <Button variant="destructive" onClick={() => review(r.id, 'decline')} disabled={busyId === r.id + 'decline'}>Decline</Button>
+              </div>
+            ) : null}
           </CardContent>
         </Card>
       ))}

@@ -42,12 +42,12 @@ export default function BottomNav() {
   return (
     <>
       {/* Spacer */}
-      <div className="h-20 w-full" />
+      <div className="h-24 w-full" />
 
-      <nav className="fixed bottom-4 left-0 right-0 z-50 flex justify-center px-4">
+      <nav className="fixed bottom-3 left-0 right-0 z-50 flex justify-center px-2">
         <div
           className="
-            w-full max-w-md
+            w-full max-w-3xl
             rounded-2xl
             border
             border-primary/30
@@ -57,7 +57,7 @@ export default function BottomNav() {
             shadow-[0_8px_30px_rgba(0,0,0,0.12)]
           "
         >
-          <div className="flex items-end justify-between px-3 py-2">
+          <div className="grid grid-cols-7 gap-1 px-1 py-2">
             {items.map((item) => {
               const active =
                 item.href === '/'
@@ -71,7 +71,7 @@ export default function BottomNav() {
                 <Link
                   key={item.href}
                   href={item.href}
-                  className="flex flex-1 justify-center"
+                  className="flex justify-center"
                 >
                   <motion.div
                     whileTap={{ scale: 0.9 }}
@@ -93,7 +93,7 @@ export default function BottomNav() {
                     {/* Label */}
                     <span
                       className={cn(
-                        'text-[9px] font-medium transition-colors',
+                        'text-[9px] font-medium transition-colors text-center leading-none',
                         active ? 'text-primary' : 'text-muted-foreground'
                       )}
                     >
