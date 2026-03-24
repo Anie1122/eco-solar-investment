@@ -778,15 +778,9 @@ const WithdrawalDialogContent = ({
         : Number(values.amount || 0);
 
     if (!Number.isFinite(amountUSDT) || amountUSDT <= 0) {
+
       formMethods.setError('amount', {
         message: 'Invalid amount.',
-      });
-      return;
-    }
-
-    if (amountUSDT < minWithdrawalUSDT) {
-      formMethods.setError('amount', {
-        message: `Minimum withdrawal is ${formatModeAmount(minWithdrawalInCurrentMode)}.`,
       });
       return;
     }
