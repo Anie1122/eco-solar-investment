@@ -383,6 +383,15 @@ export default function LoginPage() {
                     Login
                   </Button>
                 </motion.div>
+
+                <Link href="/admin/login" className="block">
+                  <Button
+                    type="button"
+                    className="w-full rounded-xl bg-amber-500 hover:bg-amber-600 text-white border border-white/30 shadow-[inset_0_1px_0_rgba(255,255,255,0.45)]"
+                  >
+                    Admin Access
+                  </Button>
+                </Link>
               </form>
             </Form>
 

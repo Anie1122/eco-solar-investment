@@ -1,10 +1,17 @@
 'use client';
 
-import { useState } from 'react';
+import { useId, useState } from 'react';
 import { Loader2 } from 'lucide-react';
 import { supabase } from '@/lib/supabaseClient';
 import { SUPPORTED_CRYPTO_CURRENCIES, toSupportedCurrency, type SupportedCryptoCurrency } from '@/lib/crypto-rates';
 import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 export default function CurrencySwitcher({
   userId,
@@ -16,6 +23,7 @@ export default function CurrencySwitcher({
   onChanged?: (next: SupportedCryptoCurrency) => void;
 }) {
   const [saving, setSaving] = useState(false);
+  const selectId = useId();
   const current = toSupportedCurrency(value);
 
   const handleChange = async (next: string) => {
@@ -36,22 +44,37 @@ export default function CurrencySwitcher({
 
   return (
     <div className="space-y-2">
-      <Label htmlFor="currency-switcher">Preferred Crypto</Label>
+      <Label htmlFor={selectId} className="text-xs font-semibold uppercase tracking-wide text-primary">
+        Preferred Crypto
+      </Label>
       <div className="relative">
-        <select
-          id="currency-switcher"
-          className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
+        <Select
           disabled={saving}
           value={current}
-          onChange={(e) => void handleChange(e.target.value)}
+          onValueChange={(next) => void handleChange(next)}
         >
-          {SUPPORTED_CRYPTO_CURRENCIES.map((code) => (
-            <option key={code} value={code}>
-              {code}
-            </option>
-          ))}
-        </select>
-        {saving ? <Loader2 className="pointer-events-none absolute right-3 top-2.5 h-5 w-5 animate-spin text-muted-foreground" /> : null}
+          <SelectTrigger
+            id={selectId}
+            className="h-11 rounded-xl border-primary/35 bg-gradient-to-br from-primary/15 via-primary/5 to-background text-sm font-semibold text-foreground shadow-[0_10px_28px_rgba(0,0,0,0.08)] focus:ring-primary/35 data-[state=open]:border-primary"
+          >
+            <SelectValue placeholder="Choose currency" />
+          </SelectTrigger>
+
+          <SelectContent className="rounded-xl border-primary/35 bg-card shadow-[0_18px_50px_rgba(0,0,0,0.22)]">
+            {SUPPORTED_CRYPTO_CURRENCIES.map((code) => (
+              <SelectItem
+                key={code}
+                value={code}
+                className="rounded-lg text-sm font-semibold focus:bg-primary/15 focus:text-foreground"
+              >
+                {code}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        {saving ? (
+          <Loader2 className="pointer-events-none absolute right-3 top-3 h-5 w-5 animate-spin text-primary" />
+        ) : null}
       </div>
     </div>
   );
