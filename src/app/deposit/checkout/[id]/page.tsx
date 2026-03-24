@@ -212,6 +212,7 @@ export default function DepositCheckoutPage() {
 
               <div className="mx-auto w-fit rounded-2xl bg-white p-3">
                 <img src={qrForAddress(selectedChain.address)} alt={`${selectedChain.label} QR`} width={280} height={280} />
+
               </div>
 
               <div>
