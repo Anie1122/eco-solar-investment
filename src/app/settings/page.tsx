@@ -72,6 +72,15 @@ const passwordFormSchema = z.object({
   currentPassword: z.string().min(1, 'Current password is required.'),
   newPassword: z.string().min(6, 'New password must be at least 6 characters.'),
 });
+const setPinFormSchema = z
+  .object({
+    pin: z.string().regex(/^\d{4}$/, 'PIN must be exactly 4 digits.'),
+    confirmPin: z.string().regex(/^\d{4}$/, 'Confirm PIN must be exactly 4 digits.'),
+  })
+  .refine((v) => v.pin === v.confirmPin, {
+    path: ['confirmPin'],
+    message: 'PINs do not match.',
+  });
 
 function useSupabaseSessionUser() {
   const [userId, setUserId] = useState<string | null>(null);
@@ -214,6 +223,8 @@ const SettingsPage: NextPage = () => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [forgotPinOpen, setForgotPinOpen] = useState(false);
   const [forgotPinBusy, setForgotPinBusy] = useState(false);
+  const [setPinOpen, setSetPinOpen] = useState(false);
+  const [setPinBusy, setSetPinBusy] = useState(false);
 
   const form = useForm<z.infer<typeof passwordFormSchema>>({
     resolver: zodResolver(passwordFormSchema),
@@ -221,6 +232,11 @@ const SettingsPage: NextPage = () => {
   });
   const forgotPinForm = useForm<{ password: string }>({
     defaultValues: { password: '' },
+    mode: 'onChange',
+  });
+  const setPinForm = useForm<z.infer<typeof setPinFormSchema>>({
+    resolver: zodResolver(setPinFormSchema),
+    defaultValues: { pin: '', confirmPin: '' },
     mode: 'onChange',
   });
 
@@ -312,6 +328,23 @@ const SettingsPage: NextPage = () => {
     if (!res.ok || !json?.ok) throw new Error(json?.message || 'Could not reset transaction PIN.');
   };
 
+  const setWithdrawalPin = async (pin: string) => {
+    const { data } = await supabase.auth.getSession();
+    const token = data.session?.access_token;
+    if (!token) throw new Error('Session expired. Please log in again.');
+
+    const res = await fetch('/api/withdrawal-pin/set', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ pin }),
+    });
+    const json = await res.json().catch(() => ({}));
+    if (!res.ok || !json?.ok) throw new Error(json?.message || 'Could not set new transaction PIN.');
+  };
+
   const handleForgotPin = async (values: { password: string }) => {
     if (!row?.email) {
       toast({ variant: 'destructive', title: 'Error', description: 'No email found.' });
@@ -329,12 +362,13 @@ const SettingsPage: NextPage = () => {
       await clearWithdrawalPin();
 
       toast({
-        title: 'Transaction PIN Reset',
-        description: 'Your 4-digit transaction PIN has been cleared. Please set a new PIN when required.',
+        title: 'Old PIN Cleared',
+        description: 'Please create your new 4-digit transaction PIN now.',
       });
 
       forgotPinForm.reset({ password: '' });
       setForgotPinOpen(false);
+      setSetPinOpen(true);
     } catch (e: any) {
       toast({
         variant: 'destructive',
@@ -343,6 +377,27 @@ const SettingsPage: NextPage = () => {
       });
     } finally {
       setForgotPinBusy(false);
+    }
+  };
+
+  const handleSetNewPin = async (values: z.infer<typeof setPinFormSchema>) => {
+    setSetPinBusy(true);
+    try {
+      await setWithdrawalPin(values.pin);
+      toast({
+        title: 'PIN Created',
+        description: 'Your new 4-digit transaction PIN is now active.',
+      });
+      setPinForm.reset({ pin: '', confirmPin: '' });
+      setSetPinOpen(false);
+    } catch (e: any) {
+      toast({
+        variant: 'destructive',
+        title: 'PIN Setup Failed',
+        description: e?.message || 'Could not set new transaction PIN.',
+      });
+    } finally {
+      setSetPinBusy(false);
     }
   };
 
@@ -476,6 +531,80 @@ const SettingsPage: NextPage = () => {
                               <Button type="submit" disabled={forgotPinBusy}>
                                 {forgotPinBusy && <Loader className="mr-2 h-4 w-4 animate-spin" />}
                                 Reset PIN
+                              </Button>
+                            </DialogFooter>
+                          </form>
+                        </Form>
+                      </DialogContent>
+                    </Dialog>
+
+                    <Dialog
+                      open={setPinOpen}
+                      onOpenChange={(open) => {
+                        setSetPinOpen(open);
+                        if (!open) setPinForm.reset({ pin: '', confirmPin: '' });
+                      }}
+                    >
+                      <DialogContent>
+                        <DialogHeader>
+                          <DialogTitle>Create New Transaction PIN</DialogTitle>
+                          <DialogDescription>
+                            Your old PIN was cleared. Set a new 4-digit transaction PIN now.
+                          </DialogDescription>
+                        </DialogHeader>
+
+                        <Form {...setPinForm}>
+                          <form onSubmit={setPinForm.handleSubmit(handleSetNewPin)} className="space-y-4">
+                            <FormField
+                              control={setPinForm.control}
+                              name="pin"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>New PIN</FormLabel>
+                                  <FormControl>
+                                    <Input
+                                      inputMode="numeric"
+                                      maxLength={4}
+                                      placeholder="Enter 4 digits"
+                                      {...field}
+                                      onChange={(e) => {
+                                        const clean = e.target.value.replace(/\D/g, '').slice(0, 4);
+                                        field.onChange(clean);
+                                      }}
+                                    />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+
+                            <FormField
+                              control={setPinForm.control}
+                              name="confirmPin"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Confirm PIN</FormLabel>
+                                  <FormControl>
+                                    <Input
+                                      inputMode="numeric"
+                                      maxLength={4}
+                                      placeholder="Re-enter 4 digits"
+                                      {...field}
+                                      onChange={(e) => {
+                                        const clean = e.target.value.replace(/\D/g, '').slice(0, 4);
+                                        field.onChange(clean);
+                                      }}
+                                    />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+
+                            <DialogFooter>
+                              <Button type="submit" disabled={setPinBusy}>
+                                {setPinBusy && <Loader className="mr-2 h-4 w-4 animate-spin" />}
+                                Save New PIN
                               </Button>
                             </DialogFooter>
                           </form>
