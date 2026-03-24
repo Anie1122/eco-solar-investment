@@ -14,7 +14,7 @@ export default function DepositCheckoutPage() {
   const router = useRouter();
   const { toast } = useToast();
   const id = String(params?.id || '');
-  const mode = String(search.get('mode') || 'bank_transfer');
+  const mode = String(search.get('mode') || 'local_bank_transfer');
 
   const [amountText, setAmountText] = useState('');
   const [countdown, setCountdown] = useState(20 * 60);
@@ -94,7 +94,7 @@ export default function DepositCheckoutPage() {
     }
   };
 
-  if (mode === 'crypto') {
+  if (mode === 'crypto_checkout' || mode === 'crypto') {
     return (
       <div className="mx-auto max-w-xl px-4 py-8">
         <Card>
