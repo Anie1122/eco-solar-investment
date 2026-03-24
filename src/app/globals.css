@@ -54,6 +54,11 @@
 }
 
 @layer base {
+  html {
+    /* Requested global scale-down across app pages */
+    font-size: 50%;
+  }
+
   * {
     @apply border-border;
   }
