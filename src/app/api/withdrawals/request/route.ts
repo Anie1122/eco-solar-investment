@@ -116,6 +116,16 @@ export async function POST(req: Request) {
     const currency = row.currency ?? 'USDT';
     const minWithdrawalUsdt = 10.875; // 15,000 NGN × 0.000725
     if (amountUsdt < minWithdrawalUsdt) {
+      if (destinationType === 'bank') {
+        const minInLocal = minWithdrawalUsdt * Number(LOCAL_RATE_TO_USDT[payoutCurrency] || 1);
+        return NextResponse.json(
+          {
+            ok: false,
+            message: `Minimum withdrawal is ${minInLocal.toFixed(2)} ${payoutCurrency} (${minWithdrawalUsdt} USDT base).`,
+          },
+          { status: 400 }
+        );
+      }
       return NextResponse.json({ ok: false, message: `Minimum withdrawal is ${minWithdrawalUsdt} USDT.` }, { status: 400 });
     }
 

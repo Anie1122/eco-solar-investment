@@ -778,9 +778,15 @@ const WithdrawalDialogContent = ({
         : Number(values.amount || 0);
 
     if (!Number.isFinite(amountUSDT) || amountUSDT <= 0) {
-
       formMethods.setError('amount', {
         message: 'Invalid amount.',
+      });
+      return;
+    }
+
+    if (amountUSDT < minWithdrawalUSDT) {
+      formMethods.setError('amount', {
+        message: `Minimum withdrawal is ${formatModeAmount(minWithdrawalInCurrentMode)}.`,
       });
       return;
     }
@@ -861,16 +867,9 @@ const WithdrawalDialogContent = ({
 
     setBusy(true);
     try {
-      // ✅ send USDT base to backend (so DB stays consistent)
-      const localRate =
-        LOCAL_PAYOUT_OPTIONS.find((x) => x.code === pendingWithdrawal.payoutCurrency)?.perUsdt ?? 1;
-      const amountUSDT =
-        withdrawalType === 'bank'
-          ? Number(pendingWithdrawal.amount || 0) / Number(localRate || 1)
-          : Number(pendingWithdrawal.amount || 0);
-
       await requestWithdrawal({
-        amount: Number(amountUSDT),
+        // send user-entered amount; backend handles conversion to USDT base
+        amount: Number(pendingWithdrawal.amount || 0),
         destinationType: withdrawalType,
         chain: pendingWithdrawal.chain,
         walletAddress: pendingWithdrawal.walletAddress,
