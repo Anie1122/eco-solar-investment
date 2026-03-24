@@ -55,8 +55,8 @@
 
 @layer base {
   html {
-    /* Requested global scale-down across app pages */
-    font-size: 50%;
+    /* Global upscale requested for icons/text/logo spacing across app pages */
+    font-size: 200%;
   }
 
   * {
