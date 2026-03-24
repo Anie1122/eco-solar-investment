@@ -9,8 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import { createSupportSession } from '@/lib/support-chat';
-
-const MIN_LEN = 104;
+const MIN_LEN = 74;
 
 export default function SupportRequestPage() {
   const router = useRouter();

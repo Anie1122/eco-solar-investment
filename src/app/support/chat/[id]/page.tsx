@@ -142,7 +142,7 @@ export default function SupportChatPage() {
       <Card className="rounded-3xl shadow-xl">
         <CardHeader className="border-b">
           <CardTitle>{session.agent.name}</CardTitle>
-          <CardDescription>{session.agent.title} • Human-like assisted support</CardDescription>
+          <CardDescription>{session.agent.title} • Support is active</CardDescription>
         </CardHeader>
 
         <CardContent className="p-0">

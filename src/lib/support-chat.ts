@@ -149,6 +149,14 @@ const REPLY_BANK = {
     'Thank you for your patience. I have received your details and I am reviewing this carefully for you.',
     'I understand your concern. I am checking the account details from support tools now.',
   ],
+  scam: [
+    'Please stop sending money immediately and avoid any further transactions until your account activity is verified.',
+    'For your safety, do not transfer more funds or share OTP/PIN details with anyone while we review this report.',
+  ],
+  appHelp: [
+    'For step-by-step app usage help, please use the floating AI bot button on the dashboard for instant guidance.',
+    'For how-to app instructions, tap the live floating AI bot button and it will guide you through each step quickly.',
+  ],
 };
 
 function pick<T>(arr: T[]): T {
@@ -157,6 +165,17 @@ function pick<T>(arr: T[]): T {
 
 export function generateSupportReply(userText: string): string {
   const lower = userText.toLowerCase();
+
+  if (/(scam|fraud|fake|419|ponzi|hacked|hack|phish|phishing|stolen|unauthorized|unknown transfer)/.test(lower)) {
+    const base = pick(REPLY_BANK.scam);
+    return `${base} Also change your password, protect your PIN, and only transact through official channels.`;
+  }
+
+  if (/(how to|how do i|where do i|can.t find|cant find|app|operate|navigation|button|bot|feature|use the app)/.test(lower)) {
+    const base = pick(REPLY_BANK.appHelp);
+    return `${base} If there is still an account-specific issue after that, return here and I will escalate it for you.`;
+  }
+
   let base = pick(REPLY_BANK.general);
 
   if (/(pay|debit|charged|charge|top up|airtime|data)/.test(lower)) base = pick(REPLY_BANK.payment);
