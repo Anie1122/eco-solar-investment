@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getUserFromBearer } from '@/lib/getUserFromBearer';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
+import { assertTransactionStatus } from '@/lib/transaction-status';
 
 export async function POST(req: Request) {
   try {
@@ -41,9 +42,10 @@ export async function POST(req: Request) {
       submittedForReviewAt: new Date().toISOString(),
     };
 
+    const pendingStatus = assertTransactionStatus('pending');
     const { error: updErr } = await admin
       .from('transactions')
-      .update({ metadata, status: 'pending' })
+      .update({ metadata, status: pendingStatus })
       .eq('id', txId)
       .eq('user_id', user.id);
 
@@ -51,6 +53,7 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ ok: true });
   } catch (e: any) {
+    console.error('Transaction receipt update failed:', e);
     return NextResponse.json({ ok: false, message: e?.message || 'Could not upload receipt.' }, { status: 500 });
   }
 }
