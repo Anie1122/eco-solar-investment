@@ -57,7 +57,7 @@ export default function BottomNav() {
             shadow-[0_8px_30px_rgba(0,0,0,0.12)]
           "
         >
-          <div className="flex items-end justify-between gap-1 overflow-x-auto px-2 py-2">
+          <div className="grid grid-cols-7 gap-1 px-1 py-2">
             {items.map((item) => {
               const active =
                 item.href === '/'
@@ -71,7 +71,7 @@ export default function BottomNav() {
                 <Link
                   key={item.href}
                   href={item.href}
-                  className="flex flex-1 min-w-[58px] justify-center"
+                  className="flex justify-center"
                 >
                   <motion.div
                     whileTap={{ scale: 0.9 }}
@@ -93,7 +93,7 @@ export default function BottomNav() {
                     {/* Label */}
                     <span
                       className={cn(
-                        'text-[10px] font-medium transition-colors',
+                        'text-[9px] font-medium transition-colors text-center leading-none',
                         active ? 'text-primary' : 'text-muted-foreground'
                       )}
                     >
