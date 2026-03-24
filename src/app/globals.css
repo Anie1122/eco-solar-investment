@@ -55,8 +55,8 @@
 
 @layer base {
   html {
-    /* Global normalization after size reduction request */
-    font-size: 70%;
+    /* Global normalization after size update request */
+    font-size: 90%;
   }
 
   * {
