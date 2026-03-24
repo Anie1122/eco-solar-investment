@@ -50,7 +50,7 @@ export default function BottomNav() {
             w-full max-w-md
             rounded-2xl
             border
-            border-cyan-400/30
+            border-primary/30
             bg-white/60
             dark:bg-background/70
             backdrop-blur-xl
@@ -83,7 +83,7 @@ export default function BottomNav() {
                         'flex items-center justify-center rounded-xl transition-all duration-300',
                         'h-9 w-9',
                         active
-                          ? 'bg-cyan-500 text-white shadow-md shadow-cyan-400/40'
+                          ? 'bg-primary text-primary-foreground shadow-md shadow-primary/40'
                           : 'text-muted-foreground'
                       )}
                     >
@@ -94,7 +94,7 @@ export default function BottomNav() {
                     <span
                       className={cn(
                         'text-[9px] font-medium transition-colors',
-                        active ? 'text-cyan-600' : 'text-muted-foreground'
+                        active ? 'text-primary' : 'text-muted-foreground'
                       )}
                     >
                       {item.label}
@@ -104,7 +104,7 @@ export default function BottomNav() {
                     {active && (
                       <motion.div
                         layoutId="bottom-dot"
-                        className="h-1 w-1 rounded-full bg-cyan-500"
+                        className="h-1 w-1 rounded-full bg-primary"
                       />
                     )}
                   </motion.div>

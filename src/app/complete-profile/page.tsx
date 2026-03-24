@@ -184,7 +184,7 @@ export default function CompleteProfilePage() {
               phone_number,
               currency,
               wallet_balance: 0,
-              bonus_balance: 1500,
+              bonus_balance: 1.5,
               has_invested: false,
               profile_completed: true,
               status: 'active',
