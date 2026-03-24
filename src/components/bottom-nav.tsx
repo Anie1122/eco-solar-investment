@@ -81,13 +81,13 @@ export default function BottomNav() {
                     <div
                       className={cn(
                         'flex items-center justify-center rounded-xl transition-all duration-300',
-                        'h-9 w-9',
+                        'h-10 w-10',
                         active
                           ? 'bg-primary text-primary-foreground shadow-md shadow-primary/40'
                           : 'text-muted-foreground'
                       )}
                     >
-                      <Icon className="h-4 w-4" />
+                      <Icon className="h-[18px] w-[18px]" />
                     </div>
 
                     {/* Label */}
