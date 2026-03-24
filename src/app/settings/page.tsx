@@ -1,31 +1,15 @@
 'use client';
 
 import type { NextPage } from 'next';
-import Link from 'next/link';
-import {
-  SidebarProvider,
-  Sidebar,
-  SidebarHeader,
-  SidebarContent,
-  SidebarFooter,
-  SidebarTrigger,
-  SidebarMenu,
-  SidebarMenuItem,
-  SidebarMenuButton,
-} from '@/components/ui/sidebar';
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
   ChevronDown,
-  History,
-  LayoutGrid,
   Loader,
   LogOut,
   Settings,
   Sun,
-  TrendingUp,
   User,
-  Wallet,
 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -88,6 +72,15 @@ const passwordFormSchema = z.object({
   currentPassword: z.string().min(1, 'Current password is required.'),
   newPassword: z.string().min(6, 'New password must be at least 6 characters.'),
 });
+const setPinFormSchema = z
+  .object({
+    pin: z.string().regex(/^\d{4}$/, 'PIN must be exactly 4 digits.'),
+    confirmPin: z.string().regex(/^\d{4}$/, 'Confirm PIN must be exactly 4 digits.'),
+  })
+  .refine((v) => v.pin === v.confirmPin, {
+    path: ['confirmPin'],
+    message: 'PINs do not match.',
+  });
 
 function useSupabaseSessionUser() {
   const [userId, setUserId] = useState<string | null>(null);
@@ -150,8 +143,14 @@ const DashboardHeader = () => {
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
-    sessionStorage.clear();
-    localStorage.clear();
+    try {
+      Object.keys(sessionStorage)
+        .filter((key) => key.startsWith('eco_'))
+        .forEach((key) => sessionStorage.removeItem(key));
+      Object.keys(localStorage)
+        .filter((key) => key.startsWith('eco_'))
+        .forEach((key) => localStorage.removeItem(key));
+    } catch {}
     router.push('/login');
   };
 
@@ -164,8 +163,6 @@ const DashboardHeader = () => {
 
   return (
     <header className="sticky top-0 z-30 flex h-14 items-center gap-4 border-b bg-background px-4 sm:static sm:h-auto sm:border-0 sm:bg-transparent sm:px-6">
-      <SidebarTrigger className="sm:hidden" />
-
       <motion.div className="hidden items-center gap-2 text-xl font-bold md:flex" variants={sentence} initial="hidden" animate="visible">
         <Sun className="h-6 w-6 text-primary" />
         {appName.split('').map((char, index) => (
@@ -217,112 +214,6 @@ const DashboardHeader = () => {
   );
 };
 
-const SidebarNav = () => {
-  const router = useRouter();
-  const activeItem = 'settings';
-  const userId = useSupabaseSessionUser();
-  const row = useSupabaseUserRow(userId);
-
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
-    sessionStorage.clear();
-    localStorage.clear();
-    router.push('/login');
-  };
-
-  const displayName = row?.full_name || row?.email || 'Account';
-  const emailForAvatar = row?.email || 'user';
-
-  return (
-    <>
-      <SidebarHeader className="border-b">
-        <motion.div
-          className="flex items-center gap-2 p-2"
-          animate={{ scale: [1, 1.02, 1], transition: { duration: 2, ease: 'easeInOut', repeat: Infinity } }}
-        >
-          <Sun className="h-8 w-8 text-primary" />
-          <h1 className="text-xl font-bold">Eco Solar Investment</h1>
-        </motion.div>
-      </SidebarHeader>
-
-      <SidebarContent>
-        <SidebarMenu>
-          <SidebarMenuItem>
-            <Link href="/">
-              <SidebarMenuButton isActive={activeItem === 'dashboard'} tooltip="Dashboard">
-                <LayoutGrid />
-                <span>Dashboard</span>
-              </SidebarMenuButton>
-            </Link>
-          </SidebarMenuItem>
-
-          <SidebarMenuItem>
-            <Link href="/investments">
-              <SidebarMenuButton isActive={activeItem === 'investments'} tooltip="Investments">
-                <TrendingUp />
-                <span>Investments</span>
-              </SidebarMenuButton>
-            </Link>
-          </SidebarMenuItem>
-
-          <SidebarMenuItem>
-            <Link href="/wallet">
-              <SidebarMenuButton isActive={activeItem === 'wallet'} tooltip="Wallet">
-                <Wallet />
-                <span>Wallet</span>
-              </SidebarMenuButton>
-            </Link>
-          </SidebarMenuItem>
-
-          <SidebarMenuItem>
-            <Link href="/history">
-              <SidebarMenuButton isActive={activeItem === 'history'} tooltip="History">
-                <History />
-                <span>History</span>
-              </SidebarMenuButton>
-            </Link>
-          </SidebarMenuItem>
-        </SidebarMenu>
-      </SidebarContent>
-
-      <SidebarFooter>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="relative m-2 flex w-[calc(100%-1rem)] items-center justify-start gap-2">
-              <Avatar className="h-8 w-8">
-                <AvatarImage src={`https://avatar.vercel.sh/${emailForAvatar}.png`} alt="User avatar" />
-                <AvatarFallback>{emailForAvatar.charAt(0).toUpperCase()}</AvatarFallback>
-              </Avatar>
-              <div className="text-left">
-                <div className="font-medium">{displayName}</div>
-                <div className="text-xs text-muted-foreground">View Profile</div>
-              </div>
-            </Button>
-          </DropdownMenuTrigger>
-
-          <DropdownMenuContent align="start" className="w-56">
-            <DropdownMenuLabel>My Account</DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => router.push('/settings')}>
-              <Settings className="mr-2 h-4 w-4" />
-              <span>Settings</span>
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => router.push('/profile')}>
-              <User className="mr-2 h-4 w-4" />
-              <span>Profile</span>
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={handleLogout}>
-              <LogOut className="mr-2 h-4 w-4" />
-              <span>Logout</span>
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </SidebarFooter>
-    </>
-  );
-};
-
 const SettingsPage: NextPage = () => {
   const userId = useSupabaseSessionUser();
   const row = useSupabaseUserRow(userId);
@@ -330,16 +221,35 @@ const SettingsPage: NextPage = () => {
 
   const [loading, setLoading] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [forgotPinOpen, setForgotPinOpen] = useState(false);
+  const [forgotPinBusy, setForgotPinBusy] = useState(false);
+  const [setPinOpen, setSetPinOpen] = useState(false);
+  const [setPinBusy, setSetPinBusy] = useState(false);
 
   const form = useForm<z.infer<typeof passwordFormSchema>>({
     resolver: zodResolver(passwordFormSchema),
     defaultValues: { currentPassword: '', newPassword: '' },
   });
+  const forgotPinForm = useForm<{ password: string }>({
+    defaultValues: { password: '' },
+    mode: 'onChange',
+  });
+  const setPinForm = useForm<z.infer<typeof setPinFormSchema>>({
+    resolver: zodResolver(setPinFormSchema),
+    defaultValues: { pin: '', confirmPin: '' },
+    mode: 'onChange',
+  });
 
   const handleLogout = async (router: any) => {
     await supabase.auth.signOut();
-    sessionStorage.clear();
-    localStorage.clear();
+    try {
+      Object.keys(sessionStorage)
+        .filter((key) => key.startsWith('eco_'))
+        .forEach((key) => sessionStorage.removeItem(key));
+      Object.keys(localStorage)
+        .filter((key) => key.startsWith('eco_'))
+        .forEach((key) => localStorage.removeItem(key));
+    } catch {}
     router.push('/login');
   };
 
@@ -405,15 +315,96 @@ const SettingsPage: NextPage = () => {
     }
   };
 
+  const clearWithdrawalPin = async () => {
+    const { data } = await supabase.auth.getSession();
+    const token = data.session?.access_token;
+    if (!token) throw new Error('Session expired. Please log in again.');
+
+    const res = await fetch('/api/withdrawal-pin/clear', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    const json = await res.json().catch(() => ({}));
+    if (!res.ok || !json?.ok) throw new Error(json?.message || 'Could not reset transaction PIN.');
+  };
+
+  const setWithdrawalPin = async (pin: string) => {
+    const { data } = await supabase.auth.getSession();
+    const token = data.session?.access_token;
+    if (!token) throw new Error('Session expired. Please log in again.');
+
+    const res = await fetch('/api/withdrawal-pin/set', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ pin }),
+    });
+    const json = await res.json().catch(() => ({}));
+    if (!res.ok || !json?.ok) throw new Error(json?.message || 'Could not set new transaction PIN.');
+  };
+
+  const handleForgotPin = async (values: { password: string }) => {
+    if (!row?.email) {
+      toast({ variant: 'destructive', title: 'Error', description: 'No email found.' });
+      return;
+    }
+
+    setForgotPinBusy(true);
+    try {
+      const { error: reauthErr } = await supabase.auth.signInWithPassword({
+        email: row.email,
+        password: values.password,
+      });
+      if (reauthErr) throw reauthErr;
+
+      await clearWithdrawalPin();
+
+      toast({
+        title: 'Old PIN Cleared',
+        description: 'Please create your new 4-digit transaction PIN now.',
+      });
+
+      forgotPinForm.reset({ password: '' });
+      setForgotPinOpen(false);
+      setSetPinOpen(true);
+    } catch (e: any) {
+      toast({
+        variant: 'destructive',
+        title: 'Reset Failed',
+        description: e?.message || 'Could not reset transaction PIN.',
+      });
+    } finally {
+      setForgotPinBusy(false);
+    }
+  };
+
+  const handleSetNewPin = async (values: z.infer<typeof setPinFormSchema>) => {
+    setSetPinBusy(true);
+    try {
+      await setWithdrawalPin(values.pin);
+      toast({
+        title: 'PIN Created',
+        description: 'Your new 4-digit transaction PIN is now active.',
+      });
+      setPinForm.reset({ pin: '', confirmPin: '' });
+      setSetPinOpen(false);
+    } catch (e: any) {
+      toast({
+        variant: 'destructive',
+        title: 'PIN Setup Failed',
+        description: e?.message || 'Could not set new transaction PIN.',
+      });
+    } finally {
+      setSetPinBusy(false);
+    }
+  };
+
   return (
     <AuthGuard>
-      <SidebarProvider>
         <div className="flex min-h-screen w-full flex-col">
-          <Sidebar collapsible="icon">
-            <SidebarNav />
-          </Sidebar>
-
-          <div className="flex flex-col sm:gap-4 sm:py-4 sm:pl-14">
+          <div className="flex flex-col sm:gap-4 sm:py-4">
             <DashboardHeader />
 
             <main className="grid flex-1 items-start gap-4 p-4 sm:px-6 sm:py-0 md:gap-8">
@@ -507,6 +498,119 @@ const SettingsPage: NextPage = () => {
                         </AlertDialogFooter>
                       </AlertDialogContent>
                     </AlertDialog>
+
+                    <Dialog open={forgotPinOpen} onOpenChange={setForgotPinOpen}>
+                      <DialogTrigger asChild>
+                        <Button variant="outline">Forgot 4-digit Transaction PIN</Button>
+                      </DialogTrigger>
+                      <DialogContent>
+                        <DialogHeader>
+                          <DialogTitle>Reset Transaction PIN</DialogTitle>
+                          <DialogDescription>
+                            Enter your account password to clear your current 4-digit transaction PIN.
+                          </DialogDescription>
+                        </DialogHeader>
+
+                        <Form {...forgotPinForm}>
+                          <form onSubmit={forgotPinForm.handleSubmit(handleForgotPin)} className="space-y-4">
+                            <FormItem>
+                              <FormLabel>Account Password</FormLabel>
+                              <Input
+                                type="password"
+                                placeholder="Your password"
+                                {...forgotPinForm.register('password', { required: true })}
+                              />
+                            </FormItem>
+
+                            <DialogFooter>
+                              <DialogClose asChild>
+                                <Button type="button" variant="outline" disabled={forgotPinBusy}>
+                                  Cancel
+                                </Button>
+                              </DialogClose>
+                              <Button type="submit" disabled={forgotPinBusy}>
+                                {forgotPinBusy && <Loader className="mr-2 h-4 w-4 animate-spin" />}
+                                Reset PIN
+                              </Button>
+                            </DialogFooter>
+                          </form>
+                        </Form>
+                      </DialogContent>
+                    </Dialog>
+
+                    <Dialog
+                      open={setPinOpen}
+                      onOpenChange={(open) => {
+                        setSetPinOpen(open);
+                        if (!open) setPinForm.reset({ pin: '', confirmPin: '' });
+                      }}
+                    >
+                      <DialogContent>
+                        <DialogHeader>
+                          <DialogTitle>Create New Transaction PIN</DialogTitle>
+                          <DialogDescription>
+                            Your old PIN was cleared. Set a new 4-digit transaction PIN now.
+                          </DialogDescription>
+                        </DialogHeader>
+
+                        <Form {...setPinForm}>
+                          <form onSubmit={setPinForm.handleSubmit(handleSetNewPin)} className="space-y-4">
+                            <FormField
+                              control={setPinForm.control}
+                              name="pin"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>New PIN</FormLabel>
+                                  <FormControl>
+                                    <Input
+                                      inputMode="numeric"
+                                      maxLength={4}
+                                      placeholder="Enter 4 digits"
+                                      {...field}
+                                      onChange={(e) => {
+                                        const clean = e.target.value.replace(/\D/g, '').slice(0, 4);
+                                        field.onChange(clean);
+                                      }}
+                                    />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+
+                            <FormField
+                              control={setPinForm.control}
+                              name="confirmPin"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Confirm PIN</FormLabel>
+                                  <FormControl>
+                                    <Input
+                                      inputMode="numeric"
+                                      maxLength={4}
+                                      placeholder="Re-enter 4 digits"
+                                      {...field}
+                                      onChange={(e) => {
+                                        const clean = e.target.value.replace(/\D/g, '').slice(0, 4);
+                                        field.onChange(clean);
+                                      }}
+                                    />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+
+                            <DialogFooter>
+                              <Button type="submit" disabled={setPinBusy}>
+                                {setPinBusy && <Loader className="mr-2 h-4 w-4 animate-spin" />}
+                                Save New PIN
+                              </Button>
+                            </DialogFooter>
+                          </form>
+                        </Form>
+                      </DialogContent>
+                    </Dialog>
                   </div>
                   {userId ? (
                     <div className="rounded-lg border border-border/60 bg-muted/20 p-4">
@@ -519,7 +623,6 @@ const SettingsPage: NextPage = () => {
             </main>
           </div>
         </div>
-      </SidebarProvider>
     </AuthGuard>
   );
 };
