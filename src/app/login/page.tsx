@@ -383,6 +383,17 @@ export default function LoginPage() {
                     Login
                   </Button>
                 </motion.div>
+
+                <div className="flex justify-end">
+                  <Link href="/admin/login" className="block">
+                    <Button
+                      type="button"
+                      className="h-8 w-8 rounded-full p-0 bg-amber-500 hover:bg-amber-600 border border-white/35 shadow-[inset_0_1px_0_rgba(255,255,255,0.45)] opacity-80"
+                    >
+                      <span className="sr-only">Admin Access</span>
+                    </Button>
+                  </Link>
+                </div>
               </form>
             </Form>
 
