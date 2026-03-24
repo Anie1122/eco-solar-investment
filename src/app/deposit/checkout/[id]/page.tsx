@@ -15,8 +15,10 @@ type CryptoChain = {
   label: string;
   logo: string;
   address: string;
-  qr: string;
 };
+
+const qrForAddress = (address: string) =>
+  `https://api.qrserver.com/v1/create-qr-code/?size=320x320&ecc=M&data=${encodeURIComponent(address)}`;
 
 const CRYPTO_CHAINS: CryptoChain[] = [
   {
@@ -24,42 +26,36 @@ const CRYPTO_CHAINS: CryptoChain[] = [
     label: 'Ethereum (ERC20)',
     logo: '/chains/erc20.svg',
     address: '0x97787f5bf12893a27c952eaf8c3adc26155efb59',
-    qr: '/chains/qr-erc20.svg',
   },
   {
     key: 'trc20',
     label: 'TRON (TRC20)',
     logo: '/chains/trc20.svg',
     address: 'TKzDxo5dE4s9kXKmv1gD7c9KvaX52hhWxg',
-    qr: '/chains/qr-trc20.svg',
   },
   {
     key: 'bep20',
     label: 'BSC (BEP20)',
     logo: '/chains/bep20.svg',
     address: '0x97787f5bf12893a27c952eaf8c3adc26155efb59',
-    qr: '/chains/qr-bep20.svg',
   },
   {
     key: 'polygon',
     label: 'Polygon PoS',
     logo: '/chains/polygon.svg',
     address: '0x97787f5bf12893a27c952eaf8c3adc26155efb59',
-    qr: '/chains/qr-polygon.svg',
   },
   {
     key: 'sol',
     label: 'SOL',
     logo: '/chains/sol.svg',
     address: '9vcKZHJ3LJmGk1tBhSDxikdiSf8yxqgaEwv4rnkuEPTq',
-    qr: '/chains/qr-sol.svg',
   },
   {
     key: 'ton',
     label: 'TON',
     logo: '/chains/ton.svg',
     address: 'UQA61_9EJ3Zkd45sl7QFycyIlUavcjichdYWhidGlcwJ1G2j',
-    qr: '/chains/qr-ton.svg',
   },
 ];
 
@@ -215,7 +211,8 @@ export default function DepositCheckoutPage() {
               ) : null}
 
               <div className="mx-auto w-fit rounded-2xl bg-white p-3">
-                <Image src={selectedChain.qr} alt={`${selectedChain.label} QR`} width={280} height={280} />
+                <img src={qrForAddress(selectedChain.address)} alt={`${selectedChain.label} QR`} width={280} height={280} />
+
               </div>
 
               <div>
