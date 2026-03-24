@@ -11,8 +11,10 @@ export async function POST(req: Request) {
     const amountInput = Number(body?.amountInput ?? 0);
     const amountUsdt = Number(body?.amountUsdt ?? 0);
     const inputCurrency = String(body?.inputCurrency ?? 'USDT').toUpperCase();
-    const paymentMethod = String(body?.paymentMethod ?? 'crypto');
+    const paymentMethod = String(body?.paymentMethod ?? 'crypto_checkout');
     const userName = String(body?.userName ?? '').trim();
+    const cardTypeRaw = String(body?.cardDetails?.cardType ?? '').trim().toLowerCase();
+    const isUnsupportedVerve = paymentMethod === 'card_payment' && cardTypeRaw === 'verve';
 
     if (!Number.isFinite(amountInput) || amountInput <= 0) {
       return NextResponse.json({ ok: false, message: 'Invalid deposit amount.' }, { status: 400 });
@@ -34,7 +36,10 @@ export async function POST(req: Request) {
       receiptDataUrl: null,
       receiptFileName: null,
       submittedForReviewAt: null,
+      cancellationReason: isUnsupportedVerve ? 'unsupported_card_type_verve' : null,
     };
+
+    const status = isUnsupportedVerve ? 'failed' : 'pending';
 
     const { data, error } = await admin
       .from('transactions')
@@ -43,7 +48,7 @@ export async function POST(req: Request) {
         transaction_type: 'deposit',
         amount: amountUsdt,
         currency: 'USDT',
-        status: 'pending',
+        status,
         description: `Deposit (${paymentMethod})`,
         created_at: now,
         metadata,
@@ -52,6 +57,15 @@ export async function POST(req: Request) {
       .single();
 
     if (error) throw error;
+
+    if (isUnsupportedVerve) {
+      return NextResponse.json({
+        ok: true,
+        txId: data.id,
+        cancelled: true,
+        message: 'Verve card is currently unsupported. Transaction has been cancelled and marked failed.',
+      });
+    }
 
     return NextResponse.json({ ok: true, txId: data.id });
   } catch (e: any) {
