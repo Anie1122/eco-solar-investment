@@ -49,6 +49,13 @@ import {
   FormLabel,
   FormMessage,
 } from './ui/form';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from './ui/select';
 import { RadioGroup, RadioGroupItem } from './ui/radio-group';
 import {
   AlertDialog,
@@ -560,6 +567,26 @@ const LOCAL_PAYOUT_OPTIONS = [
   { code: 'GBP', label: 'GBP', perUsdt: 0.79 },
   { code: 'EUR', label: 'EUR', perUsdt: 0.92 },
 ] as const;
+const COUNTRY_TO_LOCAL_CURRENCY: Record<string, (typeof LOCAL_PAYOUT_OPTIONS)[number]['code']> = {
+  NIGERIA: 'NGN',
+  GHANA: 'GHS',
+  KENYA: 'KES',
+  'SOUTH AFRICA': 'ZAR',
+  'UNITED KINGDOM': 'GBP',
+  UK: 'GBP',
+  'GREAT BRITAIN': 'GBP',
+  'UNITED STATES': 'USD',
+  USA: 'USD',
+  EUROPE: 'EUR',
+  FRANCE: 'EUR',
+  GERMANY: 'EUR',
+  ITALY: 'EUR',
+  SPAIN: 'EUR',
+  PORTUGAL: 'EUR',
+  NETHERLANDS: 'EUR',
+  BELGIUM: 'EUR',
+  IRELAND: 'EUR',
+};
 
 const WithdrawalDialogContent = ({
   userProfile,
@@ -585,6 +612,12 @@ const WithdrawalDialogContent = ({
   const savedAccount = (userProfile.withdrawal_account ?? null) as
     | WithdrawalAccount
     | null;
+  const userCountry = String(userProfile.country ?? '').trim().toUpperCase();
+  const detectedLocalCurrency = COUNTRY_TO_LOCAL_CURRENCY[userCountry] ?? null;
+  const localWithdrawalSupported = Boolean(
+    detectedLocalCurrency &&
+      LOCAL_PAYOUT_OPTIONS.some((x) => x.code === detectedLocalCurrency)
+  );
   const [withdrawalType, setWithdrawalType] = useState<'crypto' | 'bank'>('crypto');
   const [accountOption, setAccountOption] = useState<'saved' | 'new'>(
     savedAccount?.destinationType === 'bank' ? 'saved' : 'new'
@@ -671,14 +704,21 @@ const WithdrawalDialogContent = ({
         amount: '' as any,
         chain: savedAccount?.chain ?? 'TRC20',
         walletAddress: savedAccount?.walletAddress ?? '',
-        payoutCurrency: 'USD',
+        payoutCurrency: (detectedLocalCurrency as any) ?? 'USD',
         bankName: '',
         accountNumber: '',
         accountName: '',
       });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [savedAccount]);
+  }, [savedAccount, detectedLocalCurrency]);
+
+  useEffect(() => {
+    if (!localWithdrawalSupported && withdrawalType === 'bank') {
+      setWithdrawalType('crypto');
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [localWithdrawalSupported]);
 
   const handleRemoveAccount = async () => {
     try {
@@ -698,7 +738,7 @@ const WithdrawalDialogContent = ({
         amount: formMethods.getValues('amount'),
         chain: formMethods.getValues('chain') ?? 'TRC20',
         walletAddress: formMethods.getValues('walletAddress') ?? '',
-        payoutCurrency: formMethods.getValues('payoutCurrency') ?? 'USD',
+        payoutCurrency: formMethods.getValues('payoutCurrency') ?? ((detectedLocalCurrency as any) ?? 'USD'),
         bankName: '',
         accountNumber: '',
         accountName: '',
@@ -719,6 +759,15 @@ const WithdrawalDialogContent = ({
     if (!userProfile.profile_completed) {
       formMethods.setError('amount', {
         message: 'Please complete your profile before withdrawing.',
+      });
+      return;
+    }
+
+    if (withdrawalType === 'bank' && !localWithdrawalSupported) {
+      toast({
+        variant: 'destructive',
+        title: 'Local Withdrawal Unavailable',
+        description: `${userProfile.country || 'Your country'} currency is not supported for local withdrawal yet.`,
       });
       return;
     }
@@ -917,7 +966,13 @@ const WithdrawalDialogContent = ({
           <FormLabel>Withdrawal Destination</FormLabel>
           <RadioGroup
             value={withdrawalType}
-            onValueChange={(value: 'crypto' | 'bank') => setWithdrawalType(value)}
+            onValueChange={(value: 'crypto' | 'bank') => {
+              if (value === 'bank' && !localWithdrawalSupported) return;
+              setWithdrawalType(value);
+              if (value === 'bank' && detectedLocalCurrency) {
+                formMethods.setValue('payoutCurrency', detectedLocalCurrency, { shouldValidate: true });
+              }
+            }}
             className="grid grid-cols-2 gap-4"
           >
             <div>
@@ -932,16 +987,35 @@ const WithdrawalDialogContent = ({
             </div>
 
             <div>
-              <RadioGroupItem value="bank" id="withdraw-bank" className="peer sr-only" />
+              <RadioGroupItem
+                value="bank"
+                id="withdraw-bank"
+                className="peer sr-only"
+                disabled={!localWithdrawalSupported}
+              />
               <FormLabel
                 htmlFor="withdraw-bank"
-                className="flex flex-col items-center justify-between rounded-xl border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary transition"
+                className={cn(
+                  'flex flex-col items-center justify-between rounded-xl border-2 border-muted bg-popover p-4 transition peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary',
+                  localWithdrawalSupported
+                    ? 'hover:bg-accent hover:text-accent-foreground cursor-pointer'
+                    : 'opacity-50 cursor-not-allowed'
+                )}
               >
                 <Banknote className="mb-3 h-6 w-6" />
                 Withdraw to Local Bank
               </FormLabel>
             </div>
           </RadioGroup>
+          {!localWithdrawalSupported ? (
+            <Alert className="rounded-xl">
+              <Info className="h-4 w-4" />
+              <AlertDescription>
+                Local withdrawal is not supported for <b>{userProfile.country || 'your country'}</b> yet.
+                Please use crypto withdrawal for now.
+              </AlertDescription>
+            </Alert>
+          ) : null}
         </div>
 
         {withdrawalType === 'bank' && savedAccount?.destinationType === 'bank' && (
@@ -1043,17 +1117,30 @@ const WithdrawalDialogContent = ({
                 <FormItem>
                   <FormLabel>Local Currency</FormLabel>
                   <FormControl>
-                    <select
-                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                      {...field}
+                    <Select
+                      value={field.value}
+                      onValueChange={(next) => field.onChange(next)}
+                      disabled={!localWithdrawalSupported}
                     >
-                      {LOCAL_PAYOUT_OPTIONS.map((opt) => (
-                        <option key={opt.code} value={opt.code}>
-                          {opt.code} (1 USDT ≈ {opt.perUsdt})
-                        </option>
-                      ))}
-                    </select>
+                      <SelectTrigger className="rounded-xl">
+                        <SelectValue placeholder="Select approved local currency" />
+                      </SelectTrigger>
+                      <SelectContent className="rounded-xl">
+                        {LOCAL_PAYOUT_OPTIONS.map((opt) => (
+                          <SelectItem
+                            key={opt.code}
+                            value={opt.code}
+                            disabled={opt.code !== detectedLocalCurrency}
+                          >
+                            {opt.code} (1 USDT ≈ {opt.perUsdt})
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </FormControl>
+                  <p className="text-xs text-muted-foreground">
+                    Approved currency for local withdrawal. Other currencies will be added soon.
+                  </p>
                   <FormMessage />
                 </FormItem>
               )}
@@ -1067,16 +1154,18 @@ const WithdrawalDialogContent = ({
                   <FormItem>
                     <FormLabel>Chain</FormLabel>
                     <FormControl>
-                      <select
-                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                        {...field}
-                      >
-                        {CRYPTO_CHAINS.map((chain) => (
-                          <option key={chain} value={chain}>
-                            {chain}
-                          </option>
-                        ))}
-                      </select>
+                      <Select value={field.value} onValueChange={(next) => field.onChange(next)}>
+                        <SelectTrigger className="rounded-xl">
+                          <SelectValue placeholder="Select chain" />
+                        </SelectTrigger>
+                        <SelectContent className="rounded-xl">
+                          {CRYPTO_CHAINS.map((chain) => (
+                            <SelectItem key={chain} value={chain}>
+                              {chain}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </FormControl>
                     <FormMessage />
                   </FormItem>
