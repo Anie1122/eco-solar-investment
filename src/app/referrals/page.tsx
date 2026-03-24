@@ -346,12 +346,12 @@ Earn ${BONUS_PER_REF_USDT} USDT per referral (${perRefInUserCurrency}).`;
 
           {/* Totals */}
           <div className="grid grid-cols-2 gap-3">
-            <div className="rounded-2xl border bg-sky-50 p-4">
+            <div className="rounded-2xl border border-sky-200/70 bg-sky-50 p-4 dark:border-sky-500/30 dark:bg-sky-500/10">
               <div className="text-xs text-muted-foreground">Total Referred</div>
               <div className="mt-2 text-3xl font-extrabold">{loading ? '—' : totals.totalReferred}</div>
             </div>
 
-            <div className="rounded-2xl border bg-emerald-50 p-4">
+            <div className="rounded-2xl border border-emerald-200/70 bg-emerald-50 p-4 dark:border-emerald-500/30 dark:bg-emerald-500/10">
               <div className="flex items-center justify-between gap-2">
                 <div className="text-xs text-muted-foreground">Total Earned</div>
                 <Badge variant="secondary" className="text-[10px]">
@@ -400,7 +400,7 @@ Earn ${BONUS_PER_REF_USDT} USDT per referral (${perRefInUserCurrency}).`;
                         key={row.id}
                         className={cn(
                           'rounded-2xl border p-3 flex items-center justify-between gap-3',
-                          idx === 0 ? 'bg-yellow-50' : 'bg-background'
+                          idx === 0 ? 'bg-yellow-50 dark:bg-yellow-500/10 dark:border-yellow-500/30' : 'bg-background'
                         )}
                       >
                         <div className="min-w-0">
@@ -409,7 +409,7 @@ Earn ${BONUS_PER_REF_USDT} USDT per referral (${perRefInUserCurrency}).`;
                             <div className="truncate font-semibold">{row.name}</div>
 
                             {idx === 0 ? (
-                              <Badge className="text-[10px] bg-yellow-500/15 text-yellow-700 border border-yellow-400/40">
+                              <Badge className="text-[10px] bg-yellow-500/15 text-yellow-700 border border-yellow-400/40 dark:text-yellow-300 dark:border-yellow-500/50">
                                 <Crown className="mr-1 h-3 w-3" />
                                 Top
                               </Badge>
