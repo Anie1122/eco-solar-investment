@@ -54,6 +54,11 @@
 }
 
 @layer base {
+  html {
+    /* Global normalization after size update request */
+    font-size: 90%;
+  }
+
   * {
     @apply border-border;
   }

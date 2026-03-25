@@ -18,7 +18,7 @@ export type Transaction = {
   amount: number;
   transactionDate: Timestamp;
   description: string;
-  status: 'approved' | 'pending' | 'failed' | 'rejected';
+  status: 'success' | 'pending' | 'failed';
   currency: string;
   withdrawalDetails?: WithdrawalAccount;
 };

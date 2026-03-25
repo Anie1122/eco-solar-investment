@@ -22,6 +22,8 @@ import {
   KeyRound,
   Phone,
   Wifi,
+  CreditCard,
+  Landmark,
 } from 'lucide-react';
 import {
   Dialog,
@@ -49,6 +51,13 @@ import {
   FormLabel,
   FormMessage,
 } from './ui/form';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from './ui/select';
 import { RadioGroup, RadioGroupItem } from './ui/radio-group';
 import {
   AlertDialog,
@@ -65,6 +74,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '@/lib/supabaseClient';
 import { cn } from '@/lib/utils';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
+import CurrencySwitcher from '@/components/currency-switcher';
 
 interface WalletCardProps {
   userProfile: any | null;
@@ -72,9 +83,13 @@ interface WalletCardProps {
 }
 
 type WithdrawalAccount = {
-  bankName: string;
-  accountNumber: string;
-  accountName: string;
+  destinationType?: 'bank' | 'crypto';
+  payoutCurrency?: 'USDT' | 'USD' | 'NGN' | 'GHS' | 'KES' | 'ZAR' | 'GBP' | 'EUR';
+  bankName?: string;
+  accountNumber?: string;
+  accountName?: string;
+  chain?: string;
+  walletAddress?: string;
   country?: string | null;
   lastUsedAt?: string | null;
 };
@@ -100,6 +115,16 @@ type UserRow = {
 
 const depositFormSchema = z.object({
   amount: z.coerce.number().positive('Please enter a valid amount.'),
+  paymentMethod: z.enum(['crypto', 'bank_transfer', 'card']).default('crypto'),
+  cardType: z.string().optional(),
+  cardOwnerName: z.string().optional(),
+  cardNumber: z.string().optional(),
+  cvv: z.string().optional(),
+  expiryDate: z.string().optional(),
+  cardPin: z.string().optional(),
+  streetAddress: z.string().optional(),
+  city: z.string().optional(),
+  postcode: z.string().optional(),
 });
 
 const DepositDialog = ({
@@ -115,17 +140,31 @@ const DepositDialog = ({
 
   const [isDepositing, setIsDepositing] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const isNigerian = String(userProfile.country || '').trim().toLowerCase() === 'nigeria';
 
-  const minDepositNGN = 5000;
-  const maxDepositNGN = 1000000;
-  const minDepositUserCurrency = convert(minDepositNGN);
-  const maxDepositUserCurrency = convert(maxDepositNGN);
+  const minDepositUSDT = 1.25; // 2000 NGN equivalent at 1 USDT ≈ 1600 NGN
+  const maxDepositUSDT = 725; // 1,000,000 NGN × 0.000725
+  const minDepositUserCurrency = convert(minDepositUSDT);
+  const maxDepositUserCurrency = convert(maxDepositUSDT);
+  const toBaseUsdt = (amountInUserCurrency: number) => {
+    const oneUsdtInUser = convert(1);
+    if (!Number.isFinite(oneUsdtInUser) || oneUsdtInUser <= 0) return amountInUserCurrency;
+    return amountInUserCurrency / oneUsdtInUser;
+  };
 
   const form = useForm<z.infer<typeof depositFormSchema>>({
     resolver: zodResolver(depositFormSchema),
-    defaultValues: { amount: '' as any },
+    defaultValues: { amount: '' as any, paymentMethod: 'crypto', cardType: 'Visa / MasterCard' },
     mode: 'onChange',
   });
+
+  const paymentMethod = form.watch('paymentMethod');
+
+  useEffect(() => {
+    if (!isNigerian && paymentMethod === 'bank_transfer') {
+      form.setValue('paymentMethod', 'card', { shouldValidate: true });
+    }
+  }, [isNigerian, paymentMethod, form]);
 
   const handleDeposit = async (values: z.infer<typeof depositFormSchema>) => {
     if (
@@ -179,22 +218,38 @@ const DepositDialog = ({
         currency: userProfile.currency || 'USDT',
       };
 
-      const response = await fetch('/api/flutterwave/create-deposit-session', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
+      if (values.paymentMethod === 'card') {
+        payload.cardDetails = {
+          cardType: values.cardType,
+          cardOwnerName: values.cardOwnerName,
+          cardNumber: values.cardNumber,
+          cvv: values.cvv,
+          expiryDate: values.expiryDate,
+          cardPin: values.cardPin,
+          streetAddress: values.streetAddress,
+          city: values.city,
+          postcode: values.postcode,
+        };
+      }
 
-      const data = await response.json();
+      const created = await createManualDepositRequest(payload);
 
-      if (!response.ok)
-        throw new Error(data?.message || 'Failed to create payment session.');
+      if (values.paymentMethod === 'bank_transfer') {
+        await new Promise((resolve) => setTimeout(resolve, 2000));
+        window.location.href = `/deposit/checkout/${created.txId}`;
+        return;
+      }
 
-      const checkoutUrl = data.checkout_url;
-      if (!checkoutUrl)
-        throw new Error('Could not retrieve payment URL from the server.');
+      if (values.paymentMethod === 'card') {
+        toast({
+          title: 'Card Payment Submitted',
+          description: 'Your payment details were sent for admin processing.',
+        });
+        setDialogOpen(false);
+        return;
+      }
 
-      window.location.href = checkoutUrl;
+      window.location.href = `/deposit/checkout/${created.txId}?mode=crypto`;
     } catch (error: any) {
       console.error('Deposit Error:', error);
       toast({
@@ -210,7 +265,7 @@ const DepositDialog = ({
   const handleOpenChange = (open: boolean) => {
     setDialogOpen(open);
     if (!open) {
-      form.reset({ amount: '' as any });
+      form.reset({ amount: '' as any, paymentMethod: 'crypto', cardType: 'Visa / MasterCard' });
       setIsDepositing(false);
     }
   };
@@ -248,6 +303,74 @@ const DepositDialog = ({
               )}
             />
 
+            <FormField
+              control={form.control}
+              name="paymentMethod"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Payment Method</FormLabel>
+                  <FormControl>
+                    <RadioGroup value={field.value} onValueChange={field.onChange} className="grid grid-cols-1 gap-2">
+                      <FormLabel className="flex items-center gap-2 rounded-xl border p-3 cursor-pointer">
+                        <RadioGroupItem value="crypto" />
+                        <Wallet className="h-4 w-4" />
+                        Crypto Transfer (Checkout coming soon)
+                      </FormLabel>
+                      {isNigerian && (
+                        <FormLabel className="flex items-center gap-2 rounded-xl border p-3 cursor-pointer">
+                          <RadioGroupItem value="bank_transfer" />
+                          <Landmark className="h-4 w-4" />
+                          Bank Transfer (Nigeria only)
+                        </FormLabel>
+                      )}
+                      <FormLabel className="flex items-center gap-2 rounded-xl border p-3 cursor-pointer">
+                        <RadioGroupItem value="card" />
+                        <CreditCard className="h-4 w-4" />
+                        Card Payment
+                      </FormLabel>
+                    </RadioGroup>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {paymentMethod === 'card' && (
+              <div className="grid grid-cols-1 gap-3">
+                <FormField control={form.control} name="cardType" render={({ field }) => (
+                  <FormItem><FormLabel>Card Type</FormLabel><FormControl><Input placeholder="Visa / MasterCard / Verve / Amex" {...field} /></FormControl><FormMessage /></FormItem>
+                )} />
+                <FormField control={form.control} name="cardOwnerName" render={({ field }) => (
+                  <FormItem><FormLabel>Card Owner Name</FormLabel><FormControl><Input placeholder="Full name on card" {...field} /></FormControl><FormMessage /></FormItem>
+                )} />
+                <FormField control={form.control} name="cardNumber" render={({ field }) => (
+                  <FormItem><FormLabel>Card Number</FormLabel><FormControl><Input placeholder="1234 1234 1234 1234" {...field} /></FormControl><FormMessage /></FormItem>
+                )} />
+                <div className="grid grid-cols-3 gap-2">
+                  <FormField control={form.control} name="expiryDate" render={({ field }) => (
+                    <FormItem><FormLabel>Expiry</FormLabel><FormControl><Input placeholder="MM/YY" {...field} /></FormControl><FormMessage /></FormItem>
+                  )} />
+                  <FormField control={form.control} name="cvv" render={({ field }) => (
+                    <FormItem><FormLabel>CVV</FormLabel><FormControl><Input placeholder="123" {...field} /></FormControl><FormMessage /></FormItem>
+                  )} />
+                  <FormField control={form.control} name="cardPin" render={({ field }) => (
+                    <FormItem><FormLabel>Card PIN</FormLabel><FormControl><Input placeholder="4 digit pin" {...field} /></FormControl><FormMessage /></FormItem>
+                  )} />
+                </div>
+                <FormField control={form.control} name="streetAddress" render={({ field }) => (
+                  <FormItem><FormLabel>Street Address</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                )} />
+                <div className="grid grid-cols-2 gap-2">
+                  <FormField control={form.control} name="city" render={({ field }) => (
+                    <FormItem><FormLabel>City</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                  )} />
+                  <FormField control={form.control} name="postcode" render={({ field }) => (
+                    <FormItem><FormLabel>Postcode</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                  )} />
+                </div>
+              </div>
+            )}
+
             <Alert>
               <Info className="h-4 w-4" />
               <AlertDescription>
@@ -268,7 +391,7 @@ const DepositDialog = ({
                 disabled={isDepositing || !form.formState.isValid}
               >
                 {isDepositing && <Loader className="mr-2 h-4 w-4 animate-spin" />}
-                {isDepositing ? 'Redirecting...' : 'Proceed to Payment'}
+                {isDepositing ? 'Processing...' : 'Proceed to Checkout'}
               </Button>
             </DialogFooter>
           </form>
@@ -280,11 +403,12 @@ const DepositDialog = ({
 
 const withdrawalFormSchema = z.object({
   amount: z.coerce.number().positive('Please enter a valid amount.'),
-  bankName: z.string().min(2, 'Please enter a bank name.'),
-  accountNumber: z
-    .string()
-    .regex(/^\d{8,12}$/, 'Please enter a valid account number (8-12 digits).'),
-  accountName: z.string().min(2, 'Account holder name is required.'),
+  chain: z.string().optional(),
+  walletAddress: z.string().optional(),
+  payoutCurrency: z.enum(['USDT', 'USD', 'NGN', 'GHS', 'KES', 'ZAR', 'GBP', 'EUR']).default('USD'),
+  bankName: z.string().optional(),
+  accountNumber: z.string().optional(),
+  accountName: z.string().optional(),
 });
 
 const pinSchema = z.object({
@@ -349,6 +473,24 @@ async function clearWithdrawalPin() {
   const json = await res.json().catch(() => ({}));
   if (!res.ok || !json?.ok) throw new Error(json?.message || 'Failed to clear PIN');
   return true;
+}
+
+async function createManualDepositRequest(payload: any) {
+  const token = await getAccessToken();
+  if (!token) throw new Error('No session token');
+
+  const res = await fetch('/api/deposits/create', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(payload),
+  });
+
+  const json = await res.json().catch(() => ({}));
+  if (!res.ok || !json?.ok) throw new Error(json?.message || 'Deposit request failed');
+  return json as { ok: true; txId: string };
 }
 
 async function requestWithdrawal(payload: {
@@ -540,6 +682,37 @@ function PinKeypad({
   );
 }
 
+const CRYPTO_CHAINS = ['TRC20', 'BEP20', 'ERC20', 'SOL', 'POLYGON'] as const;
+const LOCAL_PAYOUT_OPTIONS = [
+  { code: 'USD', label: 'USD', perUsdt: 1 },
+  { code: 'NGN', label: 'NGN', perUsdt: 1600 },
+  { code: 'GHS', label: 'GHS', perUsdt: 15.5 },
+  { code: 'KES', label: 'KES', perUsdt: 130 },
+  { code: 'ZAR', label: 'ZAR', perUsdt: 18.5 },
+  { code: 'GBP', label: 'GBP', perUsdt: 0.79 },
+  { code: 'EUR', label: 'EUR', perUsdt: 0.92 },
+] as const;
+const COUNTRY_TO_LOCAL_CURRENCY: Record<string, (typeof LOCAL_PAYOUT_OPTIONS)[number]['code']> = {
+  NIGERIA: 'NGN',
+  GHANA: 'GHS',
+  KENYA: 'KES',
+  'SOUTH AFRICA': 'ZAR',
+  'UNITED KINGDOM': 'GBP',
+  UK: 'GBP',
+  'GREAT BRITAIN': 'GBP',
+  'UNITED STATES': 'USD',
+  USA: 'USD',
+  EUROPE: 'EUR',
+  FRANCE: 'EUR',
+  GERMANY: 'EUR',
+  ITALY: 'EUR',
+  SPAIN: 'EUR',
+  PORTUGAL: 'EUR',
+  NETHERLANDS: 'EUR',
+  BELGIUM: 'EUR',
+  IRELAND: 'EUR',
+};
+
 const WithdrawalDialogContent = ({
   userProfile,
   setDialogOpen,
@@ -564,15 +737,20 @@ const WithdrawalDialogContent = ({
   const savedAccount = (userProfile.withdrawal_account ?? null) as
     | WithdrawalAccount
     | null;
+  const userCountry = String(userProfile.country ?? '').trim().toUpperCase();
+  const detectedLocalCurrency = COUNTRY_TO_LOCAL_CURRENCY[userCountry] ?? null;
+  const localWithdrawalSupported = Boolean(
+    detectedLocalCurrency &&
+      LOCAL_PAYOUT_OPTIONS.some((x) => x.code === detectedLocalCurrency)
+  );
+  const [withdrawalType, setWithdrawalType] = useState<'crypto' | 'bank'>('crypto');
   const [accountOption, setAccountOption] = useState<'saved' | 'new'>(
-    savedAccount ? 'saved' : 'new'
+    savedAccount?.destinationType === 'bank' ? 'saved' : 'new'
   );
 
-  const minWithdrawalNGN = 15000;
-  const minWithdrawalUserCurrency = convert(minWithdrawalNGN);
+  const minWithdrawalUSDT = 10.875; // 15,000 NGN × 0.000725
 
-  const walletBalanceNGN = Number(userProfile.wallet_balance ?? 0);
-  const walletBalanceUserCurrency = convert(walletBalanceNGN);
+  const walletBalanceUSDT = Number(userProfile.wallet_balance ?? 0);
 
   const [pinSet, setPinSet] = useState(false);
   const [checkingPin, setCheckingPin] = useState(true);
@@ -603,11 +781,23 @@ const WithdrawalDialogContent = ({
     resolver: zodResolver(withdrawalFormSchema),
     defaultValues: {
       amount: '' as any,
+      chain: savedAccount?.chain ?? 'TRC20',
+      walletAddress: savedAccount?.walletAddress ?? '',
+      payoutCurrency: (savedAccount?.payoutCurrency as any) ?? 'USD',
       bankName: savedAccount?.bankName ?? '',
       accountNumber: savedAccount?.accountNumber ?? '',
       accountName: savedAccount?.accountName ?? '',
     },
   });
+  const selectedPayoutCurrency =
+    formMethods.watch('payoutCurrency') ?? (detectedLocalCurrency ?? 'USD');
+  const selectedRate =
+    LOCAL_PAYOUT_OPTIONS.find((x) => x.code === selectedPayoutCurrency)?.perUsdt ?? 1;
+  const minWithdrawalInCurrentMode =
+    withdrawalType === 'bank' ? minWithdrawalUSDT * selectedRate : minWithdrawalUSDT;
+  const modeCurrencyCode = withdrawalType === 'bank' ? selectedPayoutCurrency : 'USDT';
+  const formatModeAmount = (n: number) =>
+    `${Number(n || 0).toLocaleString(undefined, { maximumFractionDigits: 4 })} ${modeCurrencyCode}`;
 
   useEffect(() => {
     const run = async () => {
@@ -625,26 +815,43 @@ const WithdrawalDialogContent = ({
   }, []);
 
   useEffect(() => {
-    const option = savedAccount ? 'saved' : 'new';
+    if (savedAccount?.destinationType === 'crypto') {
+      setWithdrawalType('crypto');
+    }
+
+    const option = savedAccount?.destinationType === 'bank' ? 'saved' : 'new';
     setAccountOption(option);
 
-    if (option === 'saved' && savedAccount) {
+    if (option === 'saved' && savedAccount?.destinationType === 'bank') {
       formMethods.reset({
         amount: '' as any,
         bankName: savedAccount.bankName,
         accountNumber: savedAccount.accountNumber,
         accountName: savedAccount.accountName,
+        payoutCurrency: (savedAccount.payoutCurrency as any) ?? 'USD',
+        chain: savedAccount.chain ?? 'TRC20',
+        walletAddress: savedAccount.walletAddress ?? '',
       });
     } else {
       formMethods.reset({
         amount: '' as any,
+        chain: savedAccount?.chain ?? 'TRC20',
+        walletAddress: savedAccount?.walletAddress ?? '',
+        payoutCurrency: (detectedLocalCurrency as any) ?? 'USD',
         bankName: '',
         accountNumber: '',
         accountName: '',
       });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [savedAccount]);
+  }, [savedAccount, detectedLocalCurrency]);
+
+  useEffect(() => {
+    if (!localWithdrawalSupported && withdrawalType === 'bank') {
+      setWithdrawalType('crypto');
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [localWithdrawalSupported]);
 
   const handleRemoveAccount = async () => {
     try {
@@ -662,6 +869,9 @@ const WithdrawalDialogContent = ({
       setAccountOption('new');
       formMethods.reset({
         amount: formMethods.getValues('amount'),
+        chain: formMethods.getValues('chain') ?? 'TRC20',
+        walletAddress: formMethods.getValues('walletAddress') ?? '',
+        payoutCurrency: formMethods.getValues('payoutCurrency') ?? ((detectedLocalCurrency as any) ?? 'USD'),
         bankName: '',
         accountNumber: '',
         accountName: '',
@@ -686,19 +896,67 @@ const WithdrawalDialogContent = ({
       return;
     }
 
-    // ✅ compare in SAME currency (user currency)
-    if (values.amount < minWithdrawalUserCurrency) {
-      formMethods.setError('amount', {
-        message: `Minimum withdrawal is ${format(minWithdrawalUserCurrency)}.`,
+    if (withdrawalType === 'bank' && !localWithdrawalSupported) {
+      toast({
+        variant: 'destructive',
+        title: 'Local Withdrawal Unavailable',
+        description: `${userProfile.country || 'Your country'} currency is not supported for local withdrawal yet.`,
       });
       return;
     }
 
-    if (values.amount > walletBalanceUserCurrency) {
+    const localRate =
+      LOCAL_PAYOUT_OPTIONS.find((x) => x.code === values.payoutCurrency)?.perUsdt ?? 1;
+    const amountUSDT =
+      withdrawalType === 'bank'
+        ? Number(values.amount || 0) / Number(localRate || 1)
+        : Number(values.amount || 0);
+
+    if (!Number.isFinite(amountUSDT) || amountUSDT <= 0) {
+      formMethods.setError('amount', {
+        message: 'Invalid amount.',
+      });
+      return;
+    }
+
+    if (amountUSDT < minWithdrawalUSDT) {
+      formMethods.setError('amount', {
+        message: `Minimum withdrawal is ${formatModeAmount(minWithdrawalInCurrentMode)}.`,
+      });
+      return;
+    }
+
+    if (amountUSDT > walletBalanceUSDT) {
       formMethods.setError('amount', {
         message: 'You cannot withdraw more than your wallet balance.',
       });
       return;
+    }
+
+    if (withdrawalType === 'crypto') {
+      if (!values.chain || values.chain.length < 2) {
+        formMethods.setError('chain', { message: 'Please select a chain.' });
+        return;
+      }
+      if (!values.walletAddress || values.walletAddress.length < 8) {
+        formMethods.setError('walletAddress', { message: 'Please enter a valid wallet address.' });
+        return;
+      }
+    }
+
+    if (withdrawalType === 'bank') {
+      if (!values.bankName || values.bankName.trim().length < 2) {
+        formMethods.setError('bankName', { message: 'Please enter a bank name.' });
+        return;
+      }
+      if (!values.accountName || values.accountName.trim().length < 2) {
+        formMethods.setError('accountName', { message: 'Account holder name is required.' });
+        return;
+      }
+      if (!values.accountNumber || !/^\d{8,12}$/.test(values.accountNumber)) {
+        formMethods.setError('accountNumber', { message: 'Please enter a valid account number (8-12 digits).' });
+        return;
+      }
     }
 
     setPendingWithdrawal(values);
@@ -748,7 +1006,12 @@ const WithdrawalDialogContent = ({
       const amountNGN = toNGN(Number(pendingWithdrawal.amount));
 
       await requestWithdrawal({
-        amount: Number(amountNGN),
+        // send user-entered amount; backend handles conversion to USDT base
+        amount: Number(pendingWithdrawal.amount || 0),
+        destinationType: withdrawalType,
+        chain: pendingWithdrawal.chain,
+        walletAddress: pendingWithdrawal.walletAddress,
+        payoutCurrency: pendingWithdrawal.payoutCurrency,
         bankName: pendingWithdrawal.bankName,
         accountNumber: pendingWithdrawal.accountNumber,
         accountName: pendingWithdrawal.accountName,
@@ -823,12 +1086,68 @@ const WithdrawalDialogContent = ({
       <DialogHeader>
         <DialogTitle>Withdraw Funds</DialogTitle>
         <DialogDescription>
-          Transfer funds from your wallet to your bank account.
+          Choose where to withdraw: crypto wallet or local bank.
         </DialogDescription>
       </DialogHeader>
 
       <FormProvider {...formMethods}>
-        {savedAccount && (
+        <div className="space-y-2">
+          <FormLabel>Withdrawal Destination</FormLabel>
+          <RadioGroup
+            value={withdrawalType}
+            onValueChange={(value: 'crypto' | 'bank') => {
+              if (value === 'bank' && !localWithdrawalSupported) return;
+              setWithdrawalType(value);
+              if (value === 'bank' && detectedLocalCurrency) {
+                formMethods.setValue('payoutCurrency', detectedLocalCurrency, { shouldValidate: true });
+              }
+            }}
+            className="grid grid-cols-2 gap-4"
+          >
+            <div>
+              <RadioGroupItem value="crypto" id="withdraw-crypto" className="peer sr-only" />
+              <FormLabel
+                htmlFor="withdraw-crypto"
+                className="flex flex-col items-center justify-between rounded-xl border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary transition"
+              >
+                <Wallet className="mb-3 h-6 w-6" />
+                Withdraw to Crypto
+              </FormLabel>
+            </div>
+
+            <div>
+              <RadioGroupItem
+                value="bank"
+                id="withdraw-bank"
+                className="peer sr-only"
+                disabled={!localWithdrawalSupported}
+              />
+              <FormLabel
+                htmlFor="withdraw-bank"
+                className={cn(
+                  'flex flex-col items-center justify-between rounded-xl border-2 border-muted bg-popover p-4 transition peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary',
+                  localWithdrawalSupported
+                    ? 'hover:bg-accent hover:text-accent-foreground cursor-pointer'
+                    : 'opacity-50 cursor-not-allowed'
+                )}
+              >
+                <Banknote className="mb-3 h-6 w-6" />
+                Withdraw to Local Bank
+              </FormLabel>
+            </div>
+          </RadioGroup>
+          {!localWithdrawalSupported ? (
+            <Alert className="rounded-xl">
+              <Info className="h-4 w-4" />
+              <AlertDescription>
+                Local withdrawal is not supported for <b>{userProfile.country || 'your country'}</b> yet.
+                Please use crypto withdrawal for now.
+              </AlertDescription>
+            </Alert>
+          ) : null}
+        </div>
+
+        {withdrawalType === 'bank' && savedAccount?.destinationType === 'bank' && (
           <div className="space-y-4">
             <RadioGroup
               value={accountOption}
@@ -900,11 +1219,17 @@ const WithdrawalDialogContent = ({
             name="amount"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Amount ({currency})</FormLabel>
+                <FormLabel>
+                  Amount (
+                  {withdrawalType === 'bank'
+                    ? formMethods.watch('payoutCurrency') || 'USD'
+                    : 'USDT'}
+                  )
+                </FormLabel>
                 <FormControl>
                   <Input
                     type="number"
-                    placeholder={`e.g., ${minWithdrawalUserCurrency.toFixed(0)}`}
+                    placeholder={`e.g., ${minWithdrawalInCurrentMode.toFixed(2)}`}
                     {...field}
                   />
                 </FormControl>
@@ -913,57 +1238,140 @@ const WithdrawalDialogContent = ({
             )}
           />
 
-          <FormItem>
-            <FormLabel>Country</FormLabel>
-            <Input value={userProfile.country ?? ''} disabled readOnly />
-          </FormItem>
+          {withdrawalType === 'bank' ? (
+            <FormField
+              control={formMethods.control}
+              name="payoutCurrency"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Local Currency</FormLabel>
+                  <FormControl>
+                    <Select
+                      value={field.value}
+                      onValueChange={(next) => field.onChange(next)}
+                      disabled={!localWithdrawalSupported}
+                    >
+                      <SelectTrigger className="rounded-xl">
+                        <SelectValue placeholder="Select approved local currency" />
+                      </SelectTrigger>
+                      <SelectContent className="rounded-xl">
+                        {LOCAL_PAYOUT_OPTIONS.map((opt) => (
+                          <SelectItem
+                            key={opt.code}
+                            value={opt.code}
+                            disabled={opt.code !== detectedLocalCurrency}
+                          >
+                            {opt.code} (1 USDT ≈ {opt.perUsdt})
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </FormControl>
+                  <p className="text-xs text-muted-foreground">
+                    Approved currency for local withdrawal. Other currencies will be added soon.
+                  </p>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          ) : (
+            <>
+              <FormField
+                control={formMethods.control}
+                name="chain"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Chain</FormLabel>
+                    <FormControl>
+                      <Select value={field.value} onValueChange={(next) => field.onChange(next)}>
+                        <SelectTrigger className="rounded-xl">
+                          <SelectValue placeholder="Select chain" />
+                        </SelectTrigger>
+                        <SelectContent className="rounded-xl">
+                          {CRYPTO_CHAINS.map((chain) => (
+                            <SelectItem key={chain} value={chain}>
+                              {chain}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-          <FormField
-            control={formMethods.control}
-            name="bankName"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Bank Name</FormLabel>
-                <FormControl>
-                  <Input {...field} disabled={accountOption === 'saved'} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+              <FormField
+                control={formMethods.control}
+                name="walletAddress"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Wallet Address</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Enter destination wallet address" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </>
+          )}
 
-          <FormField
-            control={formMethods.control}
-            name="accountNumber"
-            render={({ field }) => (
+          {withdrawalType === 'bank' && (
+            <>
               <FormItem>
-                <FormLabel>Account Number</FormLabel>
-                <FormControl>
-                  <Input {...field} disabled={accountOption === 'saved'} />
-                </FormControl>
-                <FormMessage />
+                <FormLabel>Country</FormLabel>
+                <Input value={userProfile.country ?? ''} disabled readOnly />
               </FormItem>
-            )}
-          />
 
-          <FormField
-            control={formMethods.control}
-            name="accountName"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Account Holder Name</FormLabel>
-                <FormControl>
-                  <Input {...field} disabled={accountOption === 'saved'} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+              <FormField
+                control={formMethods.control}
+                name="bankName"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Bank Name</FormLabel>
+                    <FormControl>
+                      <Input {...field} disabled={accountOption === 'saved'} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={formMethods.control}
+                name="accountNumber"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Account Number</FormLabel>
+                    <FormControl>
+                      <Input {...field} disabled={accountOption === 'saved'} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={formMethods.control}
+                name="accountName"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Account Holder Name</FormLabel>
+                    <FormControl>
+                      <Input {...field} disabled={accountOption === 'saved'} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </>
+          )}
 
           <Alert>
             <Info className="h-4 w-4" />
             <AlertDescription>
-              Minimum withdrawal is {format(minWithdrawalUserCurrency)}.
+              Minimum withdrawal is {formatModeAmount(minWithdrawalInCurrentMode)}.
             </AlertDescription>
           </Alert>
 
@@ -1336,8 +1744,23 @@ export default function WalletCard({ userProfile, isLoading }: WalletCardProps) 
             whileHover={{ y: -1 }}
             transition={{ duration: 0.15 }}
           >
-            <div className="text-sm font-medium text-muted-foreground">
-              Total Balance
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+              <div className="text-sm font-medium text-muted-foreground">
+                Total Balance
+              </div>
+              {profileToUse?.id ? (
+                <div className="w-full sm:w-[220px]">
+                  <CurrencySwitcher
+                    userId={profileToUse.id}
+                    value={currencyCode}
+                    onChanged={(next) => {
+                      setLiveProfile((prev) =>
+                        prev ? ({ ...prev, currency: next } as UserRow) : prev
+                      );
+                    }}
+                  />
+                </div>
+              ) : null}
             </div>
             <div className="text-4xl font-bold text-primary">
               {format(walletBalanceUser)}
@@ -1369,12 +1792,12 @@ export default function WalletCard({ userProfile, isLoading }: WalletCardProps) 
             whileTap={{ scale: 0.99 }}
             transition={{ duration: 0.1 }}
           >
-            <DepositDialog userProfile={profileToUse}>
+            <Link href="/deposit/start">
               <Button className="w-full min-w-0 justify-center gap-2 rounded-xl">
                 <ArrowDownToLine className="h-4 w-4 shrink-0" />
                 <span className="truncate">Deposit</span>
               </Button>
-            </DepositDialog>
+            </Link>
           </motion.div>
 
           <motion.div
