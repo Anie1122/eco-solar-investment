@@ -44,7 +44,7 @@ export default function BottomNav() {
       {/* Spacer */}
       <div className="h-20 w-full" />
 
-      <nav className="bottom-nav-root fixed bottom-4 left-0 right-0 z-50 flex justify-center px-4">
+      <nav className="fixed bottom-4 left-0 right-0 z-50 flex justify-center px-4">
         <div
           className="
             w-full max-w-md
