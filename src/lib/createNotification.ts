@@ -16,7 +16,7 @@ export async function createNotification({
   message,
   type,
   amount,
-  currency = 'NGN',
+  currency = 'USDT',
 }: {
   userId: string;
   title: string;

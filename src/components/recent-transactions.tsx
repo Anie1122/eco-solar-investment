@@ -24,7 +24,7 @@ type TxRow = {
   user_id: string;
   transaction_type: string;
   status: string;
-  amount: number; // NGN base
+  amount: number; // USDT base
   currency: string | null;
   description: string | null;
   created_at: string;
@@ -93,7 +93,7 @@ export default function RecentTransactions() {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
 
-  const { format, convert } = useCurrencyConverter(userRow?.currency || 'NGN');
+  const { format, convert } = useCurrencyConverter(userRow?.currency || 'USDT');
 
   useEffect(() => {
     let unsub: { data: { subscription: { unsubscribe: () => void } } } | null = null;

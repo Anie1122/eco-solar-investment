@@ -82,7 +82,7 @@ export default function NotificationBell() {
   const [notifications, setNotifications] = useState<NotificationRow[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const { format: formatCurrency, convert } = useCurrencyConverter(userRow?.currency || 'NGN');
+  const { format: formatCurrency, convert } = useCurrencyConverter(userRow?.currency || 'USDT');
 
   const unreadCount = useMemo(() => notifications.filter((n) => !n.is_read).length, [notifications]);
 
