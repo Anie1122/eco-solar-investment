@@ -2,7 +2,7 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
-const DEFAULT_SIGNUP_BONUS_NGN = 1500;
+const DEFAULT_SIGNUP_BONUS_USDT = 1.5;
 
 function json(status: number, payload: any) {
   return NextResponse.json(payload, { status });
@@ -77,8 +77,8 @@ async function ensureSignupBonusTransaction(params: {
     created_at: new Date().toISOString(),
     metadata: {
       bonus_type: 'signup_bonus',
-      base_currency: 'NGN',
-      base_amount: DEFAULT_SIGNUP_BONUS_NGN,
+      base_currency: 'USDT',
+      base_amount: DEFAULT_SIGNUP_BONUS_USDT,
     },
   } as any);
 
@@ -126,9 +126,9 @@ export async function POST(req: Request) {
         full_name: fullName,
         phone_number: '',
         country: '',
-        currency: 'NGN',
+        currency: 'USDT',
         wallet_balance: 0,
-        bonus_balance: DEFAULT_SIGNUP_BONUS_NGN,
+        bonus_balance: DEFAULT_SIGNUP_BONUS_USDT,
         has_invested: false,
         profile_completed: false,
         status: 'active',
@@ -143,8 +143,8 @@ export async function POST(req: Request) {
       await ensureSignupBonusTransaction({
         supabaseAdmin,
         userId,
-        currency: 'NGN',
-        amount: DEFAULT_SIGNUP_BONUS_NGN,
+        currency: 'USDT',
+        amount: DEFAULT_SIGNUP_BONUS_USDT,
       });
 
       return json(200, { ok: true, invite_code });
@@ -162,7 +162,7 @@ export async function POST(req: Request) {
     // (keeps your app stable and lets us log transaction correctly)
     let bonus_balance = existing.bonus_balance;
     if (bonus_balance === null || bonus_balance === undefined) {
-      bonus_balance = DEFAULT_SIGNUP_BONUS_NGN;
+      bonus_balance = DEFAULT_SIGNUP_BONUS_USDT;
       const { error: bonusErr } = await supabaseAdmin
         .from('users')
         .update({ bonus_balance })
@@ -172,12 +172,12 @@ export async function POST(req: Request) {
     }
 
     // ✅ Ensure signup bonus transaction exists (idempotent)
-    const currency = String(existing.currency ?? 'NGN').toUpperCase();
+    const currency = String(existing.currency ?? 'USDT').toUpperCase();
     await ensureSignupBonusTransaction({
       supabaseAdmin,
       userId,
       currency,
-      amount: Number(bonus_balance ?? DEFAULT_SIGNUP_BONUS_NGN),
+      amount: Number(bonus_balance ?? DEFAULT_SIGNUP_BONUS_USDT),
     });
 
     return json(200, { ok: true, invite_code });

@@ -39,7 +39,7 @@ type ReferralRowAny = {
 
 type MiniUser = { id: string; full_name: string | null; email: string | null };
 
-const BONUS_PER_REF_NGN = 300;
+const BONUS_PER_REF_USDT = 0.2175; // 300 NGN × 0.000725
 
 function formatDateTime(date: any) {
   try {
@@ -109,29 +109,29 @@ export default function ReferralsPage() {
   const [downlineUsers, setDownlineUsers] = useState<Record<string, MiniUser>>({});
 
   const [leaderboard, setLeaderboard] = useState<
-    Array<{ id: string; name: string; totalReferred: number; totalEarnedNGN: number }>
+    Array<{ id: string; name: string; totalReferred: number; totalEarnedUSDT: number }>
   >([]);
 
-  const userCurrency = String(user?.currency || 'NGN').toUpperCase();
+  const userCurrency = String(user?.currency || 'USDT').toUpperCase();
   const { format, convert } = useCurrencyConverter(userCurrency);
 
-  const perRefInUserCurrency = useMemo(() => format(convert(BONUS_PER_REF_NGN)), [convert, format]);
+  const perRefInUserCurrency = useMemo(() => format(convert(BONUS_PER_REF_USDT)), [convert, format]);
 
   const totals = useMemo(() => {
     const totalReferred = refRows.length;
 
     // ✅ ALWAYS compute with base NGN
-    const totalEarnedNGN = refRows.reduce((sum, r) => {
-      const bonusNgn = toNum(r?.bonus_ngn, BONUS_PER_REF_NGN);
-      return sum + (bonusNgn > 0 ? bonusNgn : BONUS_PER_REF_NGN);
+    const totalEarnedUSDT = refRows.reduce((sum, r) => {
+      const bonusUsdt = toNum(r?.bonus_ngn, BONUS_PER_REF_USDT);
+      return sum + (bonusUsdt > 0 ? bonusUsdt : BONUS_PER_REF_USDT);
     }, 0);
 
-    return { totalReferred, totalEarnedNGN };
+    return { totalReferred, totalEarnedUSDT };
   }, [refRows]);
 
   const totalEarnedUserFormatted = useMemo(
-    () => format(convert(totals.totalEarnedNGN)),
-    [totals.totalEarnedNGN, convert, format]
+    () => format(convert(totals.totalEarnedUSDT)),
+    [totals.totalEarnedUSDT, convert, format]
   );
 
   useEffect(() => {
@@ -217,7 +217,7 @@ export default function ReferralsPage() {
             id: `demo-${idx}`,
             name: d.name,
             totalReferred: d.totalReferred,
-            totalEarnedNGN: d.totalReferred * BONUS_PER_REF_NGN,
+            totalEarnedUSDT: d.totalReferred * BONUS_PER_REF_USDT,
           }))
         );
       } catch (e: any) {
@@ -257,7 +257,7 @@ export default function ReferralsPage() {
     const shareText = `Eco Solar Investment
 Invite Code: ${inviteCode}
 Invite Link: ${inviteLink}
-Earn ₦${BONUS_PER_REF_NGN} per referral (${perRefInUserCurrency}).`;
+Earn ${BONUS_PER_REF_USDT} USDT per referral (${perRefInUserCurrency}).`;
 
     try {
       // @ts-ignore
@@ -291,7 +291,7 @@ Earn ₦${BONUS_PER_REF_NGN} per referral (${perRefInUserCurrency}).`;
             Referrals
           </CardTitle>
           <CardDescription>
-            Invite friends, earn <b>₦{BONUS_PER_REF_NGN}</b> per successful referral (<b>{perRefInUserCurrency}</b>), and track leaderboard.
+            Invite friends, earn <b>{BONUS_PER_REF_USDT} USDT</b> per successful referral (<b>{perRefInUserCurrency}</b>), and track leaderboard.
           </CardDescription>
         </CardHeader>
 
@@ -346,23 +346,23 @@ Earn ₦${BONUS_PER_REF_NGN} per referral (${perRefInUserCurrency}).`;
 
           {/* Totals */}
           <div className="grid grid-cols-2 gap-3">
-            <div className="rounded-2xl border bg-sky-50 p-4">
+            <div className="rounded-2xl border border-sky-200/70 bg-sky-50 p-4 dark:border-sky-500/30 dark:bg-sky-500/10">
               <div className="text-xs text-muted-foreground">Total Referred</div>
               <div className="mt-2 text-3xl font-extrabold">{loading ? '—' : totals.totalReferred}</div>
             </div>
 
-            <div className="rounded-2xl border bg-emerald-50 p-4">
+            <div className="rounded-2xl border border-emerald-200/70 bg-emerald-50 p-4 dark:border-emerald-500/30 dark:bg-emerald-500/10">
               <div className="flex items-center justify-between gap-2">
                 <div className="text-xs text-muted-foreground">Total Earned</div>
                 <Badge variant="secondary" className="text-[10px]">
-                  ₦{BONUS_PER_REF_NGN}/ref ({perRefInUserCurrency})
+                  {BONUS_PER_REF_USDT} USDT/ref ({perRefInUserCurrency})
                 </Badge>
               </div>
 
               <div className="mt-2 text-2xl font-extrabold">{loading ? '—' : totalEarnedUserFormatted}</div>
 
               <div className="mt-1 text-[10px] text-muted-foreground">
-                Base NGN: ₦{Number(totals.totalEarnedNGN || 0).toLocaleString()}
+                Base: USDT {Number(totals.totalEarnedUSDT || 0).toLocaleString()}
               </div>
             </div>
           </div>
@@ -393,14 +393,14 @@ Earn ₦${BONUS_PER_REF_NGN} per referral (${perRefInUserCurrency}).`;
                 <div className="space-y-2">
                   {leaderboard.map((row, idx) => {
                     const medal = idx < 5 ? getTopBadge(idx) : null;
-                    const earnedUser = format(convert(row.totalEarnedNGN));
+                    const earnedUser = format(convert(row.totalEarnedUSDT));
 
                     return (
                       <div
                         key={row.id}
                         className={cn(
                           'rounded-2xl border p-3 flex items-center justify-between gap-3',
-                          idx === 0 ? 'bg-yellow-50' : 'bg-background'
+                          idx === 0 ? 'bg-yellow-50 dark:bg-yellow-500/10 dark:border-yellow-500/30' : 'bg-background'
                         )}
                       >
                         <div className="min-w-0">
@@ -409,7 +409,7 @@ Earn ₦${BONUS_PER_REF_NGN} per referral (${perRefInUserCurrency}).`;
                             <div className="truncate font-semibold">{row.name}</div>
 
                             {idx === 0 ? (
-                              <Badge className="text-[10px] bg-yellow-500/15 text-yellow-700 border border-yellow-400/40">
+                              <Badge className="text-[10px] bg-yellow-500/15 text-yellow-700 border border-yellow-400/40 dark:text-yellow-300 dark:border-yellow-500/50">
                                 <Crown className="mr-1 h-3 w-3" />
                                 Top
                               </Badge>
@@ -425,14 +425,14 @@ Earn ₦${BONUS_PER_REF_NGN} per referral (${perRefInUserCurrency}).`;
 
                           <div className="mt-1 text-[11px] text-muted-foreground">
                             total referred users = <b className="text-foreground">{row.totalReferred.toLocaleString()}</b>, amount earned ={' '}
-                            <b className="text-foreground">₦{row.totalEarnedNGN.toLocaleString()}</b>
+                            <b className="text-foreground">USDT {row.totalEarnedUSDT.toLocaleString()}</b>
                           </div>
                         </div>
 
                         <div className="text-right shrink-0">
                           <div className="text-xs text-muted-foreground">Earned</div>
                           <div className="text-sm font-extrabold">{earnedUser}</div>
-                          <div className="text-[10px] text-muted-foreground">Base: ₦{row.totalEarnedNGN.toLocaleString()}</div>
+                          <div className="text-[10px] text-muted-foreground">Base: USDT {row.totalEarnedUSDT.toLocaleString()}</div>
                         </div>
                       </div>
                     );
@@ -461,7 +461,7 @@ Earn ₦${BONUS_PER_REF_NGN} per referral (${perRefInUserCurrency}).`;
                 <div className="rounded-2xl border border-dashed p-6 text-center">
                   <div className="text-sm font-semibold">No Referrals Yet</div>
                   <div className="mt-1 text-xs text-muted-foreground">
-                    Share your invite link to start earning ₦{BONUS_PER_REF_NGN} per referral ({perRefInUserCurrency}).
+                    Share your invite link to start earning {BONUS_PER_REF_USDT} USDT per referral ({perRefInUserCurrency}).
                   </div>
                   <Button className="mt-4 rounded-2xl" onClick={onShare} disabled={!inviteLink}>
                     <Share2 className="mr-2 h-4 w-4" />
@@ -477,8 +477,8 @@ Earn ₦${BONUS_PER_REF_NGN} per referral (${perRefInUserCurrency}).`;
                     const name = down?.full_name || down?.email || 'Referred User';
 
                     // ✅ amount per row is base NGN
-                    const bonusNGN = toNum(r?.bonus_ngn, BONUS_PER_REF_NGN);
-                    const bonusUser = format(convert(bonusNGN));
+                    const bonusUSDT = toNum(r?.bonus_ngn, BONUS_PER_REF_USDT);
+                    const bonusUser = format(convert(bonusUSDT));
 
                     // ✅ bonus_paid is numeric; treat > 0 as paid
                     const paidAmt = toNum(r?.bonus_paid, 0);
@@ -503,7 +503,7 @@ Earn ₦${BONUS_PER_REF_NGN} per referral (${perRefInUserCurrency}).`;
                               {paid ? 'paid' : 'pending'}
                             </Badge>
                             <div className="mt-1 text-sm font-extrabold">{bonusUser}</div>
-                            <div className="text-[10px] text-muted-foreground">Base: ₦{bonusNGN.toLocaleString()}</div>
+                            <div className="text-[10px] text-muted-foreground">Base: USDT {bonusUSDT.toLocaleString()}</div>
                           </div>
                         </div>
                       </div>

@@ -1,0 +1,26 @@
+<svg width="300" height="300" viewBox="0 0 300 300" xmlns="http://www.w3.org/2000/svg">
+  <rect width="300" height="300" rx="16" fill="#fff"/>
+  <g fill="#111827">
+    <rect x="18" y="18" width="70" height="70"/><rect x="28" y="28" width="50" height="50" fill="#fff"/><rect x="36" y="36" width="34" height="34"/>
+    <rect x="212" y="18" width="70" height="70"/><rect x="222" y="28" width="50" height="50" fill="#fff"/><rect x="230" y="36" width="34" height="34"/>
+    <rect x="18" y="212" width="70" height="70"/><rect x="28" y="222" width="50" height="50" fill="#fff"/><rect x="36" y="230" width="34" height="34"/>
+    <rect x="118" y="22" width="12" height="12"/><rect x="136" y="22" width="12" height="12"/><rect x="154" y="22" width="12" height="12"/>
+    <rect x="118" y="40" width="12" height="12"/><rect x="154" y="40" width="12" height="12"/><rect x="172" y="40" width="12" height="12"/>
+    <rect x="100" y="58" width="12" height="12"/><rect x="136" y="58" width="12" height="12"/><rect x="172" y="58" width="12" height="12"/>
+    <rect x="100" y="118" width="12" height="12"/><rect x="118" y="118" width="12" height="12"/><rect x="154" y="118" width="12" height="12"/><rect x="172" y="118" width="12" height="12"/>
+    <rect x="100" y="136" width="12" height="12"/><rect x="136" y="136" width="12" height="12"/><rect x="154" y="136" width="12" height="12"/><rect x="190" y="136" width="12" height="12"/>
+    <rect x="100" y="154" width="12" height="12"/><rect x="118" y="154" width="12" height="12"/><rect x="172" y="154" width="12" height="12"/><rect x="190" y="154" width="12" height="12"/>
+    <rect x="100" y="172" width="12" height="12"/><rect x="136" y="172" width="12" height="12"/><rect x="154" y="172" width="12" height="12"/><rect x="190" y="172" width="12" height="12"/>
+    <rect x="118" y="190" width="12" height="12"/><rect x="154" y="190" width="12" height="12"/><rect x="172" y="190" width="12" height="12"/>
+    <rect x="208" y="118" width="12" height="12"/><rect x="226" y="118" width="12" height="12"/><rect x="244" y="118" width="12" height="12"/>
+    <rect x="208" y="136" width="12" height="12"/><rect x="244" y="136" width="12" height="12"/>
+    <rect x="208" y="154" width="12" height="12"/><rect x="226" y="154" width="12" height="12"/><rect x="244" y="154" width="12" height="12"/>
+    <rect x="208" y="172" width="12" height="12"/><rect x="244" y="172" width="12" height="12"/>
+    <rect x="208" y="190" width="12" height="12"/><rect x="226" y="190" width="12" height="12"/><rect x="244" y="190" width="12" height="12"/>
+    <rect x="118" y="208" width="12" height="12"/><rect x="136" y="208" width="12" height="12"/><rect x="172" y="208" width="12" height="12"/>
+    <rect x="118" y="226" width="12" height="12"/><rect x="154" y="226" width="12" height="12"/><rect x="172" y="226" width="12" height="12"/>
+    <rect x="118" y="244" width="12" height="12"/><rect x="136" y="244" width="12" height="12"/><rect x="154" y="244" width="12" height="12"/>
+  </g>
+  <circle cx="150" cy="150" r="26" fill="#14B8A6" stroke="#fff" stroke-width="6"/>
+  <text x="150" y="157" text-anchor="middle" fill="#fff" font-family="Inter,Arial" font-size="14" font-weight="700">USDT</text>
+</svg>

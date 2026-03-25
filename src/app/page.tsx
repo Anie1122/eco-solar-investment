@@ -45,7 +45,6 @@ import {
 
 import WalletCard from '@/components/wallet-card';
 import AiSuggestionCard from '@/components/ai-suggestion-card';
-import TransactionHistory from '@/components/transaction-history';
 import AuthGuard from '@/components/auth-guard';
 import NotificationBell from '@/components/notification-bell';
 
@@ -82,7 +81,7 @@ function mapUserRowToEntity(row: UserRow): UserEntity {
     currency: row.currency ?? 'USDT',
     phoneNumber: row.phone_number ?? '',
     walletBalance: Number(row.wallet_balance ?? 0),
-    bonusBalance: Number(row.bonus_balance ?? 1500),
+    bonusBalance: Number(row.bonus_balance ?? 1.5),
     hasInvested: Boolean(row.has_invested ?? false),
     profileCompleted: Boolean(row.profile_completed ?? false),
     status: (row.status ?? 'active') as any,
@@ -420,8 +419,20 @@ const Home: NextPage = () => {
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
-    sessionStorage.clear();
-    localStorage.clear();
+
+    // Clear only app-scoped volatile keys to avoid breaking other client state.
+    try {
+      Object.keys(sessionStorage)
+        .filter((key) => key.startsWith('eco_'))
+        .forEach((key) => sessionStorage.removeItem(key));
+
+      Object.keys(localStorage)
+        .filter((key) => key.startsWith('eco_'))
+        .forEach((key) => localStorage.removeItem(key));
+    } catch {
+      // no-op for restricted storage environments
+    }
+
     router.push('/login');
   };
 
@@ -480,7 +491,7 @@ const Home: NextPage = () => {
                       <AiSuggestionCard userProfile={userProfile} isLoading={isLoading} />
                     </motion.div>
 
-                    <TransactionHistory />
+                    <MarketTicker />
                   </div>
                 </div>
               )}

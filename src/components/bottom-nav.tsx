@@ -42,22 +42,22 @@ export default function BottomNav() {
   return (
     <>
       {/* Spacer */}
-      <div className="h-20 w-full" />
+      <div className="h-24 w-full" />
 
       <nav className="bottom-nav-root fixed bottom-4 left-0 right-0 z-50 flex justify-center px-4">
         <div
           className="
-            w-full max-w-md
+            w-full max-w-3xl
             rounded-2xl
             border
-            border-cyan-400/30
+            border-primary/30
             bg-white/60
             dark:bg-background/70
             backdrop-blur-xl
             shadow-[0_8px_30px_rgba(0,0,0,0.12)]
           "
         >
-          <div className="flex items-end justify-between px-3 py-2">
+          <div className="grid grid-cols-7 gap-1 px-1 py-2">
             {items.map((item) => {
               const active =
                 item.href === '/'
@@ -71,7 +71,7 @@ export default function BottomNav() {
                 <Link
                   key={item.href}
                   href={item.href}
-                  className="flex flex-1 justify-center"
+                  className="flex justify-center"
                 >
                   <motion.div
                     whileTap={{ scale: 0.9 }}
@@ -81,20 +81,20 @@ export default function BottomNav() {
                     <div
                       className={cn(
                         'flex items-center justify-center rounded-xl transition-all duration-300',
-                        'h-9 w-9',
+                        'h-10 w-10',
                         active
-                          ? 'bg-cyan-500 text-white shadow-md shadow-cyan-400/40'
+                          ? 'bg-primary text-primary-foreground shadow-md shadow-primary/40'
                           : 'text-muted-foreground'
                       )}
                     >
-                      <Icon className="h-4 w-4" />
+                      <Icon className="h-[18px] w-[18px]" />
                     </div>
 
                     {/* Label */}
                     <span
                       className={cn(
-                        'text-[9px] font-medium transition-colors',
-                        active ? 'text-cyan-600' : 'text-muted-foreground'
+                        'text-[9px] font-medium transition-colors text-center leading-none',
+                        active ? 'text-primary' : 'text-muted-foreground'
                       )}
                     >
                       {item.label}
@@ -104,7 +104,7 @@ export default function BottomNav() {
                     {active && (
                       <motion.div
                         layoutId="bottom-dot"
-                        className="h-1 w-1 rounded-full bg-cyan-500"
+                        className="h-1 w-1 rounded-full bg-primary"
                       />
                     )}
                   </motion.div>
