@@ -14,7 +14,7 @@ export default function CustomerServiceWidget({ hidden }: { hidden?: boolean }) 
     <motion.div
       className={cn(
         // ✅ PUSHED UP: will not block bottom nav
-        'fixed right-5 bottom-[148px] z-[9999]',
+        'floating-widget fixed right-5 bottom-[148px] z-[9999]',
         hidden ? 'hidden' : 'block'
       )}
       initial={{ opacity: 0, y: 10, scale: 0.98 }}
