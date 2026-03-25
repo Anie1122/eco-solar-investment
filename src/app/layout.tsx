@@ -34,7 +34,7 @@ export default function RootLayout({
       </head>
 
       <body className={`${inter.variable} font-body antialiased`}>
-        <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
+        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           <FirebaseClientProvider>
             {/* Main content */}
             <div className="min-h-screen pb-24 fintech-shell">

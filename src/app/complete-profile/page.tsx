@@ -32,6 +32,7 @@ import { Loader2 } from 'lucide-react';
 import type { CountryItem } from '@/lib/countries';
 import { buildCountriesAtoZ } from '@/lib/countries';
 import { BASE_CURRENCY } from '@/lib/crypto-rates';
+import { getSignupBonusUsdtToday } from '@/lib/bonus';
 
 const schema = z.object({
   country: z.string().min(2, 'Select your country'),
@@ -157,6 +158,8 @@ export default function CompleteProfilePage() {
       }
 
       const currency = BASE_CURRENCY;
+      // Merge-resolution choice: keep live converted bonus in USDT for all users.
+      const signupBonusUsdt = await getSignupBonusUsdtToday();
 
       const phone_number = `${values.dial} ${values.phone}`.trim();
 
@@ -167,6 +170,7 @@ export default function CompleteProfilePage() {
           country: selectedCountry?.name ?? values.country,
           phone_number,
           currency,
+          bonus_balance: signupBonusUsdt,
           profile_completed: true,
         })
         .eq('id', user.id);
@@ -184,7 +188,7 @@ export default function CompleteProfilePage() {
               phone_number,
               currency,
               wallet_balance: 0,
-              bonus_balance: 1.5,
+              bonus_balance: signupBonusUsdt,
               has_invested: false,
               profile_completed: true,
               status: 'active',

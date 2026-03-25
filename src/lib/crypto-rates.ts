@@ -9,20 +9,23 @@ export const SUPPORTED_CRYPTO_CURRENCIES = [
   'SOL',
 ] as const;
 
-export type SupportedCryptoCurrency =
-  (typeof SUPPORTED_CRYPTO_CURRENCIES)[number];
+export type SupportedCryptoCurrency = (typeof SUPPORTED_CRYPTO_CURRENCIES)[number];
 
-type TickerItem = {
-  symbol: SupportedCryptoCurrency;
-  priceUsd: number;
-  change24h: number;
+const COINGECKO_IDS: Record<SupportedCryptoCurrency, string> = {
+  USDT: 'tether',
+  USDC: 'usd-coin',
+  ETH: 'ethereum',
+  BNB: 'binancecoin',
+  BTC: 'bitcoin',
+  SOL: 'solana',
 };
 
-type Snapshot = {
-  fetchedAt: number;
-  ratesFromUsdt: Record<SupportedCryptoCurrency, number>;
-  ticker: TickerItem[];
+type CoinGeckoRow = {
+  usd?: number;
+  usd_24h_change?: number;
 };
+
+type CoinGeckoResponse = Record<string, CoinGeckoRow>;
 
 const PRECISION = 8;
 
@@ -36,51 +39,60 @@ export function clampToPrecision(value: number) {
   return roundTo(value, PRECISION);
 }
 
-function isSupportedCurrency(value: string): value is SupportedCryptoCurrency {
-  return (SUPPORTED_CRYPTO_CURRENCIES as readonly string[]).includes(value);
-}
+export async function fetchCryptoMarketSnapshot() {
+  const ids = SUPPORTED_CRYPTO_CURRENCIES.map((c) => COINGECKO_IDS[c]).join(',');
+  const url = `https://api.coingecko.com/api/v3/simple/price?ids=${encodeURIComponent(ids)}&vs_currencies=usd&include_24hr_change=true`;
 
-export function fetchCryptoMarketSnapshot(): Promise<Snapshot> {
-  const usdtPerCoin: Record<SupportedCryptoCurrency, number> = {
-    USDT: 1,
-    USDC: 1,
-    ETH: 3500,
-    BNB: 550,
-    BTC: 65000,
-    SOL: 150,
-  };
+  const res = await fetch(url, {
+    method: 'GET',
+    headers: { accept: 'application/json' },
+    cache: 'no-store',
+  });
+
+  if (!res.ok) {
+    throw new Error(`CoinGecko request failed: ${res.status}`);
+  }
+
+  const json = (await res.json()) as CoinGeckoResponse;
+
+  const usdtUsd = Number(json[COINGECKO_IDS.USDT]?.usd || 1);
+  const safeUsdtUsd = usdtUsd > 0 ? usdtUsd : 1;
 
   const ratesFromUsdt: Record<SupportedCryptoCurrency, number> = {
     USDT: 1,
     USDC: 1,
-    ETH: clampToPrecision(1 / usdtPerCoin.ETH),
-    BNB: clampToPrecision(1 / usdtPerCoin.BNB),
-    BTC: clampToPrecision(1 / usdtPerCoin.BTC),
-    SOL: clampToPrecision(1 / usdtPerCoin.SOL),
+    ETH: 0,
+    BNB: 0,
+    BTC: 0,
+    SOL: 0,
   };
 
-  const ticker: TickerItem[] = [
-    { symbol: 'USDT', priceUsd: 1, change24h: 0 },
-    { symbol: 'USDC', priceUsd: 1, change24h: 0 },
-    { symbol: 'ETH', priceUsd: 3500, change24h: 0 },
-    { symbol: 'BNB', priceUsd: 550, change24h: 0 },
-    { symbol: 'BTC', priceUsd: 65000, change24h: 0 },
-    { symbol: 'SOL', priceUsd: 150, change24h: 0 },
-  ];
+  const ticker = SUPPORTED_CRYPTO_CURRENCIES.map((symbol) => {
+    const row = json[COINGECKO_IDS[symbol]] || {};
+    const usd = Number(row.usd || 0);
+    const change24h = Number(row.usd_24h_change || 0);
 
-  return Promise.resolve({
+    const rate = symbol === 'USDT' ? 1 : clampToPrecision(usd / safeUsdtUsd);
+    ratesFromUsdt[symbol] = rate;
+
+    return {
+      symbol,
+      priceUsd: clampToPrecision(usd),
+      change24h: Number.isFinite(change24h) ? change24h : 0,
+    };
+  });
+
+  return {
     fetchedAt: Date.now(),
     ratesFromUsdt,
     ticker,
-  });
+  };
 }
 
-export function toSupportedCurrency(
-  value?: string | null
-): SupportedCryptoCurrency {
+export function toSupportedCurrency(value?: string | null): SupportedCryptoCurrency {
   const normalized = String(value || BASE_CURRENCY).toUpperCase();
-  if (isSupportedCurrency(normalized)) {
-    return normalized;
+  if ((SUPPORTED_CRYPTO_CURRENCIES as readonly string[]).includes(normalized)) {
+    return normalized as SupportedCryptoCurrency;
   }
   return BASE_CURRENCY;
 }

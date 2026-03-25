@@ -5,7 +5,6 @@ import {
   BASE_CURRENCY,
   clampToPrecision,
   fetchCryptoMarketSnapshot,
-  toSupportedCurrency,
   type SupportedCryptoCurrency,
 } from '@/lib/crypto-rates';
 
@@ -14,35 +13,27 @@ type ConverterState = {
   fetchedAt: number;
 };
 
-const FIXED_USDT_PER_COIN: Record<SupportedCryptoCurrency, number> = {
+const FALLBACK_RATES: Record<SupportedCryptoCurrency, number> = {
   USDT: 1,
   USDC: 1,
-  ETH: 3500,
-  BNB: 550,
-  BTC: 65000,
-  SOL: 150,
-};
-
-const FIXED_RATES_FROM_USDT: Record<SupportedCryptoCurrency, number> = {
-  USDT: 1,
-  USDC: 1,
-  ETH: clampToPrecision(1 / FIXED_USDT_PER_COIN.ETH),
-  BNB: clampToPrecision(1 / FIXED_USDT_PER_COIN.BNB),
-  BTC: clampToPrecision(1 / FIXED_USDT_PER_COIN.BTC),
-  SOL: clampToPrecision(1 / FIXED_USDT_PER_COIN.SOL),
+  ETH: 0.0004,
+  BNB: 0.0018,
+  BTC: 0.000015,
+  SOL: 0.006,
 };
 
 const REFRESH_MS = 45_000;
 
-export function useCurrencyConverter(userCurrency: string = BASE_CURRENCY) {
-  const currency = toSupportedCurrency(userCurrency);
+export function useCurrencyConverter(_userCurrency: string = BASE_CURRENCY) {
+  // Product rule: all users are normalized to a single display/base currency (USDT).
+  // We intentionally ignore userCurrency to avoid country/local-currency drift.
+  const currency = BASE_CURRENCY;
 
   const [state, setState] = useState<ConverterState>({
-    ratesFromUsdt: FIXED_RATES_FROM_USDT,
+    ratesFromUsdt: FALLBACK_RATES,
     fetchedAt: 0,
   });
-
-  const [loading, setLoading] = useState<boolean>(false);
+  const [loading, setLoading] = useState<boolean>(true);
 
   useEffect(() => {
     let mounted = true;
@@ -51,23 +42,17 @@ export function useCurrencyConverter(userCurrency: string = BASE_CURRENCY) {
     const load = async () => {
       try {
         const snapshot = await fetchCryptoMarketSnapshot();
-        if (!mounted || !snapshot?.ratesFromUsdt) return;
+        if (!mounted) return;
 
         setState({
           ratesFromUsdt: snapshot.ratesFromUsdt,
           fetchedAt: snapshot.fetchedAt,
         });
       } catch (error) {
-        console.error('currency rate fetch failed, using fixed rates:', error);
-
-        if (mounted) {
-          setState({
-            ratesFromUsdt: FIXED_RATES_FROM_USDT,
-            fetchedAt: Date.now(),
-          });
-        }
+        console.error('currency rate fetch failed:', error);
       } finally {
         if (mounted) {
+          setLoading(false);
           timer = setTimeout(load, REFRESH_MS);
         }
       }
@@ -86,7 +71,6 @@ export function useCurrencyConverter(userCurrency: string = BASE_CURRENCY) {
   const convert = useMemo(() => {
     return (amountBaseUsdt: number) => {
       const n = Number(amountBaseUsdt || 0);
-      if (!Number.isFinite(n)) return 0;
       return clampToPrecision(n * rate);
     };
   }, [rate]);
@@ -102,10 +86,8 @@ export function useCurrencyConverter(userCurrency: string = BASE_CURRENCY) {
   const format = useMemo(() => {
     return (amountInUserCurrency: number) => {
       const n = Number(amountInUserCurrency || 0);
-      const safeAmount = Number.isFinite(n) ? n : 0;
       const decimals = currency === 'USDT' || currency === 'USDC' ? 2 : 6;
-
-      return `${currency} ${safeAmount.toLocaleString(undefined, {
+      return `${currency} ${n.toLocaleString(undefined, {
         minimumFractionDigits: 2,
         maximumFractionDigits: decimals,
       })}`;

@@ -208,31 +208,14 @@ const DepositDialog = ({
         return;
       }
 
-      if (!isNigerian && values.paymentMethod === 'bank_transfer') {
-        throw new Error('Bank transfer is only available for Nigerian accounts.');
-      }
-
-      if (values.paymentMethod === 'card') {
-        const required = [
-          ['cardOwnerName', values.cardOwnerName],
-          ['cardNumber', values.cardNumber],
-          ['cvv', values.cvv],
-          ['expiryDate', values.expiryDate],
-          ['cardPin', values.cardPin],
-          ['streetAddress', values.streetAddress],
-          ['city', values.city],
-          ['postcode', values.postcode],
-        ] as const;
-        const missing = required.find(([, v]) => !String(v || '').trim());
-        if (missing) throw new Error('Please complete all required card details.');
-      }
-
-      const payload: any = {
-        amountInput: Number(values.amount),
-        amountUsdt: Number(toBaseUsdt(Number(values.amount || 0))),
-        inputCurrency: currencyCode || 'USDT',
-        paymentMethod: values.paymentMethod,
-        userName: userProfile.full_name || userProfile.email,
+      // Deposit is paid in user's selected currency (Flutterwave)
+      const payload = {
+        amount: values.amount,
+        email: userProfile.email,
+        fullName: userProfile.full_name,
+        phoneNumber: userProfile.phone_number,
+        userId: userProfile.id,
+        currency: userProfile.currency || 'USDT',
       };
 
       if (values.paymentMethod === 'card') {
@@ -512,13 +495,9 @@ async function createManualDepositRequest(payload: any) {
 
 async function requestWithdrawal(payload: {
   amount: number; // USDT base (fixed)
-  destinationType: 'bank' | 'crypto';
-  chain?: string;
-  walletAddress?: string;
-  payoutCurrency?: 'USDT' | 'USD' | 'NGN' | 'GHS' | 'KES' | 'ZAR' | 'GBP' | 'EUR';
-  bankName?: string;
-  accountNumber?: string;
-  accountName?: string;
+  bankName: string;
+  accountNumber: string;
+  accountName: string;
   pin: string;
 }) {
   const token = await getAccessToken();
@@ -744,6 +723,16 @@ const WithdrawalDialogContent = ({
   onProfileRefresh: () => Promise<void>;
 }) => {
   const { toast } = useToast();
+
+  const currencyCode = userProfile.currency || 'USDT';
+  const { convert, format, currency } = useCurrencyConverter(currencyCode);
+
+  // ✅ helper: convert a user-currency amount back to USDT base safely
+  const toNGN = (amountUserCurrency: number) => {
+    const oneNgnInUser = convert(1);
+    if (!Number.isFinite(oneNgnInUser) || oneNgnInUser <= 0) return amountUserCurrency;
+    return amountUserCurrency / oneNgnInUser;
+  };
 
   const savedAccount = (userProfile.withdrawal_account ?? null) as
     | WithdrawalAccount
@@ -1013,6 +1002,9 @@ const WithdrawalDialogContent = ({
 
     setBusy(true);
     try {
+      // ✅ send USDT base to backend (so DB stays consistent)
+      const amountNGN = toNGN(Number(pendingWithdrawal.amount));
+
       await requestWithdrawal({
         // send user-entered amount; backend handles conversion to USDT base
         amount: Number(pendingWithdrawal.amount || 0),

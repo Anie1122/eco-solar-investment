@@ -123,8 +123,8 @@ ${plansText}
   return (
     <>
       {/* ✅ SMALLER MODERN FLOATING BOT BUTTON (hidden when chat open) */}
-      {!isOpen && (<motion.div
-    className="fixed right-4 bottom-[82px] z-[9999]"
+      {!open && (<motion.div
+    className="floating-widget fixed right-4 bottom-[82px] z-[9999]"
     initial={{ opacity: 0, y: 10, scale: 0.98 }}
     animate={{ opacity: 1, y: 0, scale: 1 }}
     transition={{ duration: 0.18 }}

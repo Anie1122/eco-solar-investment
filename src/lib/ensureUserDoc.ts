@@ -1,18 +1,23 @@
 import { doc, getDoc, setDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { Firestore } from 'firebase/firestore';
+import { getSignupBonusUsdtToday } from '@/lib/bonus';
 
-const DEFAULT_USER_DATA = {
-  fullName: '',
-  phoneNumber: '',
-  country: 'Nigeria',
-  countryCode: 'NG',
-  currency: 'USDT',
-  walletBalance: 0,
-  bonusBalance: 1.5,
-  hasInvested: false,
-  profileCompleted: false,
-  createdAt: serverTimestamp(),
-};
+async function buildDefaultUserData() {
+  // Keep signup bonus aligned with live NGN->USDT conversion used across Supabase flows.
+  const bonusUsdt = await getSignupBonusUsdtToday();
+  return {
+    fullName: '',
+    phoneNumber: '',
+    country: 'Nigeria',
+    countryCode: 'NG',
+    currency: 'USDT',
+    walletBalance: 0,
+    bonusBalance: bonusUsdt,
+    hasInvested: false,
+    profileCompleted: false,
+    createdAt: serverTimestamp(),
+  };
+}
 
 export async function ensureUserDoc(
   firestore: Firestore,
@@ -21,10 +26,11 @@ export async function ensureUserDoc(
 ) {
   const ref = doc(firestore, 'users', uid);
   const snap = await getDoc(ref);
+  const defaultData = await buildDefaultUserData();
 
   if (!snap.exists()) {
     await setDoc(ref, {
-      ...DEFAULT_USER_DATA,
+      ...defaultData,
       email: email ?? '',
     });
     return;
@@ -33,9 +39,9 @@ export async function ensureUserDoc(
   const data = snap.data();
   const updates: any = {};
 
-  for (const key in DEFAULT_USER_DATA) {
+  for (const key in defaultData) {
     if (data[key] === undefined) {
-      updates[key] = DEFAULT_USER_DATA[key];
+      updates[key] = defaultData[key as keyof typeof defaultData];
     }
   }
 

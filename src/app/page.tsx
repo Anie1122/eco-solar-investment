@@ -53,7 +53,6 @@ import type { User as UserEntity } from '@/lib/types';
 
 import PolicyGate from '@/components/policy-gate';
 import LiveCryptoTicker from '@/components/live-crypto-ticker';
-import MarketTicker from '@/components/MarketTicker';
 
 type UserRow = {
   id: string;
