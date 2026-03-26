@@ -21,6 +21,8 @@ export default function PolicyGate({ userId, onAccepted, onDismiss }: Props) {
   }, []);
 
   const acceptPolicy = async () => {
+    // Close immediately for better UX, then persist in background.
+    onAccepted();
     setLoading(true);
     try {
       const { error } = await supabase
@@ -30,12 +32,10 @@ export default function PolicyGate({ userId, onAccepted, onDismiss }: Props) {
 
       if (error) throw error;
 
-      onAccepted();
     } catch (e) {
       console.error('Policy accept error:', e);
-    } finally {
-      setLoading(false);
     }
+    setLoading(false);
   };
 
   const openLink = (url: string) => {
@@ -43,8 +43,8 @@ export default function PolicyGate({ userId, onAccepted, onDismiss }: Props) {
   };
 
   return (
-    <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/60 p-4">
-      <Card className="w-full max-w-3xl overflow-hidden rounded-2xl border bg-background shadow-2xl">
+    <div className="fixed inset-0 z-[2147483647] flex items-center justify-center bg-black/70 p-2 sm:p-4">
+      <Card className="flex max-h-[92dvh] w-full max-w-3xl flex-col overflow-hidden rounded-2xl border bg-background shadow-2xl">
         {/* Header */}
         <div className="flex items-center gap-4 border-b p-4 sm:p-6">
           <div className="flex h-14 w-14 items-center justify-center overflow-hidden rounded-xl bg-white">
@@ -70,7 +70,7 @@ export default function PolicyGate({ userId, onAccepted, onDismiss }: Props) {
         </div>
 
         {/* Body */}
-        <div className="max-h-[70vh] overflow-y-auto p-4 sm:p-6">
+        <div className="flex-1 overflow-y-auto p-4 sm:p-6">
           <div className="space-y-4 text-sm leading-relaxed">
             <div className="grid gap-2 sm:grid-cols-2">
               <div className="rounded-lg border bg-muted/30 p-3">
@@ -267,7 +267,7 @@ export default function PolicyGate({ userId, onAccepted, onDismiss }: Props) {
         </div>
 
         {/* Footer actions */}
-        <div className="flex flex-col gap-2 border-t p-4 sm:flex-row sm:items-center sm:justify-end sm:p-6">
+        <div className="sticky bottom-0 flex flex-col gap-2 border-t bg-background p-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:flex-row sm:items-center sm:justify-end sm:p-6">
           <Button
             type="button"
             variant="secondary"

@@ -75,7 +75,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: false, message: 'Could not find user profile.' }, { status: 404 });
     }
 
-    const currency = userRow.currency || 'NGN';
+    const currency = userRow.currency || 'USDT';
 
     const investAmount = Number(plan.amount);
     const firstProfit = Number(plan.dailyProfit);
@@ -174,7 +174,7 @@ export async function POST(req: NextRequest) {
       is_read: false,
       created_at: nowIso,
       amount: investAmount,
-      currency: 'NGN',
+      currency: 'USDT',
       metadata: { plan_id: plan.id, investment_id: invInserted?.id ?? null },
     });
 
@@ -186,7 +186,7 @@ export async function POST(req: NextRequest) {
       is_read: false,
       created_at: nowIso,
       amount: firstProfit,
-      currency: 'NGN',
+      currency: 'USDT',
       metadata: { plan_id: plan.id, investment_id: invInserted?.id ?? null },
     });
 
@@ -199,7 +199,7 @@ export async function POST(req: NextRequest) {
         is_read: false,
         created_at: nowIso,
         amount: bonusToUnlock,
-        currency: 'NGN',
+        currency: 'USDT',
         metadata: { reason: 'first_investment' },
       });
     }

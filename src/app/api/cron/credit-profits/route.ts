@@ -22,7 +22,7 @@ async function safeNotify(userId: string, amountNgN: number, meta: any) {
     is_read: false,
     created_at: nowIso,
     amount: amountNgN,
-    currency: 'NGN',
+    currency: 'USDT',
     metadata: meta,
   } as any);
 
