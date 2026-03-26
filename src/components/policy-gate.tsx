@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -14,6 +14,11 @@ type Props = {
 
 export default function PolicyGate({ userId, onAccepted, onDismiss }: Props) {
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    document.body.classList.add('policy-gate-open');
+    return () => document.body.classList.remove('policy-gate-open');
+  }, []);
 
   const effectiveDate = useMemo(() => {
     const d = new Date();
