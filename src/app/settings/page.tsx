@@ -110,12 +110,12 @@ function useSupabaseUserRow(userId: string | null) {
   const [row, setRow] = useState<UserRow | null>(null);
 
   useEffect(() => {
-    const run = async () => {
-      if (!userId) {
-        setRow(null);
-        return;
-      }
+    if (!userId) {
+      setRow(null);
+      return;
+    }
 
+    const run = async () => {
       const { data, error } = await supabase
         .from('users')
         .select('id,email,full_name,currency')
@@ -131,6 +131,22 @@ function useSupabaseUserRow(userId: string | null) {
     };
 
     run();
+
+    const channel = supabase
+      .channel(`users-settings-${userId}`)
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'users', filter: `id=eq.${userId}` },
+        (payload) => {
+          if (!payload.new) return;
+          setRow((payload.new as UserRow) ?? null);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [userId]);
 
   return row;
