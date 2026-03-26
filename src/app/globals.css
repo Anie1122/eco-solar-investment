@@ -70,11 +70,6 @@
 
 
 @layer utilities {
-  .policy-gate-open .bottom-nav-root,
-  .policy-gate-open .floating-widget {
-    display: none !important;
-  }
-
   .ticker-track {
     animation: ticker-scroll 28s linear infinite;
   }
