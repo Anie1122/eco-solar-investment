@@ -142,7 +142,7 @@ export default function DepositCheckoutPage() {
       const json = await res.json().catch(() => ({}));
       if (!res.ok || !json?.ok) throw new Error(json?.message || 'Failed');
 
-      toast({ title: 'Request sent', description: 'Receipt sent to admin for review.' });
+      toast({ title: 'Request sent', description: 'Receipt submitted successfully.' });
       router.push('/history');
     } catch (e: any) {
       toast({ variant: 'destructive', title: 'Upload failed', description: e?.message || 'Could not upload receipt.' });
