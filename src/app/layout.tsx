@@ -8,7 +8,6 @@ import { FirebaseClientProvider } from '@/firebase/client-provider';
 import { Toaster } from '@/components/ui/toaster';
 
 import BottomNav from '@/components/bottom-nav';
-import FloatingActions from '@/components/floating-actions';
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 
@@ -40,9 +39,6 @@ export default function RootLayout({
             <div className="min-h-screen pb-24 fintech-shell">
               <div className="fintech-page-animate">{children}</div>
             </div>
-
-            {/* ✅ New Modern Floating Buttons (AI + Support) */}
-            <FloatingActions />
 
             {/* Bottom navigation */}
             <BottomNav />

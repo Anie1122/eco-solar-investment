@@ -82,7 +82,7 @@ export default function MarketTicker() {
   const rows = useMemo(() => markets, [markets]);
 
   return (
-    <section className="rounded-2xl border border-white/10 bg-[#0a0d14] p-3 text-white shadow-[0_22px_65px_rgba(0,0,0,0.45)]">
+    <section className="w-full max-w-full overflow-hidden rounded-2xl border border-white/10 bg-[#0a0d14] p-3 text-white shadow-[0_22px_65px_rgba(0,0,0,0.45)]">
       <div className="mb-2 flex items-center px-2 py-1">
         <h3 className="text-sm font-semibold tracking-wide text-zinc-200">Live Market</h3>
       </div>
@@ -96,7 +96,7 @@ export default function MarketTicker() {
           return (
             <div
               key={row.symbol}
-              className={`grid grid-cols-[1.5fr_1fr_auto] items-center gap-3 rounded-xl px-3 py-3 transition-all duration-300 ${
+              className={`flex w-full items-center justify-between gap-2 rounded-xl px-2.5 py-3 transition-all duration-300 sm:px-3 ${
                 flash === 'up'
                   ? 'price-flash-up'
                   : flash === 'down'
@@ -104,29 +104,33 @@ export default function MarketTicker() {
                     : 'bg-[#111522]'
               }`}
             >
-              <div className="flex items-center gap-3">
-                <div className={`flex h-10 w-10 items-center justify-center rounded-full text-base font-bold ${brand.bg} ${brand.fg}`}>
+              <div className="flex min-w-0 items-center gap-2.5 sm:gap-3">
+                <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-base font-bold sm:h-10 sm:w-10 ${brand.bg} ${brand.fg}`}>
                   {brand.icon}
                 </div>
 
                 <div className="min-w-0">
-                  <p className="truncate text-lg font-semibold leading-tight">
+                  <p className="truncate text-base font-semibold leading-tight sm:text-lg">
                     {row.symbol}
                     <span className="ml-1 text-zinc-400">/ USDT</span>
                   </p>
-                  <p className="truncate text-sm text-zinc-500">{row.volume}</p>
+                  <p className="truncate text-xs text-zinc-500 sm:text-sm">{row.volume}</p>
                 </div>
               </div>
 
-              <p className="text-right font-mono text-xl font-semibold tabular-nums">{formatPrice(row.price)}</p>
+              <div className="ml-1 flex shrink-0 items-center gap-1.5 sm:ml-3 sm:gap-2">
+                <p className="text-right font-mono text-sm font-semibold tabular-nums sm:text-xl">
+                  {formatPrice(row.price)}
+                </p>
 
-              <div
-                className={`inline-flex min-w-[104px] justify-center rounded-full px-3 py-2 text-lg font-semibold tabular-nums ${
-                  positive ? 'bg-emerald-500 text-white' : 'bg-rose-500 text-white'
-                }`}
-              >
-                {positive ? '+' : ''}
-                {row.change.toFixed(2)}%
+                <div
+                  className={`inline-flex min-w-[78px] justify-center rounded-full px-2 py-1.5 text-sm font-semibold tabular-nums sm:min-w-[104px] sm:px-3 sm:py-2 sm:text-lg ${
+                    positive ? 'bg-emerald-500 text-white' : 'bg-rose-500 text-white'
+                  }`}
+                >
+                  {positive ? '+' : ''}
+                  {row.change.toFixed(2)}%
+                </div>
               </div>
             </div>
           );

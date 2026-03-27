@@ -48,6 +48,7 @@ import AiSuggestionCard from '@/components/ai-suggestion-card';
 import AuthGuard from '@/components/auth-guard';
 import NotificationBell from '@/components/notification-bell';
 import MarketTicker from '@/components/MarketTicker';
+import FloatingActions from '@/components/floating-actions';
 
 import { supabase } from '@/lib/supabaseClient';
 import type { User as UserEntity } from '@/lib/types';
@@ -525,6 +526,8 @@ const Home: NextPage = () => {
               )}
             </main>
           </div>
+
+          <FloatingActions />
         </div>
       </SidebarProvider>
     </AuthGuard>
