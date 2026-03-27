@@ -47,14 +47,12 @@ import WalletCard from '@/components/wallet-card';
 import AiSuggestionCard from '@/components/ai-suggestion-card';
 import AuthGuard from '@/components/auth-guard';
 import NotificationBell from '@/components/notification-bell';
+import MarketTicker from '@/components/MarketTicker';
 
 import { supabase } from '@/lib/supabaseClient';
 import type { User as UserEntity } from '@/lib/types';
 
 import PolicyGate from '@/components/policy-gate';
-import LiveCryptoTicker from '@/components/live-crypto-ticker';
-// Backward-compatible alias to avoid runtime crashes if older references to MarketTicker remain.
-const MarketTicker = LiveCryptoTicker;
 
 type UserRow = {
   id: string;
@@ -402,6 +400,27 @@ const Home: NextPage = () => {
   }, [sessionUserId]);
 
   useEffect(() => {
+    if (!sessionUserId) return;
+
+    const channel = supabase
+      .channel(`users-dashboard-${sessionUserId}`)
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'users', filter: `id=eq.${sessionUserId}` },
+        (payload) => {
+          if (!payload.new) return;
+          setUserProfile(mapUserRowToEntity(payload.new as UserRow));
+          setPolicyAccepted(Boolean((payload.new as any)?.policy_accepted ?? false));
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [sessionUserId]);
+
+  useEffect(() => {
     try {
       if (!sessionUserId) {
         setPolicyDismissed(false);
@@ -482,8 +501,6 @@ const Home: NextPage = () => {
               ) : (
                 <div className="grid flex-1 items-start gap-4 p-4 sm:px-6 sm:py-0 md:gap-8">
                   <div className="grid auto-rows-max items-start gap-4 md:gap-8">
-                    <MarketTicker />
-                    <LiveCryptoTicker />
                     <motion.div
                       className="grid gap-4 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-2 xl:grid-cols-4"
                       initial={{ opacity: 0, y: 20 }}
@@ -494,7 +511,9 @@ const Home: NextPage = () => {
                       <AiSuggestionCard userProfile={userProfile} isLoading={isLoading} />
                     </motion.div>
 
-                    <MarketTicker />
+                    <section className="w-full" aria-label="live-market-ticker">
+                      <MarketTicker />
+                    </section>
                   </div>
                 </div>
               )}

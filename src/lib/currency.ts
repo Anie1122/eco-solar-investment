@@ -1,17 +1,12 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import {
   BASE_CURRENCY,
   clampToPrecision,
-  fetchCryptoMarketSnapshot,
+  toSupportedCurrency,
   type SupportedCryptoCurrency,
 } from '@/lib/crypto-rates';
-
-type ConverterState = {
-  ratesFromUsdt: Record<SupportedCryptoCurrency, number>;
-  fetchedAt: number;
-};
 
 const FALLBACK_RATES: Record<SupportedCryptoCurrency, number> = {
   USDT: 1,
@@ -22,51 +17,9 @@ const FALLBACK_RATES: Record<SupportedCryptoCurrency, number> = {
   SOL: 0.006,
 };
 
-const REFRESH_MS = 45_000;
-
-export function useCurrencyConverter(_userCurrency: string = BASE_CURRENCY) {
-  // Product rule: all users are normalized to a single display/base currency (USDT).
-  // We intentionally ignore userCurrency to avoid country/local-currency drift.
-  const currency = BASE_CURRENCY;
-
-  const [state, setState] = useState<ConverterState>({
-    ratesFromUsdt: FALLBACK_RATES,
-    fetchedAt: 0,
-  });
-  const [loading, setLoading] = useState<boolean>(true);
-
-  useEffect(() => {
-    let mounted = true;
-    let timer: ReturnType<typeof setTimeout> | null = null;
-
-    const load = async () => {
-      try {
-        const snapshot = await fetchCryptoMarketSnapshot();
-        if (!mounted) return;
-
-        setState({
-          ratesFromUsdt: snapshot.ratesFromUsdt,
-          fetchedAt: snapshot.fetchedAt,
-        });
-      } catch (error) {
-        console.error('currency rate fetch failed:', error);
-      } finally {
-        if (mounted) {
-          setLoading(false);
-          timer = setTimeout(load, REFRESH_MS);
-        }
-      }
-    };
-
-    load();
-
-    return () => {
-      mounted = false;
-      if (timer) clearTimeout(timer);
-    };
-  }, []);
-
-  const rate = state.ratesFromUsdt[currency] || 1;
+export function useCurrencyConverter(userCurrency: string = BASE_CURRENCY) {
+  const currency = toSupportedCurrency(userCurrency);
+  const rate = FALLBACK_RATES[currency] || 1;
 
   const convert = useMemo(() => {
     return (amountBaseUsdt: number) => {
@@ -100,7 +53,7 @@ export function useCurrencyConverter(_userCurrency: string = BASE_CURRENCY) {
     format,
     rate,
     currency,
-    loading,
-    fetchedAt: state.fetchedAt,
+    loading: false,
+    fetchedAt: 0,
   };
 }
