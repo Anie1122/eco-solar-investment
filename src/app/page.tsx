@@ -402,6 +402,27 @@ const Home: NextPage = () => {
   }, [sessionUserId]);
 
   useEffect(() => {
+    if (!sessionUserId) return;
+
+    const channel = supabase
+      .channel(`users-dashboard-${sessionUserId}`)
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'users', filter: `id=eq.${sessionUserId}` },
+        (payload) => {
+          if (!payload.new) return;
+          setUserProfile(mapUserRowToEntity(payload.new as UserRow));
+          setPolicyAccepted(Boolean((payload.new as any)?.policy_accepted ?? false));
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [sessionUserId]);
+
+  useEffect(() => {
     try {
       if (!sessionUserId) {
         setPolicyDismissed(false);
