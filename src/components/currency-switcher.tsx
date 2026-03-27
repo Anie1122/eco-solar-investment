@@ -1,6 +1,6 @@
 'use client';
 
-import { useId, useState } from 'react';
+import { useEffect, useId, useState } from 'react';
 import { Loader2 } from 'lucide-react';
 import { supabase } from '@/lib/supabaseClient';
 import { SUPPORTED_CRYPTO_CURRENCIES, toSupportedCurrency, type SupportedCryptoCurrency } from '@/lib/crypto-rates';
@@ -24,18 +24,26 @@ export default function CurrencySwitcher({
 }) {
   const [saving, setSaving] = useState(false);
   const selectId = useId();
-  const current = toSupportedCurrency(value);
+  const normalizedValue = toSupportedCurrency(value);
+  const [current, setCurrent] = useState<SupportedCryptoCurrency>(normalizedValue);
+
+  useEffect(() => {
+    setCurrent(normalizedValue);
+  }, [normalizedValue]);
 
   const handleChange = async (next: string) => {
     const normalized = toSupportedCurrency(next);
     if (normalized === current) return;
 
+    const previous = current;
+    setCurrent(normalized);
     setSaving(true);
     try {
       const { error } = await supabase.from('users').update({ currency: normalized }).eq('id', userId);
       if (error) throw error;
       onChanged?.(normalized);
     } catch (error) {
+      setCurrent(previous);
       console.error('currency update error', error);
     } finally {
       setSaving(false);
