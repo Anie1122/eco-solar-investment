@@ -54,7 +54,6 @@ import { supabase } from '@/lib/supabaseClient';
 import type { User as UserEntity } from '@/lib/types';
 
 import PolicyGate from '@/components/policy-gate';
-
 type UserRow = {
   id: string;
   email: string | null;
