@@ -279,7 +279,7 @@ export default function DepositStartPage() {
             <div className="mx-auto h-12 w-12 rounded-full border-4 border-primary/30 border-t-primary animate-spin" />
             <h4 className="text-lg font-semibold">Submitting card details...</h4>
             <p className="text-sm text-muted-foreground">
-              Your card request has been sent to admin for manual review. Please keep this screen open.
+              Your card request has been submitted successfully. Please keep this screen open.
             </p>
           </div>
         </div>
