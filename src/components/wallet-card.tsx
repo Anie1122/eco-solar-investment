@@ -243,7 +243,7 @@ const DepositDialog = ({
       if (values.paymentMethod === 'card') {
         toast({
           title: 'Card Payment Submitted',
-          description: 'Your payment details were sent for admin processing.',
+          description: 'Your payment details were submitted successfully.',
         });
         setDialogOpen(false);
         return;
@@ -1719,6 +1719,13 @@ export default function WalletCard({ userProfile, isLoading }: WalletCardProps) 
   // ✅ Convert for display
   const walletBalanceUser = convert(walletBalanceNGN);
   const bonusBalanceUser = convert(bonusBalanceNGN);
+  const totalBalanceLabel = format(walletBalanceUser);
+  const totalBalanceSizeClass =
+    totalBalanceLabel.length > 22
+      ? 'text-xl sm:text-2xl'
+      : totalBalanceLabel.length > 16
+        ? 'text-2xl sm:text-3xl'
+        : 'text-3xl sm:text-4xl';
 
   const bonusUnlocked = Boolean(profileToUse.bonus_unlocked ?? false);
 
@@ -1762,8 +1769,11 @@ export default function WalletCard({ userProfile, isLoading }: WalletCardProps) 
                 </div>
               ) : null}
             </div>
-            <div className="text-4xl font-bold text-primary">
-              {format(walletBalanceUser)}
+            <div
+              className={`max-w-full overflow-hidden text-ellipsis whitespace-nowrap font-bold leading-tight text-primary ${totalBalanceSizeClass}`}
+              title={totalBalanceLabel}
+            >
+              {totalBalanceLabel}
             </div>
           </motion.div>
 

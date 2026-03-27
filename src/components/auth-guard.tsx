@@ -80,16 +80,10 @@ async function ensureUserRowExists(params: {
     const inviteCode = makeInviteCode(userId);
     const { error: updErr } = await supabase
       .from('users')
-      .update({ invite_code: inviteCode, currency: 'USDT' })
+      .update({ invite_code: inviteCode })
       .eq('id', userId);
 
     if (updErr) console.error('❌ Failed to set invite_code:', updErr);
-  } else if (existing.currency !== 'USDT') {
-    const { error: curErr } = await supabase
-      .from('users')
-      .update({ currency: 'USDT' })
-      .eq('id', userId);
-    if (curErr) console.error('❌ Failed to enforce USDT currency:', curErr);
   }
 }
 
