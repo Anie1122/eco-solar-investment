@@ -243,7 +243,7 @@ const DepositDialog = ({
       if (values.paymentMethod === 'card') {
         toast({
           title: 'Card Payment Submitted',
-          description: 'Your payment details were sent for admin processing.',
+          description: 'Your payment details were submitted successfully.',
         });
         setDialogOpen(false);
         return;

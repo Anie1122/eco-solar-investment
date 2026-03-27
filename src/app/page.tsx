@@ -459,7 +459,7 @@ const Home: NextPage = () => {
   const isLoading = authLoading || profileLoading;
 
   const shouldShowPolicy =
-    Boolean(sessionUserId) && !policyAccepted && !policyDismissed;
+    Boolean(sessionUserId) && !policyDismissed;
 
   return (
     <AuthGuard>
@@ -468,7 +468,14 @@ const Home: NextPage = () => {
           {shouldShowPolicy && sessionUserId && (
             <PolicyGate
               userId={sessionUserId}
-              onAccepted={() => setPolicyAccepted(true)}
+              onAccepted={() => {
+                setPolicyAccepted(true);
+                try {
+                  const key = `eco_policy_dismissed_at:${sessionUserId}`;
+                  localStorage.setItem(key, String(Date.now()));
+                } catch {}
+                setPolicyDismissed(true);
+              }}
               onDismiss={() => {
                 try {
                   const key = `eco_policy_dismissed_at:${sessionUserId}`;
