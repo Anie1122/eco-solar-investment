@@ -47,6 +47,7 @@ import WalletCard from '@/components/wallet-card';
 import AiSuggestionCard from '@/components/ai-suggestion-card';
 import AuthGuard from '@/components/auth-guard';
 import NotificationBell from '@/components/notification-bell';
+import MarketTicker from '@/components/MarketTicker';
 
 import { supabase } from '@/lib/supabaseClient';
 import type { User as UserEntity } from '@/lib/types';
