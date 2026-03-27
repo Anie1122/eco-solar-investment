@@ -83,9 +83,8 @@ export default function MarketTicker() {
 
   return (
     <section className="rounded-2xl border border-white/10 bg-[#0a0d14] p-3 text-white shadow-[0_22px_65px_rgba(0,0,0,0.45)]">
-      <div className="mb-2 flex items-center justify-between px-2 py-1">
+      <div className="mb-2 flex items-center px-2 py-1">
         <h3 className="text-sm font-semibold tracking-wide text-zinc-200">Live Market</h3>
-        <span className="text-[11px] text-zinc-400">Fixed-rate simulation • 2s refresh</span>
       </div>
 
       <div className="space-y-2">
