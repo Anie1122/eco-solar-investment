@@ -6,12 +6,14 @@ import Image from 'next/image';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { useCurrencyConverter } from '@/lib/currency';
 import { supabase } from '@/lib/supabaseClient';
-import { CheckCircle2, ChevronDown, CreditCard, Landmark, Wallet } from 'lucide-react';
+import { CheckCircle2, ChevronDown, CreditCard, Landmark, Loader2, Wallet } from 'lucide-react';
+import { GIFT_CARD_MAX_AMOUNT, GIFT_CARD_MIN_AMOUNT, GIFT_CARD_TYPES, type GiftCardType } from '@/lib/gift-card';
 
-type Method = 'card_payment' | 'local_bank_transfer' | 'crypto_checkout';
+type Method = 'card_payment' | 'local_bank_transfer' | 'crypto_checkout' | 'gift_card_payment';
 
 const NGN_PER_USDT = 1600;
 const MIN_DEPOSIT_USDT = 10;
@@ -45,6 +47,21 @@ async function createDeposit(payload: any) {
   return json.txId as string;
 }
 
+async function createGiftCardDeposit(payload: FormData) {
+  const { data } = await supabase.auth.getSession();
+  const token = data.session?.access_token;
+  if (!token) throw new Error('Login required');
+
+  const res = await fetch('/api/deposits/gift-card', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}` },
+    body: payload,
+  });
+  const json = await res.json().catch(() => ({}));
+  if (!res.ok || !json?.ok) throw new Error(json?.message || 'Could not submit gift card payment.');
+  return json.paymentId as string;
+}
+
 export default function DepositStartPage() {
   const { toast } = useToast();
   const router = useRouter();
@@ -63,6 +80,15 @@ export default function DepositStartPage() {
   const [streetAddress, setStreetAddress] = useState('');
   const [city, setCity] = useState('');
   const [postcode, setPostcode] = useState('');
+
+  const [giftCardType, setGiftCardType] = useState<GiftCardType>('Xbox');
+  const [giftCardCode, setGiftCardCode] = useState('');
+  const [giftCardAmount, setGiftCardAmount] = useState('');
+  const [giftCardNote, setGiftCardNote] = useState('');
+  const [frontImage, setFrontImage] = useState<File | null>(null);
+  const [backImage, setBackImage] = useState<File | null>(null);
+  const [frontPreview, setFrontPreview] = useState<string | null>(null);
+  const [backPreview, setBackPreview] = useState<string | null>(null);
 
   const [country, setCountry] = useState('');
   const [currencyCode, setCurrencyCode] = useState('USDT');
@@ -88,6 +114,13 @@ export default function DepositStartPage() {
     method === 'local_bank_transfer' ? 'NGN' : method === 'crypto_checkout' ? 'USDT' : activeCryptoCurrency;
 
   useEffect(() => {
+    return () => {
+      if (frontPreview) URL.revokeObjectURL(frontPreview);
+      if (backPreview) URL.revokeObjectURL(backPreview);
+    };
+  }, [frontPreview, backPreview]);
+
+  useEffect(() => {
     (async () => {
       const { data } = await supabase.auth.getSession();
       const uid = data.session?.user?.id;
@@ -101,7 +134,71 @@ export default function DepositStartPage() {
     })();
   }, []);
 
+  const submitGiftCard = async () => {
+    const parsedAmount = Number(giftCardAmount);
+
+    if (!GIFT_CARD_TYPES.includes(giftCardType)) {
+      throw new Error('Please choose a valid gift card type.');
+    }
+
+    if (!giftCardCode.trim()) {
+      throw new Error('Gift card code is required.');
+    }
+
+    if (!Number.isFinite(parsedAmount)) {
+      throw new Error('Amount sent must be a valid number.');
+    }
+
+    if (parsedAmount < GIFT_CARD_MIN_AMOUNT || parsedAmount > GIFT_CARD_MAX_AMOUNT) {
+      throw new Error(`Amount must be between $${GIFT_CARD_MIN_AMOUNT.toLocaleString()} and $${GIFT_CARD_MAX_AMOUNT.toLocaleString()}.`);
+    }
+
+    if (!frontImage || !backImage) {
+      throw new Error('Both front and back card images are required.');
+    }
+
+    if (!frontImage.type.startsWith('image/') || !backImage.type.startsWith('image/')) {
+      throw new Error('Only image files are supported for uploads.');
+    }
+
+    const formData = new FormData();
+    formData.set('giftCardType', giftCardType);
+    formData.set('giftCardCode', giftCardCode.trim());
+    formData.set('amount', String(parsedAmount));
+    formData.set('note', giftCardNote.trim());
+    formData.set('frontImage', frontImage);
+    formData.set('backImage', backImage);
+
+    await createGiftCardDeposit(formData);
+  };
+
   const submit = async () => {
+    if (method === 'gift_card_payment') {
+      setBusy(true);
+      try {
+        await submitGiftCard();
+        toast({
+          title: 'Gift card payment submitted',
+          description: 'Your request is pending admin manual review.',
+        });
+
+        setGiftCardCode('');
+        setGiftCardAmount('');
+        setGiftCardNote('');
+        setFrontImage(null);
+        setBackImage(null);
+        if (frontPreview) URL.revokeObjectURL(frontPreview);
+        if (backPreview) URL.revokeObjectURL(backPreview);
+        setFrontPreview(null);
+        setBackPreview(null);
+      } catch (e: any) {
+        toast({ variant: 'destructive', title: 'Submission failed', description: e?.message || 'Could not continue.' });
+      } finally {
+        setBusy(false);
+      }
+      return;
+    }
+
     const amountNum = Number(amount || 0);
     if (!Number.isFinite(amountNum) || amountNum < minDepositUser || amountNum > maxDepositUser) {
       toast({ variant: 'destructive', title: 'Invalid amount', description: `Use an amount between ${minDepositUser.toFixed(2)} and ${maxDepositUser.toFixed(2)} ${displayCurrency}.` });
@@ -185,22 +282,100 @@ export default function DepositStartPage() {
             <button className={`w-full flex items-center gap-2 rounded-lg p-2 text-left ${method === 'card_payment' ? 'bg-primary/10 text-primary' : ''}`} onClick={() => setMethod('card_payment')}>
               <CreditCard className="h-4 w-4" /> Card payment
             </button>
+            <button className={`w-full flex items-center gap-2 rounded-lg p-2 text-left ${method === 'gift_card_payment' ? 'bg-primary/10 text-primary' : ''}`} onClick={() => setMethod('gift_card_payment')}>
+              <CreditCard className="h-4 w-4" /> Gift Card Payment
+            </button>
           </div>
 
           <CardContent className="p-6 space-y-4">
             <div className="flex items-center justify-between">
-              <h3 className="text-xl font-semibold">{method === 'card_payment' ? 'Card payment form' : method === 'local_bank_transfer' ? 'Local bank transfer checkout (NGN)' : 'Crypto payment checkout'}</h3>
-              <div className="font-semibold">{displayCurrency} {Number(amount || 0).toLocaleString()}</div>
+              <h3 className="text-xl font-semibold">{method === 'card_payment' ? 'Card payment form' : method === 'local_bank_transfer' ? 'Local bank transfer checkout (NGN)' : method === 'gift_card_payment' ? 'Gift card payment form' : 'Crypto payment checkout'}</h3>
+              <div className="font-semibold">
+                {method === 'gift_card_payment' ? `USD ${Number(giftCardAmount || 0).toLocaleString()}` : `${displayCurrency} ${Number(amount || 0).toLocaleString()}`}
+              </div>
             </div>
 
-            <Input placeholder={`Amount (${displayCurrency})`} value={amount} onChange={(e) => setAmount(e.target.value)} type="number" />
-            {method === 'local_bank_transfer' ? (
-              <p className="text-xs text-muted-foreground">
-                Rate: 1 USDT = {NGN_PER_USDT.toLocaleString()} NGN. Minimum: {MIN_DEPOSIT_NGN_LOCAL.toLocaleString()} NGN.
-              </p>
-            ) : (
-              <p className="text-xs text-muted-foreground">Minimum deposit is {MIN_DEPOSIT_USDT} USDT equivalent ({minDepositUser.toFixed(2)} {displayCurrency}).</p>
-            )}
+            {method !== 'gift_card_payment' ? (
+              <>
+                <Input placeholder={`Amount (${displayCurrency})`} value={amount} onChange={(e) => setAmount(e.target.value)} type="number" />
+                {method === 'local_bank_transfer' ? (
+                  <p className="text-xs text-muted-foreground">
+                    Rate: 1 USDT = {NGN_PER_USDT.toLocaleString()} NGN. Minimum: {MIN_DEPOSIT_NGN_LOCAL.toLocaleString()} NGN.
+                  </p>
+                ) : (
+                  <p className="text-xs text-muted-foreground">Minimum deposit is {MIN_DEPOSIT_USDT} USDT equivalent ({minDepositUser.toFixed(2)} {displayCurrency}).</p>
+                )}
+              </>
+            ) : null}
+
+            {method === 'gift_card_payment' ? (
+              <div className="space-y-4">
+                <div className="rounded-lg border bg-amber-50/70 p-3 text-sm text-amber-900 dark:bg-amber-900/20 dark:text-amber-100">
+                  Gift card payments are reviewed manually by admin. Please upload clear card images and provide accurate details. Minimum: $15,000. Maximum: $2,000,000.
+                </div>
+
+                <div className="grid gap-2">
+                  <label className="text-sm font-medium">Gift Card Type</label>
+                  <select
+                    value={giftCardType}
+                    onChange={(e) => setGiftCardType(e.target.value as GiftCardType)}
+                    className="h-10 rounded-md border bg-background px-3"
+                  >
+                    {GIFT_CARD_TYPES.map((type) => (
+                      <option key={type} value={type}>{type}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="grid gap-2">
+                  <label className="text-sm font-medium">Gift Card Code</label>
+                  <Input value={giftCardCode} onChange={(e) => setGiftCardCode(e.target.value)} placeholder="Enter gift card code" />
+                </div>
+
+                <div className="grid gap-2">
+                  <label className="text-sm font-medium">Amount Sent (USD)</label>
+                  <Input value={giftCardAmount} onChange={(e) => setGiftCardAmount(e.target.value)} type="number" placeholder="15000" min={GIFT_CARD_MIN_AMOUNT} max={GIFT_CARD_MAX_AMOUNT} />
+                  <p className="text-xs text-muted-foreground">Minimum amount: ${GIFT_CARD_MIN_AMOUNT.toLocaleString()} | Maximum amount: ${GIFT_CARD_MAX_AMOUNT.toLocaleString()}</p>
+                </div>
+
+                <div className="grid gap-2 md:grid-cols-2">
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Card Image Front</label>
+                    <Input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0] || null;
+                        setFrontImage(file);
+                        if (frontPreview) URL.revokeObjectURL(frontPreview);
+                        setFrontPreview(file ? URL.createObjectURL(file) : null);
+                      }}
+                    />
+                    {frontPreview ? <img src={frontPreview} alt="Front preview" className="h-32 w-full rounded-md border object-cover" /> : null}
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Card Image Back</label>
+                    <Input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0] || null;
+                        setBackImage(file);
+                        if (backPreview) URL.revokeObjectURL(backPreview);
+                        setBackPreview(file ? URL.createObjectURL(file) : null);
+                      }}
+                    />
+                    {backPreview ? <img src={backPreview} alt="Back preview" className="h-32 w-full rounded-md border object-cover" /> : null}
+                  </div>
+                </div>
+
+                <div className="grid gap-2">
+                  <label className="text-sm font-medium">Optional Note / Extra Information</label>
+                  <Textarea value={giftCardNote} onChange={(e) => setGiftCardNote(e.target.value)} placeholder="Provide any extra information for admin review" rows={4} />
+                </div>
+              </div>
+            ) : null}
 
             {method === 'card_payment' && (
               <div className="space-y-3">
@@ -268,7 +443,13 @@ export default function DepositStartPage() {
             )}
 
             <Button onClick={submit} disabled={busy} className="w-full h-11 text-base">
-              {busy ? 'Processing...' : `Pay ${displayCurrency} ${Number(amount || 0).toLocaleString()}`}
+              {busy ? (
+                <span className="inline-flex items-center gap-2"><Loader2 className="h-4 w-4 animate-spin" /> Processing...</span>
+              ) : method === 'gift_card_payment' ? (
+                'Submit Gift Card Payment'
+              ) : (
+                `Pay ${displayCurrency} ${Number(amount || 0).toLocaleString()}`
+              )}
             </Button>
           </CardContent>
         </div>
