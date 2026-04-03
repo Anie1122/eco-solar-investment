@@ -36,6 +36,27 @@ export function useCurrencyConverter(userCurrency: string = BASE_CURRENCY) {
 
   const rate = state.ratesFromUsdt[currency] || 1;
 
+import { useMemo } from 'react';
+import {
+  BASE_CURRENCY,
+  clampToPrecision,
+  toSupportedCurrency,
+  type SupportedCryptoCurrency,
+} from '@/lib/crypto-rates';
+
+const FALLBACK_RATES: Record<SupportedCryptoCurrency, number> = {
+  USDT: 1,
+  USDC: 1,
+  ETH: 0.0004,
+  BNB: 0.0018,
+  BTC: 0.000015,
+  SOL: 0.006,
+};
+
+export function useCurrencyConverter(userCurrency: string = BASE_CURRENCY) {
+  const currency = toSupportedCurrency(userCurrency);
+  const rate = FALLBACK_RATES[currency] || 1;
+
   const convert = useMemo(() => {
     return (amountBaseUsdt: number) => {
       const n = Number(amountBaseUsdt || 0);
@@ -70,5 +91,7 @@ export function useCurrencyConverter(userCurrency: string = BASE_CURRENCY) {
     currency,
     loading,
     fetchedAt: state.fetchedAt,
+    loading: false,
+    fetchedAt: 0,
   };
 }

@@ -76,7 +76,6 @@ export default function CompleteProfilePage() {
     mode: 'onChange',
   });
 
-  // ✅ IMPORTANT FIX: make selectedCountry depend on the watched value
   const selectedCountryName = form.watch('country');
 
   const selectedCountry = useMemo(() => {
@@ -88,13 +87,11 @@ export default function CompleteProfilePage() {
     return found ?? COUNTRIES[0];
   }, [COUNTRIES, selectedCountryName]);
 
-  // ✅ Keep dial synced to selected country
   useEffect(() => {
     if (!selectedCountry) return;
     form.setValue('dial', selectedCountry.dial, { shouldValidate: true });
   }, [selectedCountry, form]);
 
-  // Prefill + redirect if already completed
   useEffect(() => {
     const run = async () => {
       try {
@@ -163,10 +160,13 @@ export default function CompleteProfilePage() {
 
       const phone_number = `${values.dial} ${values.phone}`.trim();
 
-      // Update profile
-      const { error: updateError } = await supabase
-        .from('users')
-        .update({
+      const res = await fetch('/api/profile/complete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: user.id,
+          email: user.email ?? '',
+          fullName: (user.user_metadata as any)?.full_name ?? '',
           country: selectedCountry?.name ?? values.country,
           phone_number,
           currency,
@@ -198,6 +198,13 @@ export default function CompleteProfilePage() {
           );
 
         if (upsertError) throw upsertError;
+        }),
+      });
+
+      const json = await res.json();
+
+      if (!res.ok || !json?.ok) {
+        throw new Error(json?.message || 'Could not save profile.');
       }
 
       toast({ title: 'Profile saved', description: 'Redirecting to dashboard...' });

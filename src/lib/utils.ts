@@ -11,12 +11,11 @@ export const getStatusBadgeVariant = (
   status: Transaction['status']
 ): 'default' | 'secondary' | 'destructive' | 'success' | 'warning' => {
   switch (status) {
-    case 'approved':
+    case 'success':
       return 'success';
     case 'pending':
       return 'warning';
     case 'failed':
-    case 'rejected':
       return 'destructive';
     default:
       return 'secondary';

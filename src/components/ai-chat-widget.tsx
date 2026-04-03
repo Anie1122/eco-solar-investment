@@ -16,11 +16,27 @@ type ChatMsg = {
   text: string;
 };
 
-export default function AIChatWidget() {
-  const [open, setOpen] = useState(false);
+type AIChatWidgetProps = {
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+};
+
+type ApiHistoryMsg = {
+  role: 'user' | 'model';
+  content: { text: string }[];
+};
+
+export default function AIChatWidget({ open, onOpenChange }: AIChatWidgetProps) {
+  const [internalOpen, setInternalOpen] = useState(false);
   const [messages, setMessages] = useState<ChatMsg[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
+  const isOpen = typeof open === 'boolean' ? open : internalOpen;
+
+  const setOpen = (next: boolean) => {
+    if (typeof open !== 'boolean') setInternalOpen(next);
+    onOpenChange?.(next);
+  };
 
   const suggestedQuestions = [
     'Which plan is best for a beginner?',
@@ -33,9 +49,9 @@ export default function AIChatWidget() {
     return investmentPlans
       .map(
         (p) =>
-          `- ${p.name}: Invest NGN ${Number(p.amount).toLocaleString()} for ${
+          `- ${p.name}: Invest USDT ${Number(p.amount).toLocaleString()} for ${
             p.duration
-          } days, earn NGN ${Number(p.dailyProfit).toLocaleString()} daily, total return NGN ${Number(
+          } days, earn USDT ${Number(p.dailyProfit).toLocaleString()} daily, total return USDT ${Number(
             p.totalReturn
           ).toLocaleString()}`
       )
@@ -49,7 +65,7 @@ Only answer investment-related questions about the plans and safe investing tips
 Be concise, clear, and helpful.
 Do NOT promise guaranteed profits or guaranteed returns.
 
-Available investment plans (NGN base):
+Available investment plans (USDT base):
 ${plansText}
     `.trim();
   }, [plansText]);
@@ -58,17 +74,19 @@ ${plansText}
   const handleClose = () => setOpen(false);
 
   const askAI = async (question: string) => {
+    const history: ApiHistoryMsg[] = messages.map((m) => ({
+      role: m.role === 'assistant' ? 'model' : 'user',
+      content: [{ text: m.text }],
+    }));
+
     const res = await fetch('/api/ai/chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        prompt: question,
+        question,
+        history,
+        plans: plansText,
         system: systemPrompt,
-        // send a light history (optional)
-        messages: messages.map((m) => ({
-          role: m.role === 'assistant' ? 'assistant' : 'user',
-          content: m.text,
-        })),
       }),
     });
 
@@ -83,7 +101,7 @@ ${plansText}
     const content = (text ?? input).trim();
     if (!content || loading) return;
 
-    const nextMessages = [...messages, { role: 'user', text: content }];
+    const nextMessages: ChatMsg[] = [...messages, { role: 'user', text: content }];
     setMessages(nextMessages);
     setInput('');
     setLoading(true);
@@ -106,7 +124,7 @@ ${plansText}
     <>
       {/* ✅ SMALLER MODERN FLOATING BOT BUTTON (hidden when chat open) */}
       {!open && (<motion.div
-    className="fixed right-4 bottom-[82px] z-[9999]"
+    className="floating-widget fixed right-4 bottom-[82px] z-[9999]"
     initial={{ opacity: 0, y: 10, scale: 0.98 }}
     animate={{ opacity: 1, y: 0, scale: 1 }}
     transition={{ duration: 0.18 }}
@@ -119,7 +137,7 @@ ${plansText}
         relative
         h-14 w-14           /* 🔥 smaller size */
         rounded-full
-        shadow-[0_14px_35px_rgba(6,182,212,0.35)]
+        shadow-[0_14px_35px_rgba(245,158,11,0.45)]
         ring-1 ring-white/30
         overflow-hidden
         active:scale-[0.97]
@@ -127,7 +145,7 @@ ${plansText}
       "
       style={{
         background:
-          'linear-gradient(135deg, rgba(6,182,212,1) 0%, rgba(59,130,246,1) 100%)',
+          'linear-gradient(135deg, rgba(245,158,11,1) 0%, rgba(217,119,6,1) 100%)',
       }}
     >
       {/* Bot icon */}
@@ -147,14 +165,14 @@ ${plansText}
           flex items-center justify-center
         "
       >
-        <Sparkles className="h-3.5 w-3.5 text-sky-500" />
+        <Sparkles className="h-3.5 w-3.5 text-amber-500" />
       </div>
     </motion.button>
   </motion.div>
 )}
 
       {/* ✅ Sheet Chat (no Link, no navigation) */}
-      <Sheet open={open} onOpenChange={setOpen}>
+      <Sheet open={isOpen} onOpenChange={setOpen}>
         <SheetContent className="flex flex-col p-0 z-[10000]">
           <SheetHeader className="p-4 border-b">
             <div className="flex items-center justify-between">

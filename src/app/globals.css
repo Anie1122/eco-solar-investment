@@ -54,6 +54,11 @@
 }
 
 @layer base {
+  html {
+    /* Global normalization after size update request */
+    font-size: 90%;
+  }
+
   * {
     @apply border-border;
   }
@@ -72,5 +77,28 @@
   @keyframes ticker-scroll {
     0% { transform: translateX(0); }
     100% { transform: translateX(-50%); }
+  .price-flash-up {
+    animation: priceFlashUp 420ms ease-out;
+    background: rgba(16, 185, 129, 0.24);
+  }
+
+  .price-flash-down {
+    animation: priceFlashDown 420ms ease-out;
+    background: rgba(244, 63, 94, 0.22);
+  }
+
+  @keyframes ticker-scroll {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(-50%); }
+  }
+
+  @keyframes priceFlashUp {
+    0% { background: rgba(16, 185, 129, 0.36); }
+    100% { background: rgba(17, 21, 34, 1); }
+  }
+
+  @keyframes priceFlashDown {
+    0% { background: rgba(244, 63, 94, 0.34); }
+    100% { background: rgba(17, 21, 34, 1); }
   }
 }

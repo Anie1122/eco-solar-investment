@@ -45,9 +45,10 @@ import {
 
 import WalletCard from '@/components/wallet-card';
 import AiSuggestionCard from '@/components/ai-suggestion-card';
-import TransactionHistory from '@/components/transaction-history';
 import AuthGuard from '@/components/auth-guard';
 import NotificationBell from '@/components/notification-bell';
+import MarketTicker from '@/components/MarketTicker';
+import FloatingActions from '@/components/floating-actions';
 
 import { supabase } from '@/lib/supabaseClient';
 import type { User as UserEntity } from '@/lib/types';
@@ -90,7 +91,7 @@ function mapUserRowToEntity(row: UserRow): UserEntity {
     currency: row.currency ?? 'USDT',
     phoneNumber: row.phone_number ?? '',
     walletBalance: Number(row.wallet_balance ?? 0),
-    bonusBalance: Number(row.bonus_balance ?? 1500),
+    bonusBalance: Number(row.bonus_balance ?? 1.5),
     hasInvested: Boolean(row.has_invested ?? false),
     profileCompleted: Boolean(row.profile_completed ?? false),
     status: (row.status ?? 'active') as any,
@@ -432,6 +433,27 @@ const Home: NextPage = () => {
   }, [sessionUserId]);
 
   useEffect(() => {
+    if (!sessionUserId) return;
+
+    const channel = supabase
+      .channel(`users-dashboard-${sessionUserId}`)
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'users', filter: `id=eq.${sessionUserId}` },
+        (payload) => {
+          if (!payload.new) return;
+          setUserProfile(mapUserRowToEntity(payload.new as UserRow));
+          setPolicyAccepted(Boolean((payload.new as any)?.policy_accepted ?? false));
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [sessionUserId]);
+
+  useEffect(() => {
     try {
       if (!sessionUserId) {
         setPolicyDismissed(false);
@@ -451,8 +473,20 @@ const Home: NextPage = () => {
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
-    sessionStorage.clear();
-    localStorage.clear();
+
+    // Clear only app-scoped volatile keys to avoid breaking other client state.
+    try {
+      Object.keys(sessionStorage)
+        .filter((key) => key.startsWith('eco_'))
+        .forEach((key) => sessionStorage.removeItem(key));
+
+      Object.keys(localStorage)
+        .filter((key) => key.startsWith('eco_'))
+        .forEach((key) => localStorage.removeItem(key));
+    } catch {
+      // no-op for restricted storage environments
+    }
+
     router.push('/login');
   };
 
@@ -472,7 +506,7 @@ const Home: NextPage = () => {
   const isLoading = authLoading || profileLoading;
 
   const shouldShowPolicy =
-    Boolean(sessionUserId) && !policyAccepted && !policyDismissed;
+    Boolean(sessionUserId) && !policyDismissed;
 
   return (
     <AuthGuard>
@@ -481,7 +515,14 @@ const Home: NextPage = () => {
           {shouldShowPolicy && sessionUserId && (
             <PolicyGate
               userId={sessionUserId}
-              onAccepted={() => setPolicyAccepted(true)}
+              onAccepted={() => {
+                setPolicyAccepted(true);
+                try {
+                  const key = `eco_policy_dismissed_at:${sessionUserId}`;
+                  localStorage.setItem(key, String(Date.now()));
+                } catch {}
+                setPolicyDismissed(true);
+              }}
               onDismiss={() => {
                 try {
                   const key = `eco_policy_dismissed_at:${sessionUserId}`;
@@ -526,12 +567,16 @@ const Home: NextPage = () => {
                       <AiSuggestionCard userProfile={userProfile} isLoading={isLoading} />
                     </motion.div>
 
-                    <TransactionHistory />
+                    <section className="w-full" aria-label="live-market-ticker">
+                      <MarketTicker />
+                    </section>
                   </div>
                 </div>
               )}
             </main>
           </div>
+
+          <FloatingActions />
         </div>
       </SidebarProvider>
     </AuthGuard>
