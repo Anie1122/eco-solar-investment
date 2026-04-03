@@ -94,6 +94,11 @@ export async function POST(req: Request) {
       .insert({
         user_id: user.id,
         full_name: displayName || null,
+    const { data, error } = await admin
+      .from('gift_card_payments')
+      .insert({
+        user_id: user.id,
+        full_name: String((userRow as any)?.full_name || user.user_metadata?.full_name || '').trim() || null,
         email: String((userRow as any)?.email || user.email || '').trim() || null,
         gift_card_type: payload.giftCardType,
         gift_card_code: payload.giftCardCode,
@@ -144,6 +149,9 @@ export async function POST(req: Request) {
     if (linkErr) throw linkErr;
 
     return NextResponse.json({ ok: true, paymentId: giftPayment.id, status: giftPayment.status, createdAt: giftPayment.created_at });
+    if (error) throw error;
+
+    return NextResponse.json({ ok: true, paymentId: data.id, status: data.status, createdAt: data.created_at });
   } catch (e: any) {
     console.error('Gift card payment create failed:', e?.message || e);
     return NextResponse.json({ ok: false, message: e?.message || 'Could not submit gift card payment.' }, { status: 500 });

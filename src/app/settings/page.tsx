@@ -85,11 +85,21 @@ const setPinFormSchema = z
 function useSupabaseSessionUser() {
   const [userId, setUserId] = useState<string | null>(null);
 
+  const isRefreshTokenError = (message?: string) => {
+    const m = String(message || '').toLowerCase();
+    return m.includes('invalid refresh token') || m.includes('refresh token not found');
+  };
+
   useEffect(() => {
     let unsub: { data: { subscription: { unsubscribe: () => void } } } | null = null;
 
     const run = async () => {
-      const { data } = await supabase.auth.getSession();
+      const { data, error } = await supabase.auth.getSession();
+      if (error && isRefreshTokenError(error.message)) {
+        await supabase.auth.signOut({ scope: 'local' });
+        sessionStorage.clear();
+        localStorage.clear();
+      }
       setUserId(data.session?.user?.id ?? null);
 
       unsub = supabase.auth.onAuthStateChange((_e, s) => {

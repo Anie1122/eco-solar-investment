@@ -74,6 +74,9 @@
     animation: ticker-scroll 28s linear infinite;
   }
 
+  @keyframes ticker-scroll {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(-50%); }
   .price-flash-up {
     animation: priceFlashUp 420ms ease-out;
     background: rgba(16, 185, 129, 0.24);

@@ -1,5 +1,41 @@
 'use client';
 
+import { useEffect, useMemo, useState } from 'react';
+import {
+  BASE_CURRENCY,
+  clampToPrecision,
+  FIXED_RATES_FROM_USDT,
+  toSupportedCurrency,
+  type SupportedCryptoCurrency,
+} from '@/lib/crypto-rates';
+
+type ConverterState = {
+  ratesFromUsdt: Record<SupportedCryptoCurrency, number>;
+  fetchedAt: number;
+};
+
+const FALLBACK_RATES: Record<SupportedCryptoCurrency, number> = FIXED_RATES_FROM_USDT;
+
+export function useCurrencyConverter(userCurrency: string = BASE_CURRENCY) {
+  const currency = toSupportedCurrency(userCurrency);
+
+  const [state, setState] = useState<ConverterState>({
+    ratesFromUsdt: FALLBACK_RATES,
+    fetchedAt: 0,
+  });
+  const [loading, setLoading] = useState<boolean>(true);
+
+  useEffect(() => {
+    // Deterministic conversion: fixed rates only.
+    setState({
+      ratesFromUsdt: FIXED_RATES_FROM_USDT,
+      fetchedAt: Date.now(),
+    });
+    setLoading(false);
+  }, []);
+
+  const rate = state.ratesFromUsdt[currency] || 1;
+
 import { useMemo } from 'react';
 import {
   BASE_CURRENCY,
@@ -53,6 +89,8 @@ export function useCurrencyConverter(userCurrency: string = BASE_CURRENCY) {
     format,
     rate,
     currency,
+    loading,
+    fetchedAt: state.fetchedAt,
     loading: false,
     fetchedAt: 0,
   };

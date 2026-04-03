@@ -25,6 +25,7 @@ export async function POST(req: Request) {
       const { data: gift, error: giftErr } = await admin
         .from('gift_card_payments')
         .select('id,user_id,amount,status,transaction_id')
+        .select('id,status')
         .eq('id', txId)
         .maybeSingle();
 

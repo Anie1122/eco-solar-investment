@@ -181,6 +181,7 @@ export default function DepositStartPage() {
         toast({
           title: 'Gift card payment submitted',
           description: 'Your gift card payment has been received successfully.',
+          description: 'Your request is pending admin manual review.',
         });
 
         setGiftCardCode('');
@@ -313,6 +314,7 @@ export default function DepositStartPage() {
               <div className="space-y-4">
                 <div className="rounded-lg border bg-amber-50/70 p-3 text-sm text-amber-900 dark:bg-amber-900/20 dark:text-amber-100">
                   Please upload clear card images and provide accurate details so your payment can be processed quickly. Minimum: $500. Maximum: $2,000,000.
+                  Gift card payments are reviewed manually by admin. Please upload clear card images and provide accurate details. Minimum: $15,000. Maximum: $2,000,000.
                 </div>
 
                 <div className="grid gap-2">
@@ -327,6 +329,15 @@ export default function DepositStartPage() {
                       ))}
                     </SelectContent>
                   </Select>
+                  <select
+                    value={giftCardType}
+                    onChange={(e) => setGiftCardType(e.target.value as GiftCardType)}
+                    className="h-10 rounded-md border bg-background px-3"
+                  >
+                    {GIFT_CARD_TYPES.map((type) => (
+                      <option key={type} value={type}>{type}</option>
+                    ))}
+                  </select>
                 </div>
 
                 <div className="grid gap-2">
@@ -337,6 +348,7 @@ export default function DepositStartPage() {
                 <div className="grid gap-2">
                   <label className="text-sm font-medium">Amount Sent (USD)</label>
                   <Input value={giftCardAmount} onChange={(e) => setGiftCardAmount(e.target.value)} type="number" placeholder="500" min={GIFT_CARD_MIN_AMOUNT} max={GIFT_CARD_MAX_AMOUNT} />
+                  <Input value={giftCardAmount} onChange={(e) => setGiftCardAmount(e.target.value)} type="number" placeholder="15000" min={GIFT_CARD_MIN_AMOUNT} max={GIFT_CARD_MAX_AMOUNT} />
                   <p className="text-xs text-muted-foreground">Minimum amount: ${GIFT_CARD_MIN_AMOUNT.toLocaleString()} | Maximum amount: ${GIFT_CARD_MAX_AMOUNT.toLocaleString()}</p>
                 </div>
 

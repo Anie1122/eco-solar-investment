@@ -11,6 +11,16 @@ export const SUPPORTED_CRYPTO_CURRENCIES = [
 
 export type SupportedCryptoCurrency = (typeof SUPPORTED_CRYPTO_CURRENCIES)[number];
 
+// Fixed display rates from USDT base (used for deterministic UI conversion).
+export const FIXED_RATES_FROM_USDT: Record<SupportedCryptoCurrency, number> = {
+  USDT: 1,
+  USDC: 1,
+  ETH: 0.0004,
+  BNB: 0.0018,
+  BTC: 0.000015,
+  SOL: 0.006,
+};
+
 const COINGECKO_IDS: Record<SupportedCryptoCurrency, string> = {
   USDT: 'tether',
   USDC: 'usd-coin',
