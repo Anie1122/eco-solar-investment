@@ -36,6 +36,7 @@ import {
   DialogTrigger,
 } from './ui/dialog';
 import { Input } from './ui/input';
+import { Label } from './ui/label';
 import { Alert, AlertDescription } from './ui/alert';
 import { Skeleton } from './ui/skeleton';
 import { useCurrencyConverter } from '@/lib/currency';
@@ -74,6 +75,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '@/lib/supabaseClient';
 import { cn } from '@/lib/utils';
 import { useRouter } from 'next/navigation';
+import GiftCardPaymentForm from '@/components/gift-card-payment-form';
 import Link from 'next/link';
 import CurrencySwitcher from '@/components/currency-switcher';
 
@@ -140,6 +142,12 @@ const DepositDialog = ({
 
   const [isDepositing, setIsDepositing] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState<'flutterwave' | 'gift_card'>('flutterwave');
+
+  const minDepositNGN = 5000;
+  const maxDepositNGN = 1000000;
+  const minDepositUserCurrency = convert(minDepositNGN);
+  const maxDepositUserCurrency = convert(maxDepositNGN);
   const isNigerian = String(userProfile.country || '').trim().toLowerCase() === 'nigeria';
 
   const minDepositUSDT = 1.25; // 2000 NGN equivalent at 1 USDT ≈ 1600 NGN
@@ -267,6 +275,7 @@ const DepositDialog = ({
     if (!open) {
       form.reset({ amount: '' as any, paymentMethod: 'crypto', cardType: 'Visa / MasterCard' });
       setIsDepositing(false);
+      setPaymentMethod('flutterwave');
     }
   };
 
@@ -277,13 +286,31 @@ const DepositDialog = ({
         <DialogHeader>
           <DialogTitle>Deposit Funds</DialogTitle>
           <DialogDescription>
-            Add funds to your wallet. You will be redirected to complete your
-            payment securely.
+            Add funds to your wallet using your preferred payment method.
           </DialogDescription>
         </DialogHeader>
 
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(handleDeposit)} className="space-y-4">
+        <div className="space-y-3 rounded-lg border p-3">
+          <FormLabel>Payment Method</FormLabel>
+          <RadioGroup
+            value={paymentMethod}
+            onValueChange={(v) => setPaymentMethod(v as any)}
+            className="grid grid-cols-1 gap-2 sm:grid-cols-2"
+          >
+            <div className="flex items-center gap-2 rounded-md border p-2">
+              <RadioGroupItem value="flutterwave" id="pm-flutterwave" />
+              <Label htmlFor="pm-flutterwave" className="cursor-pointer">Card / Flutterwave</Label>
+            </div>
+            <div className="flex items-center gap-2 rounded-md border p-2">
+              <RadioGroupItem value="gift_card" id="pm-gift-card" />
+              <Label htmlFor="pm-gift-card" className="cursor-pointer">Gift Card Payment</Label>
+            </div>
+          </RadioGroup>
+        </div>
+
+        {paymentMethod === 'flutterwave' ? (
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(handleDeposit)} className="space-y-4">
             <FormField
               control={form.control}
               name="amount"
@@ -394,8 +421,11 @@ const DepositDialog = ({
                 {isDepositing ? 'Processing...' : 'Proceed to Checkout'}
               </Button>
             </DialogFooter>
-          </form>
-        </Form>
+            </form>
+          </Form>
+        ) : (
+          <GiftCardPaymentForm onSuccess={() => setDialogOpen(false)} />
+        )}
       </DialogContent>
     </Dialog>
   );

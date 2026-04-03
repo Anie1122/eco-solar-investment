@@ -32,6 +32,7 @@ import { Loader2 } from 'lucide-react';
 import type { CountryItem } from '@/lib/countries';
 import { buildCountriesAtoZ } from '@/lib/countries';
 import { BASE_CURRENCY } from '@/lib/crypto-rates';
+import { getSignupBonusUsdtToday } from '@/lib/bonus';
 
 const schema = z.object({
   country: z.string().min(2, 'Select your country'),
@@ -153,6 +154,10 @@ export default function CompleteProfilePage() {
         return;
       }
 
+      const currency = BASE_CURRENCY;
+      // Merge-resolution choice: keep live converted bonus in USDT for all users.
+      const signupBonusUsdt = await getSignupBonusUsdtToday();
+
       const phone_number = `${values.dial} ${values.phone}`.trim();
 
       const res = await fetch('/api/profile/complete', {
@@ -164,6 +169,35 @@ export default function CompleteProfilePage() {
           fullName: (user.user_metadata as any)?.full_name ?? '',
           country: selectedCountry?.name ?? values.country,
           phone_number,
+          currency,
+          bonus_balance: signupBonusUsdt,
+          profile_completed: true,
+        })
+        .eq('id', user.id);
+
+      // If update fails (row missing), upsert
+      if (updateError) {
+        const { error: upsertError } = await supabase
+          .from('users')
+          .upsert(
+            {
+              id: user.id,
+              email: user.email ?? '',
+              full_name: (user.user_metadata as any)?.full_name ?? '',
+              country: selectedCountry?.name ?? values.country,
+              phone_number,
+              currency,
+              wallet_balance: 0,
+              bonus_balance: signupBonusUsdt,
+              has_invested: false,
+              profile_completed: true,
+              status: 'active',
+              created_at: new Date().toISOString(),
+            },
+            { onConflict: 'id' }
+          );
+
+        if (upsertError) throw upsertError;
         }),
       });
 

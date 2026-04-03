@@ -33,6 +33,7 @@ export default function RootLayout({
       </head>
 
       <body className={`${inter.variable} font-body antialiased`}>
+        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
         <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false}>
           <FirebaseClientProvider>
             {/* Main content */}
