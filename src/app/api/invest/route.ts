@@ -6,11 +6,16 @@ import { investmentPlans } from '@/lib/data';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  { auth: { persistSession: false } }
-);
+function getSupabaseAdmin() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const serviceRole = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+  if (!url || !serviceRole) {
+    throw new Error('Missing Supabase admin environment variables.');
+  }
+
+  return createClient(url, serviceRole, { auth: { persistSession: false } });
+}
 
 function addHoursISO(iso: string, hours: number) {
   const d = new Date(iso);
@@ -24,7 +29,7 @@ function addDaysISO(iso: string, days: number) {
   return d.toISOString();
 }
 
-async function safeNotify(payload: any) {
+async function safeNotify(supabaseAdmin: ReturnType<typeof getSupabaseAdmin>, payload: any) {
   const { error } = await supabaseAdmin.from('notifications').insert(payload as any);
   if (!error) return;
 
@@ -41,6 +46,7 @@ async function safeNotify(payload: any) {
 
 export async function POST(req: NextRequest) {
   try {
+    const supabaseAdmin = getSupabaseAdmin();
     const authHeader = req.headers.get('authorization') || '';
     const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null;
 
@@ -166,7 +172,7 @@ export async function POST(req: NextRequest) {
     }
 
     // ✅ Notifications
-    await safeNotify({
+    await safeNotify(supabaseAdmin, {
       user_id: userId,
       title: 'Investment Successful',
       message: `You successfully invested in ${plan.name}.`,
@@ -178,7 +184,7 @@ export async function POST(req: NextRequest) {
       metadata: { plan_id: plan.id, investment_id: invInserted?.id ?? null },
     });
 
-    await safeNotify({
+    await safeNotify(supabaseAdmin, {
       user_id: userId,
       title: 'Profit Credited',
       message: `Your first profit from ${plan.name} has been credited.`,
@@ -191,7 +197,7 @@ export async function POST(req: NextRequest) {
     });
 
     if (bonusToUnlock > 0) {
-      await safeNotify({
+      await safeNotify(supabaseAdmin, {
         user_id: userId,
         title: 'Bonus Unlocked',
         message: 'Your sign-up bonus has been unlocked and added to your wallet.',

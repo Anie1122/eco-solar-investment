@@ -24,6 +24,7 @@ export const GIFT_CARD_TYPES = [
 
 export type GiftCardType = (typeof GIFT_CARD_TYPES)[number];
 
+export const GIFT_CARD_MIN_AMOUNT = 500;
 export const GIFT_CARD_MIN_AMOUNT = 15000;
 export const GIFT_CARD_MAX_AMOUNT = 2000000;
 

@@ -1,6 +1,5 @@
 // src/app/layout.tsx
 import type { Metadata } from 'next';
-import { Inter } from 'next/font/google';
 import './globals.css';
 
 import { ThemeProvider } from '@/components/theme-provider';
@@ -8,8 +7,6 @@ import { FirebaseClientProvider } from '@/firebase/client-provider';
 import { Toaster } from '@/components/ui/toaster';
 
 import BottomNav from '@/components/bottom-nav';
-
-const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 
 export const metadata: Metadata = {
   title: 'Eco Solar Investment',
@@ -32,6 +29,7 @@ export default function RootLayout({
         />
       </head>
 
+      <body className="font-body antialiased">
       <body className={`${inter.variable} font-body antialiased`}>
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
         <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false}>

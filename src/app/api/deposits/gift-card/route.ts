@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { getUserFromBearer } from '@/lib/getUserFromBearer';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { GIFT_CARD_MAX_AMOUNT, GIFT_CARD_MIN_AMOUNT, GIFT_CARD_TYPES } from '@/lib/gift-card';
+import { assertTransactionStatus } from '@/lib/transaction-status';
 
 const schema = z.object({
   giftCardType: z.enum(GIFT_CARD_TYPES),
@@ -60,6 +61,7 @@ export async function POST(req: Request) {
 
     if (userErr) throw userErr;
 
+    const displayName = String((userRow as any)?.full_name || user.user_metadata?.full_name || (userRow as any)?.email || user.email || '').trim();
     const timestamp = Date.now();
     const rootPath = `${user.id}`;
     const frontPath = `${rootPath}/${timestamp}-front.${extensionFromMime(frontImage.type)}`;
@@ -85,6 +87,13 @@ export async function POST(req: Request) {
 
     if (backUploadErr) throw backUploadErr;
 
+    const now = new Date().toISOString();
+
+    const { data: giftPayment, error: paymentErr } = await admin
+      .from('gift_card_payments')
+      .insert({
+        user_id: user.id,
+        full_name: displayName || null,
     const { data, error } = await admin
       .from('gift_card_payments')
       .insert({
@@ -103,6 +112,43 @@ export async function POST(req: Request) {
       .select('id,status,created_at')
       .single();
 
+    if (paymentErr) throw paymentErr;
+
+    const txMetadata = {
+      paymentMethod: 'gift_card_payment',
+      amountInput: payload.amount,
+      inputCurrency: 'USD',
+      amountUsdt: payload.amount,
+      userName: displayName || user.id,
+      giftCardPaymentId: giftPayment.id,
+      giftCardType: payload.giftCardType,
+    };
+
+    const { data: tx, error: txErr } = await admin
+      .from('transactions')
+      .insert({
+        user_id: user.id,
+        transaction_type: 'deposit',
+        amount: payload.amount,
+        currency: 'USD',
+        status: assertTransactionStatus('pending'),
+        description: 'Deposit (gift_card_payment)',
+        created_at: now,
+        metadata: txMetadata,
+      } as any)
+      .select('id')
+      .single();
+
+    if (txErr) throw txErr;
+
+    const { error: linkErr } = await admin
+      .from('gift_card_payments')
+      .update({ transaction_id: tx.id })
+      .eq('id', giftPayment.id);
+
+    if (linkErr) throw linkErr;
+
+    return NextResponse.json({ ok: true, paymentId: giftPayment.id, status: giftPayment.status, createdAt: giftPayment.created_at });
     if (error) throw error;
 
     return NextResponse.json({ ok: true, paymentId: data.id, status: data.status, createdAt: data.created_at });

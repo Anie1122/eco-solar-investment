@@ -24,6 +24,7 @@ export async function POST(req: Request) {
     if (type === 'gift_card') {
       const { data: gift, error: giftErr } = await admin
         .from('gift_card_payments')
+        .select('id,user_id,amount,status,transaction_id')
         .select('id,status')
         .eq('id', txId)
         .maybeSingle();
@@ -35,6 +36,50 @@ export async function POST(req: Request) {
 
       if (gift.status !== 'pending') {
         return NextResponse.json({ ok: false, message: 'Gift card payment already reviewed.' }, { status: 400 });
+      }
+
+      if (action === 'approve') {
+        const { data: userRow, error: uErr } = await admin
+          .from('users')
+          .select('wallet_balance')
+          .eq('id', gift.user_id)
+          .maybeSingle();
+        if (uErr) throw uErr;
+
+        const current = Number((userRow as any)?.wallet_balance ?? 0);
+        const add = Number((gift as any).amount ?? 0);
+        const { error: updUserErr } = await admin
+          .from('users')
+          .update({ wallet_balance: current + add })
+          .eq('id', gift.user_id);
+        if (updUserErr) throw updUserErr;
+      }
+
+      if (gift.transaction_id) {
+        const { data: tx, error: txErr } = await admin
+          .from('transactions')
+          .select('id,metadata')
+          .eq('id', gift.transaction_id)
+          .maybeSingle();
+        if (txErr) throw txErr;
+
+        if (tx) {
+          const txMetadata = {
+            ...((tx as any).metadata || {}),
+            reviewedAt: new Date().toISOString(),
+            reviewedAction: action,
+            adminNote: adminNote || null,
+          };
+
+          const { error: updTxErr } = await admin
+            .from('transactions')
+            .update({
+              status: assertTransactionStatus(action === 'approve' ? 'success' : 'failed'),
+              metadata: txMetadata,
+            })
+            .eq('id', tx.id);
+          if (updTxErr) throw updTxErr;
+        }
       }
 
       const { error: updGiftErr } = await admin
