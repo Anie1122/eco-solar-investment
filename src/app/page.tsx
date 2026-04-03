@@ -53,6 +53,10 @@ import { supabase } from '@/lib/supabaseClient';
 import type { User as UserEntity } from '@/lib/types';
 
 import PolicyGate from '@/components/policy-gate';
+import LiveCryptoTicker from '@/components/live-crypto-ticker';
+import { SUPPORTED_CRYPTO_CURRENCIES, toSupportedCurrency, type SupportedCryptoCurrency } from '@/lib/crypto-rates';
+// Backward-compatible alias to avoid runtime crashes if older references to MarketTicker remain.
+const MarketTicker = LiveCryptoTicker;
 
 type UserRow = {
   id: string;
@@ -71,6 +75,11 @@ type UserRow = {
   policy_accepted?: boolean | null;
 };
 
+function isRefreshTokenError(message?: string) {
+  const m = String(message || '').toLowerCase();
+  return m.includes('invalid refresh token') || m.includes('refresh token not found');
+}
+
 function mapUserRowToEntity(row: UserRow): UserEntity {
   return {
     id: row.id,
@@ -78,7 +87,7 @@ function mapUserRowToEntity(row: UserRow): UserEntity {
     email: row.email ?? '',
     photoURL: '',
     country: row.country ?? '',
-    currency: row.currency ?? 'NGN',
+    currency: row.currency ?? 'USDT',
     phoneNumber: row.phone_number ?? '',
     walletBalance: Number(row.wallet_balance ?? 0),
     bonusBalance: Number(row.bonus_balance ?? 1500),
@@ -105,10 +114,14 @@ const DashboardSkeleton = () => (
 const DashboardHeader = ({
   userProfile,
   authEmail,
+  userId,
+  onCurrencyChange,
   onLogout,
 }: {
   userProfile: UserEntity | null;
   authEmail: string | null;
+  userId: string | null;
+  onCurrencyChange: (next: SupportedCryptoCurrency) => Promise<void>;
   onLogout: () => Promise<void>;
 }) => {
   const router = useRouter();
@@ -158,6 +171,20 @@ const DashboardHeader = ({
       </div>
 
       <div className="relative ml-auto flex-1 md:grow-0" />
+
+      {userId ? (
+        <select
+          className="h-8 rounded-md border border-input bg-background px-2 text-xs"
+          value={toSupportedCurrency(userProfile?.currency)}
+          onChange={(e) => void onCurrencyChange(toSupportedCurrency(e.target.value))}
+        >
+          {SUPPORTED_CRYPTO_CURRENCIES.map((code) => (
+            <option key={code} value={code}>
+              {code}
+            </option>
+          ))}
+        </select>
+      ) : null}
 
       <NotificationBell />
 
@@ -345,7 +372,12 @@ const Home: NextPage = () => {
       null;
 
     const run = async () => {
-      const { data } = await supabase.auth.getSession();
+      const { data, error } = await supabase.auth.getSession();
+      if (error && isRefreshTokenError(error.message)) {
+        await supabase.auth.signOut({ scope: 'local' });
+        sessionStorage.clear();
+        localStorage.clear();
+      }
       const user = data.session?.user ?? null;
 
       setSessionUserId(user?.id ?? null);
@@ -424,6 +456,19 @@ const Home: NextPage = () => {
     router.push('/login');
   };
 
+  const handleCurrencyChange = async (nextCurrency: SupportedCryptoCurrency) => {
+    if (!sessionUserId) return;
+    const { error } = await supabase
+      .from('users')
+      .update({ currency: nextCurrency })
+      .eq('id', sessionUserId);
+    if (error) {
+      console.error('Failed to update currency:', error);
+      return;
+    }
+    setUserProfile((prev) => (prev ? { ...prev, currency: nextCurrency } : prev));
+  };
+
   const isLoading = authLoading || profileLoading;
 
   const shouldShowPolicy =
@@ -459,6 +504,8 @@ const Home: NextPage = () => {
             <DashboardHeader
               userProfile={userProfile}
               authEmail={authEmail}
+              userId={sessionUserId}
+              onCurrencyChange={handleCurrencyChange}
               onLogout={handleLogout}
             />
 
@@ -468,6 +515,7 @@ const Home: NextPage = () => {
               ) : (
                 <div className="grid flex-1 items-start gap-4 p-4 sm:px-6 sm:py-0 md:gap-8">
                   <div className="grid auto-rows-max items-start gap-4 md:gap-8">
+                    <MarketTicker />
                     <motion.div
                       className="grid gap-4 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-2 xl:grid-cols-4"
                       initial={{ opacity: 0, y: 20 }}

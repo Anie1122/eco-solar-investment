@@ -34,6 +34,7 @@ import {
   DialogTrigger,
 } from './ui/dialog';
 import { Input } from './ui/input';
+import { Label } from './ui/label';
 import { Alert, AlertDescription } from './ui/alert';
 import { Skeleton } from './ui/skeleton';
 import { useCurrencyConverter } from '@/lib/currency';
@@ -65,6 +66,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '@/lib/supabaseClient';
 import { cn } from '@/lib/utils';
 import { useRouter } from 'next/navigation';
+import GiftCardPaymentForm from '@/components/gift-card-payment-form';
 
 interface WalletCardProps {
   userProfile: any | null;
@@ -87,7 +89,7 @@ type UserRow = {
   country: string | null;
   currency: string | null;
 
-  // IMPORTANT: these are assumed to be NGN base in your project
+  // IMPORTANT: these are assumed to be USDT base in your project
   wallet_balance: number | null;
   bonus_balance: number | null;
 
@@ -110,11 +112,12 @@ const DepositDialog = ({
   children: React.ReactNode;
 }) => {
   const { toast } = useToast();
-  const currencyCode = userProfile?.currency || 'NGN';
+  const currencyCode = userProfile?.currency || 'USDT';
   const { convert, format } = useCurrencyConverter(currencyCode);
 
   const [isDepositing, setIsDepositing] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState<'flutterwave' | 'gift_card'>('flutterwave');
 
   const minDepositNGN = 5000;
   const maxDepositNGN = 1000000;
@@ -176,7 +179,7 @@ const DepositDialog = ({
         fullName: userProfile.full_name,
         phoneNumber: userProfile.phone_number,
         userId: userProfile.id,
-        currency: userProfile.currency || 'NGN',
+        currency: userProfile.currency || 'USDT',
       };
 
       const response = await fetch('/api/flutterwave/create-deposit-session', {
@@ -212,6 +215,7 @@ const DepositDialog = ({
     if (!open) {
       form.reset({ amount: '' as any });
       setIsDepositing(false);
+      setPaymentMethod('flutterwave');
     }
   };
 
@@ -222,13 +226,31 @@ const DepositDialog = ({
         <DialogHeader>
           <DialogTitle>Deposit Funds</DialogTitle>
           <DialogDescription>
-            Add funds to your wallet. You will be redirected to complete your
-            payment securely.
+            Add funds to your wallet using your preferred payment method.
           </DialogDescription>
         </DialogHeader>
 
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(handleDeposit)} className="space-y-4">
+        <div className="space-y-3 rounded-lg border p-3">
+          <FormLabel>Payment Method</FormLabel>
+          <RadioGroup
+            value={paymentMethod}
+            onValueChange={(v) => setPaymentMethod(v as any)}
+            className="grid grid-cols-1 gap-2 sm:grid-cols-2"
+          >
+            <div className="flex items-center gap-2 rounded-md border p-2">
+              <RadioGroupItem value="flutterwave" id="pm-flutterwave" />
+              <Label htmlFor="pm-flutterwave" className="cursor-pointer">Card / Flutterwave</Label>
+            </div>
+            <div className="flex items-center gap-2 rounded-md border p-2">
+              <RadioGroupItem value="gift_card" id="pm-gift-card" />
+              <Label htmlFor="pm-gift-card" className="cursor-pointer">Gift Card Payment</Label>
+            </div>
+          </RadioGroup>
+        </div>
+
+        {paymentMethod === 'flutterwave' ? (
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(handleDeposit)} className="space-y-4">
             <FormField
               control={form.control}
               name="amount"
@@ -271,8 +293,11 @@ const DepositDialog = ({
                 {isDepositing ? 'Redirecting...' : 'Proceed to Payment'}
               </Button>
             </DialogFooter>
-          </form>
-        </Form>
+            </form>
+          </Form>
+        ) : (
+          <GiftCardPaymentForm onSuccess={() => setDialogOpen(false)} />
+        )}
       </DialogContent>
     </Dialog>
   );
@@ -352,7 +377,7 @@ async function clearWithdrawalPin() {
 }
 
 async function requestWithdrawal(payload: {
-  amount: number; // NGN base (fixed)
+  amount: number; // USDT base (fixed)
   bankName: string;
   accountNumber: string;
   accountName: string;
@@ -551,10 +576,10 @@ const WithdrawalDialogContent = ({
 }) => {
   const { toast } = useToast();
 
-  const currencyCode = userProfile.currency || 'NGN';
+  const currencyCode = userProfile.currency || 'USDT';
   const { convert, format, currency } = useCurrencyConverter(currencyCode);
 
-  // ✅ helper: convert a user-currency amount back to NGN base safely
+  // ✅ helper: convert a user-currency amount back to USDT base safely
   const toNGN = (amountUserCurrency: number) => {
     const oneNgnInUser = convert(1);
     if (!Number.isFinite(oneNgnInUser) || oneNgnInUser <= 0) return amountUserCurrency;
@@ -744,7 +769,7 @@ const WithdrawalDialogContent = ({
 
     setBusy(true);
     try {
-      // ✅ send NGN base to backend (so DB stays consistent)
+      // ✅ send USDT base to backend (so DB stays consistent)
       const amountNGN = toNGN(Number(pendingWithdrawal.amount));
 
       await requestWithdrawal({
@@ -1268,7 +1293,7 @@ export default function WalletCard({ userProfile, isLoading }: WalletCardProps) 
 
   const profileToUse = useMemo(() => liveProfile, [liveProfile]);
 
-  const currencyCode = profileToUse?.currency || 'NGN';
+  const currencyCode = profileToUse?.currency || 'USDT';
   const { convert, format } = useCurrencyConverter(currencyCode);
 
   if (isLoading || loadingProfile || !profileToUse) {
@@ -1304,7 +1329,7 @@ export default function WalletCard({ userProfile, isLoading }: WalletCardProps) 
     );
   }
 
-  // ✅ Treat DB values as NGN base
+  // ✅ Treat DB values as USDT base
   const walletBalanceNGN = Number(profileToUse.wallet_balance ?? 0);
   const bonusBalanceNGN = Number(profileToUse.bonus_balance ?? 0);
 
