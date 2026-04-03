@@ -12,12 +12,88 @@ export async function POST(req: Request) {
     const body = await req.json().catch(() => ({}));
     const txId = String(body?.txId ?? '').trim();
     const action = String(body?.action ?? '').trim();
+    const type = String(body?.type ?? 'deposit').trim();
+    const adminNote = String(body?.adminNote ?? '').trim();
 
     if (!txId || !['approve', 'decline'].includes(action)) {
       return NextResponse.json({ ok: false, message: 'Invalid review payload.' }, { status: 400 });
     }
 
     const admin = supabaseAdmin();
+
+    if (type === 'gift_card') {
+      const { data: gift, error: giftErr } = await admin
+        .from('gift_card_payments')
+        .select('id,user_id,amount,status,transaction_id')
+        .eq('id', txId)
+        .maybeSingle();
+
+      if (giftErr) throw giftErr;
+      if (!gift) {
+        return NextResponse.json({ ok: false, message: 'Gift card payment not found.' }, { status: 404 });
+      }
+
+      if (gift.status !== 'pending') {
+        return NextResponse.json({ ok: false, message: 'Gift card payment already reviewed.' }, { status: 400 });
+      }
+
+      if (action === 'approve') {
+        const { data: userRow, error: uErr } = await admin
+          .from('users')
+          .select('wallet_balance')
+          .eq('id', gift.user_id)
+          .maybeSingle();
+        if (uErr) throw uErr;
+
+        const current = Number((userRow as any)?.wallet_balance ?? 0);
+        const add = Number((gift as any).amount ?? 0);
+        const { error: updUserErr } = await admin
+          .from('users')
+          .update({ wallet_balance: current + add })
+          .eq('id', gift.user_id);
+        if (updUserErr) throw updUserErr;
+      }
+
+      if (gift.transaction_id) {
+        const { data: tx, error: txErr } = await admin
+          .from('transactions')
+          .select('id,metadata')
+          .eq('id', gift.transaction_id)
+          .maybeSingle();
+        if (txErr) throw txErr;
+
+        if (tx) {
+          const txMetadata = {
+            ...((tx as any).metadata || {}),
+            reviewedAt: new Date().toISOString(),
+            reviewedAction: action,
+            adminNote: adminNote || null,
+          };
+
+          const { error: updTxErr } = await admin
+            .from('transactions')
+            .update({
+              status: assertTransactionStatus(action === 'approve' ? 'success' : 'failed'),
+              metadata: txMetadata,
+            })
+            .eq('id', tx.id);
+          if (updTxErr) throw updTxErr;
+        }
+      }
+
+      const { error: updGiftErr } = await admin
+        .from('gift_card_payments')
+        .update({
+          status: action === 'approve' ? 'approved' : 'declined',
+          admin_note: adminNote || null,
+        })
+        .eq('id', txId);
+
+      if (updGiftErr) throw updGiftErr;
+
+      return NextResponse.json({ ok: true });
+    }
+
     const { data: tx, error: txErr } = await admin
       .from('transactions')
       .select('id,user_id,amount,status,metadata,transaction_type')
@@ -47,6 +123,7 @@ export async function POST(req: Request) {
       ...((tx as any).metadata || {}),
       reviewedAt: new Date().toISOString(),
       reviewedAction: action,
+      adminNote: adminNote || null,
     };
 
     const { error: updTxErr } = await admin

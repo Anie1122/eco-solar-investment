@@ -19,6 +19,7 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
   Form,
   FormControl,
@@ -213,18 +214,18 @@ export default function CompleteProfilePage() {
                   <FormItem>
                     <FormLabel>Country</FormLabel>
                     <FormControl>
-                      <select
-                        className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
-                        value={field.value}
-                        onChange={(e) => field.onChange(e.target.value)}
-                        disabled={loading}
-                      >
-                        {COUNTRIES.map((c) => (
-                          <option key={`${c.code}-${c.currency}-${c.dial}`} value={c.name}>
-                            {c.name} ({c.currency})
-                          </option>
-                        ))}
-                      </select>
+                      <Select value={field.value} onValueChange={field.onChange} disabled={loading}>
+                        <SelectTrigger className="rounded-md">
+                          <SelectValue placeholder="Select your country" />
+                        </SelectTrigger>
+                        <SelectContent className="max-h-80 rounded-md">
+                          {COUNTRIES.map((c) => (
+                            <SelectItem key={`${c.code}-${c.currency}-${c.dial}`} value={c.name}>
+                              {c.name} ({c.currency})
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </FormControl>
                     <FormMessage />
                   </FormItem>
