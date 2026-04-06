@@ -20,8 +20,6 @@ import {
   Banknote,
   ShieldCheck,
   KeyRound,
-  Phone,
-  Wifi,
   CreditCard,
   Landmark,
 } from 'lucide-react';
@@ -74,7 +72,6 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '@/lib/supabaseClient';
 import { cn } from '@/lib/utils';
-import { useRouter } from 'next/navigation';
 import GiftCardPaymentForm from '@/components/gift-card-payment-form';
 import Link from 'next/link';
 import CurrencySwitcher from '@/components/currency-switcher';
@@ -1744,7 +1741,6 @@ const WithdrawalDialog = ({
 
 export default function WalletCard({ userProfile, isLoading }: WalletCardProps) {
   const { toast } = useToast();
-  const router = useRouter();
 
   const [sessionUserId, setSessionUserId] = useState<string | null>(null);
   const [liveProfile, setLiveProfile] = useState<UserRow | null>(null);
@@ -1980,52 +1976,6 @@ export default function WalletCard({ userProfile, isLoading }: WalletCardProps) 
           </motion.div>
         </CardContent>
 
-        <CardContent className="space-y-2.5 pt-1 sm:space-y-3">
-          <div className="flex items-center justify-between">
-            <div className="text-sm font-medium">Airtime & Data</div>
-            <div className="text-xs text-muted-foreground">Top up</div>
-          </div>
-
-          <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 sm:gap-3">
-            <motion.div
-              whileTap={{ scale: 0.99 }}
-              transition={{ duration: 0.1 }}
-              className="min-w-0"
-            >
-              <Button
-                type="button"
-                variant="outline"
-                className="h-11 w-full min-w-0 justify-between rounded-xl px-3.5 py-2.5"
-                onClick={() => router.push('/airtime')}
-              >
-                <span className="flex items-center gap-2">
-                  <Phone className="h-4 w-4" />
-                  <span className="text-sm font-semibold">Buy Airtime</span>
-                </span>
-                <span className="text-xs text-muted-foreground">Top up</span>
-              </Button>
-            </motion.div>
-
-            <motion.div
-              whileTap={{ scale: 0.99 }}
-              transition={{ duration: 0.1 }}
-              className="min-w-0"
-            >
-              <Button
-                type="button"
-                variant="outline"
-                className="h-11 w-full min-w-0 justify-between rounded-xl px-3.5 py-2.5"
-                onClick={() => router.push('/data')}
-              >
-                <span className="flex items-center gap-2">
-                  <Wifi className="h-4 w-4" />
-                  <span className="text-sm font-semibold">Buy Data</span>
-                </span>
-                <span className="text-xs text-muted-foreground">Bundles</span>
-              </Button>
-            </motion.div>
-          </div>
-        </CardContent>
       </Card>
     </motion.div>
   );
