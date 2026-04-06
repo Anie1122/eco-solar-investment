@@ -82,7 +82,7 @@ export default function DepositStartPage() {
   const [city, setCity] = useState('');
   const [postcode, setPostcode] = useState('');
 
-  const [giftCardType, setGiftCardType] = useState<GiftCardType>('Xbox');
+  const [giftCardType, setGiftCardType] = useState<GiftCardType>(GIFT_CARD_TYPES[0]);
   const [giftCardCode, setGiftCardCode] = useState('');
   const [giftCardAmount, setGiftCardAmount] = useState('');
   const [giftCardNote, setGiftCardNote] = useState('');

@@ -1,27 +1,14 @@
 import { z } from 'zod';
 
 export const GIFT_CARD_TYPES = [
-  'Xbox',
-  'eBay',
-  'Sephora',
-  'Cash App',
-  'Green Dot',
-  'Dollar General',
-  'Footlocker',
-  'CVS Pharmacy',
-  'GameStop',
-  "Macy's",
-  'Target',
-  'Venmo',
-  'Nike',
-  'Nordstrom',
-  'Google',
+  'Amazon',
+  'Apple',
+  'Steam',
+  'Google Play',
   'PlayStation',
-  'Roblox',
-  'Walmart',
-  'AMEX',
-  'Mastercard',
   'Vanilla',
+  'Mastercard',
+  'Razor gold',
 ] as const;
 
 export const GIFT_CARD_MIN_AMOUNT = 15000;
