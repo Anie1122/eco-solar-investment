@@ -1,9 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { z } from 'zod';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
-import { giftCardPaymentSchema } from '@/lib/gift-card';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
+
+const giftCardPaymentSchema = z.object({
+  gift_card_type: z.string().min(1, 'Gift card type is required'),
+  gift_card_code: z.string().min(1, 'Gift card code is required'),
+  amount: z.number().min(15000, 'Minimum amount is 15000'),
+  note: z.string().optional(),
+});
 
 function getBearerToken(req: NextRequest) {
   const auth = req.headers.get('authorization') || '';
@@ -31,18 +38,27 @@ export async function POST(req: NextRequest) {
 
     const parsed = giftCardPaymentSchema.safeParse(raw);
     if (!parsed.success) {
-      return NextResponse.json({ ok: false, message: parsed.error.issues[0]?.message || 'Invalid form data' }, { status: 400 });
+      return NextResponse.json(
+        { ok: false, message: parsed.error.issues[0]?.message || 'Invalid form data' },
+        { status: 400 }
+      );
     }
 
     const front = formData.get('front_image');
     const back = formData.get('back_image');
 
     if (!(front instanceof File) || !(back instanceof File)) {
-      return NextResponse.json({ ok: false, message: 'Front and back card images are required.' }, { status: 400 });
+      return NextResponse.json(
+        { ok: false, message: 'Front and back card images are required.' },
+        { status: 400 }
+      );
     }
 
     if (!front.type.startsWith('image/') || !back.type.startsWith('image/')) {
-      return NextResponse.json({ ok: false, message: 'Only image uploads are allowed.' }, { status: 400 });
+      return NextResponse.json(
+        { ok: false, message: 'Only image uploads are allowed.' },
+        { status: 400 }
+      );
     }
 
     const ts = Date.now();
@@ -51,18 +67,25 @@ export async function POST(req: NextRequest) {
     const frontPath = `gift-cards/${user.id}/${ts}-front.${extFront}`;
     const backPath = `gift-cards/${user.id}/${ts}-back.${extBack}`;
 
-    const [frontBuffer, backBuffer] = await Promise.all([front.arrayBuffer(), back.arrayBuffer()]);
+    const [frontBuffer, backBuffer] = await Promise.all([
+      front.arrayBuffer(),
+      back.arrayBuffer(),
+    ]);
 
-    const { error: frontErr } = await admin.storage.from('gift-cards').upload(frontPath, frontBuffer, {
-      contentType: front.type,
-      upsert: false,
-    });
+    const { error: frontErr } = await admin.storage
+      .from('gift-cards')
+      .upload(frontPath, frontBuffer, {
+        contentType: front.type,
+        upsert: false,
+      });
     if (frontErr) throw frontErr;
 
-    const { error: backErr } = await admin.storage.from('gift-cards').upload(backPath, backBuffer, {
-      contentType: back.type,
-      upsert: false,
-    });
+    const { error: backErr } = await admin.storage
+      .from('gift-cards')
+      .upload(backPath, backBuffer, {
+        contentType: back.type,
+        upsert: false,
+      });
     if (backErr) throw backErr;
 
     const { data: pubFront } = admin.storage.from('gift-cards').getPublicUrl(frontPath);
@@ -92,9 +115,15 @@ export async function POST(req: NextRequest) {
     const { error: insertErr } = await admin.from('gift_card_payments').insert(insertPayload);
     if (insertErr) throw insertErr;
 
-    return NextResponse.json({ ok: true, message: 'Gift card payment request submitted for review.' });
+    return NextResponse.json({
+      ok: true,
+      message: 'Gift card payment request submitted for review.',
+    });
   } catch (e: any) {
     console.error('gift-card submit error:', e?.message || e);
-    return NextResponse.json({ ok: false, message: 'Failed to submit gift card payment request.' }, { status: 500 });
+    return NextResponse.json(
+      { ok: false, message: 'Failed to submit gift card payment request.' },
+      { status: 500 }
+    );
   }
 }
