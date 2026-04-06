@@ -99,8 +99,8 @@ function mapUserRowToEntity(row: UserRow): UserEntity {
 }
 
 const DashboardSkeleton = () => (
-  <div className="grid flex-1 items-start gap-4 p-4 sm:px-6 sm:py-0 md:gap-8">
-    <div className="grid auto-rows-max items-start gap-4 md:gap-8">
+  <div className="grid flex-1 items-start gap-3 p-4 sm:gap-4 sm:px-6 sm:py-0 md:gap-8">
+    <div className="grid auto-rows-max items-start gap-3 sm:gap-4 md:gap-8">
       <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-2 xl:grid-cols-4">
         <Skeleton className="sm:col-span-2 h-[250px]" />
         <Skeleton className="sm:col-span-2 h-[250px]" />
@@ -519,11 +519,11 @@ const Home: NextPage = () => {
               {isLoading ? (
                 <DashboardSkeleton />
               ) : (
-                <div className="grid flex-1 items-start gap-4 p-4 sm:px-6 sm:py-0 md:gap-8">
-                  <div className="grid auto-rows-max items-start gap-4 md:gap-8">
+                <div className="grid flex-1 items-start gap-3 p-4 sm:gap-4 sm:px-6 sm:py-0 md:gap-8">
+                  <div className="grid auto-rows-max items-start gap-3 sm:gap-4 md:gap-8">
                     <MarketTicker />
                     <motion.div
-                      className="grid gap-4 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-2 xl:grid-cols-4"
+                      className="grid gap-3 sm:gap-4 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-2 xl:grid-cols-4"
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ duration: 0.5, ease: 'easeOut' }}
@@ -531,10 +531,6 @@ const Home: NextPage = () => {
                       <WalletCard userProfile={userProfile} isLoading={isLoading} />
                       <AiSuggestionCard userProfile={userProfile} isLoading={isLoading} />
                     </motion.div>
-
-                    <section className="w-full" aria-label="live-market-ticker">
-                      <MarketTicker />
-                    </section>
                   </div>
                 </div>
               )}

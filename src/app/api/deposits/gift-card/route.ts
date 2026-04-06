@@ -115,7 +115,7 @@ export async function POST(req: Request) {
       inputCurrency: 'USD',
       amountUsdt: payload.amount,
       userName: displayName || user.id,
-      giftCardPaymentId: giftPayment.id,
+      giftCardPaymentId: data.id,
       giftCardType: payload.giftCardType,
     };
 
@@ -139,11 +139,11 @@ export async function POST(req: Request) {
     const { error: linkErr } = await admin
       .from('gift_card_payments')
       .update({ transaction_id: tx.id })
-      .eq('id', giftPayment.id);
+      .eq('id', data.id);
 
     if (linkErr) throw linkErr;
 
-    return NextResponse.json({ ok: true, paymentId: giftPayment.id, status: giftPayment.status, createdAt: giftPayment.created_at });
+    return NextResponse.json({ ok: true, paymentId: data.id, status: data.status, createdAt: data.created_at });
     if (error) throw error;
 
     return NextResponse.json({ ok: true, paymentId: data.id, status: data.status, createdAt: data.created_at });
