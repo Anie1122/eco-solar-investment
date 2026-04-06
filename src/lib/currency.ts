@@ -23,10 +23,10 @@ export function useCurrencyConverter(userCurrency: string = BASE_CURRENCY) {
     ratesFromUsdt: FALLBACK_RATES,
     fetchedAt: 0,
   });
+
   const [loading, setLoading] = useState<boolean>(true);
 
   useEffect(() => {
-    // Deterministic conversion: fixed rates only.
     setState({
       ratesFromUsdt: FIXED_RATES_FROM_USDT,
       fetchedAt: Date.now(),
@@ -36,30 +36,10 @@ export function useCurrencyConverter(userCurrency: string = BASE_CURRENCY) {
 
   const rate = state.ratesFromUsdt[currency] || 1;
 
-import { useMemo } from 'react';
-import {
-  BASE_CURRENCY,
-  clampToPrecision,
-  toSupportedCurrency,
-  type SupportedCryptoCurrency,
-} from '@/lib/crypto-rates';
-
-const FALLBACK_RATES: Record<SupportedCryptoCurrency, number> = {
-  USDT: 1,
-  USDC: 1,
-  ETH: 0.0004,
-  BNB: 0.0018,
-  BTC: 0.000015,
-  SOL: 0.006,
-};
-
-export function useCurrencyConverter(userCurrency: string = BASE_CURRENCY) {
-  const currency = toSupportedCurrency(userCurrency);
-  const rate = FALLBACK_RATES[currency] || 1;
-
   const convert = useMemo(() => {
     return (amountBaseUsdt: number) => {
       const n = Number(amountBaseUsdt || 0);
+      if (!Number.isFinite(n)) return 0;
       return clampToPrecision(n * rate);
     };
   }, [rate]);
@@ -75,8 +55,10 @@ export function useCurrencyConverter(userCurrency: string = BASE_CURRENCY) {
   const format = useMemo(() => {
     return (amountInUserCurrency: number) => {
       const n = Number(amountInUserCurrency || 0);
+      const safeAmount = Number.isFinite(n) ? n : 0;
       const decimals = currency === 'USDT' || currency === 'USDC' ? 2 : 6;
-      return `${currency} ${n.toLocaleString(undefined, {
+
+      return `${currency} ${safeAmount.toLocaleString(undefined, {
         minimumFractionDigits: 2,
         maximumFractionDigits: decimals,
       })}`;
@@ -91,7 +73,5 @@ export function useCurrencyConverter(userCurrency: string = BASE_CURRENCY) {
     currency,
     loading,
     fetchedAt: state.fetchedAt,
-    loading: false,
-    fetchedAt: 0,
   };
 }
