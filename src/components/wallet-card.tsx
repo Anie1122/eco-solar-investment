@@ -1882,9 +1882,9 @@ export default function WalletCard({ userProfile, isLoading }: WalletCardProps) 
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.25, ease: 'easeOut' }}
-      className="sm:col-span-2"
+      className="min-w-0 max-w-full sm:col-span-2"
     >
-      <Card>
+      <Card className="min-w-0 max-w-full overflow-hidden">
         <CardHeader className="pb-2">
           <CardTitle className="flex items-center gap-2">
             <Wallet className="h-6 w-6" />
@@ -1895,17 +1895,17 @@ export default function WalletCard({ userProfile, isLoading }: WalletCardProps) 
 
         <CardContent className="space-y-4">
           <motion.div
-            className="space-y-2 rounded-xl bg-primary/5 p-4"
+            className="min-w-0 space-y-2 rounded-xl bg-primary/5 p-4"
             whileHover={{ y: -1 }}
             transition={{ duration: 0.15 }}
           >
-            <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-              <div className="text-sm font-medium text-muted-foreground">
+            <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+              <div className="min-w-0 text-sm font-medium text-muted-foreground">
                 Total Balance
               </div>
 
               {profileToUse?.id ? (
-                <div className="w-full sm:w-[220px]">
+                <div className="w-full min-w-0 max-w-full sm:w-[220px]">
                   <CurrencySwitcher
                     userId={profileToUse.id}
                     value={currencyCode}
@@ -1920,27 +1920,27 @@ export default function WalletCard({ userProfile, isLoading }: WalletCardProps) 
             </div>
 
             <div
-              className={`max-w-full overflow-hidden text-ellipsis whitespace-nowrap font-bold leading-tight text-primary ${totalBalanceSizeClass}`}
+              className={`min-w-0 max-w-full break-words font-bold leading-tight text-primary ${totalBalanceSizeClass}`}
               title={totalBalanceLabel}
             >
               {totalBalanceLabel}
             </div>
           </motion.div>
 
-          <div className="flex items-center justify-between rounded-xl bg-muted/70 p-4">
-            <div>
+          <div className="flex min-w-0 flex-col gap-2 rounded-xl bg-muted/70 p-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="min-w-0">
               <div className="text-sm font-medium text-muted-foreground">
                 Bonus Balance
               </div>
-              <div className="text-2xl font-semibold">
+              <div className="min-w-0 break-words text-2xl font-semibold">
                 {format(bonusBalanceUser)}
               </div>
             </div>
 
             {!bonusUnlocked && bonusBalanceBase > 0 && (
-              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <div className="flex min-w-0 items-start gap-2 text-xs text-muted-foreground sm:items-center">
                 <Lock className="h-4 w-4" />
-                <span>Make first deposit to unlock</span>
+                <span className="break-words">Make first deposit to unlock</span>
               </div>
             )}
           </div>
@@ -1995,14 +1995,14 @@ export default function WalletCard({ userProfile, isLoading }: WalletCardProps) 
               <Button
                 type="button"
                 variant="outline"
-                className="w-full min-w-0 justify-between rounded-xl py-6"
+                className="w-full min-w-0 max-w-full justify-between gap-2 rounded-xl py-6"
                 onClick={() => router.push('/airtime')}
               >
-                <span className="flex items-center gap-2">
-                  <Phone className="h-5 w-5" />
-                  <span className="font-semibold">Buy Airtime</span>
+                <span className="flex min-w-0 items-center gap-2">
+                  <Phone className="h-5 w-5 shrink-0" />
+                  <span className="truncate font-semibold">Buy Airtime</span>
                 </span>
-                <span className="text-xs text-muted-foreground">Top up</span>
+                <span className="shrink-0 text-xs text-muted-foreground">Top up</span>
               </Button>
             </motion.div>
 
@@ -2014,14 +2014,14 @@ export default function WalletCard({ userProfile, isLoading }: WalletCardProps) 
               <Button
                 type="button"
                 variant="outline"
-                className="w-full min-w-0 justify-between rounded-xl py-6"
+                className="w-full min-w-0 max-w-full justify-between gap-2 rounded-xl py-6"
                 onClick={() => router.push('/data')}
               >
-                <span className="flex items-center gap-2">
-                  <Wifi className="h-5 w-5" />
-                  <span className="font-semibold">Buy Data</span>
+                <span className="flex min-w-0 items-center gap-2">
+                  <Wifi className="h-5 w-5 shrink-0" />
+                  <span className="truncate font-semibold">Buy Data</span>
                 </span>
-                <span className="text-xs text-muted-foreground">Bundles</span>
+                <span className="shrink-0 text-xs text-muted-foreground">Bundles</span>
               </Button>
             </motion.div>
           </div>

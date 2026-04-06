@@ -478,7 +478,7 @@ const Home: NextPage = () => {
   return (
     <AuthGuard>
       <SidebarProvider>
-        <div className="flex min-h-screen w-full flex-col overflow-x-hidden">
+        <div className="flex min-h-screen w-full max-w-full flex-col overflow-x-hidden">
           {shouldShowPolicy && sessionUserId && (
             <PolicyGate
               userId={sessionUserId}
@@ -508,22 +508,22 @@ const Home: NextPage = () => {
             />
           </Sidebar>
 
-          <div className="flex flex-col sm:gap-4 sm:py-4 sm:pl-14">
+          <div className="flex min-w-0 max-w-full flex-col sm:gap-4 sm:py-4 sm:pl-14">
             <DashboardHeader
               userProfile={userProfile}
               authEmail={authEmail}
               onLogout={handleLogout}
             />
 
-            <main>
+            <main className="min-w-0 max-w-full overflow-x-hidden">
               {isLoading ? (
                 <DashboardSkeleton />
               ) : (
-                <div className="grid flex-1 items-start gap-4 p-4 sm:px-6 sm:py-0 md:gap-8">
-                  <div className="grid auto-rows-max items-start gap-4 md:gap-8">
+                <div className="grid min-w-0 max-w-full flex-1 items-start gap-4 overflow-x-hidden p-4 sm:px-6 sm:py-0 md:gap-8">
+                  <div className="grid min-w-0 auto-rows-max items-start gap-4 md:gap-8">
                     <MarketTicker />
                     <motion.div
-                      className="grid gap-4 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-2 xl:grid-cols-4"
+                      className="grid min-w-0 gap-4 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-2 xl:grid-cols-4"
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ duration: 0.5, ease: 'easeOut' }}
