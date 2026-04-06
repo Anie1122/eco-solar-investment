@@ -14,7 +14,7 @@ import {
   GIFT_CARD_MAX_AMOUNT,
   GIFT_CARD_MIN_AMOUNT,
   GIFT_CARD_TYPES,
-} from '@/lib/gift-cards';
+} from '@/lib/gift-card';
 
 export default function GiftCardPaymentForm({
   onSuccess,
