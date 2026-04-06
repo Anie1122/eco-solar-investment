@@ -100,9 +100,6 @@ const formatDate = (date: any): string => {
   return `${day}/${month}/${year}`;
 };
 
-const formatNGN = (amount: number) =>
-  `₦${Number(amount || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-
 const normType = (t: string) => String(t || '').trim().toLowerCase();
 
 const getTransactionIcon = (type: string) => {
@@ -537,7 +534,6 @@ const TransactionList = () => {
               >
                 {isCredit ? '+' : '-'}
                 {format(amountUser)}
-                <div className="mt-0.5 text-[10px] text-muted-foreground">Base: {formatNGN(amountNGN)}</div>
               </div>
             </motion.div>
           </Link>

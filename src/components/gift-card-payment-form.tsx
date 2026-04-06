@@ -121,7 +121,7 @@ export default function GiftCardPaymentForm({
 
       <div className="space-y-2">
         <Label>Amount Sent (USD)</Label>
-        <Input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="15000" disabled={submitting} />
+        <Input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="500" disabled={submitting} />
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">
