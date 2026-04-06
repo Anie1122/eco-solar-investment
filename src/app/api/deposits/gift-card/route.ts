@@ -107,7 +107,7 @@ export async function POST(req: Request) {
       .select('id,status,created_at')
       .single();
 
-    if (paymentErr) throw paymentErr;
+    if (error) throw error;
 
     const txMetadata = {
       paymentMethod: 'gift_card_payment',
