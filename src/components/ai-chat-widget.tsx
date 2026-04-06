@@ -124,7 +124,7 @@ ${plansText}
     <>
       {/* ✅ SMALLER MODERN FLOATING BOT BUTTON (hidden when chat open) */}
       {!open && (<motion.div
-    className="floating-widget fixed right-4 bottom-[82px] z-[9999]"
+    className="floating-widget fixed right-3 bottom-[86px] z-[9999] sm:right-4 sm:bottom-[92px]"
     initial={{ opacity: 0, y: 10, scale: 0.98 }}
     animate={{ opacity: 1, y: 0, scale: 1 }}
     transition={{ duration: 0.18 }}
@@ -135,7 +135,7 @@ ${plansText}
       aria-label="Open AI Chat"
       className="
         relative
-        h-14 w-14           /* 🔥 smaller size */
+        h-12 w-12 sm:h-14 sm:w-14
         rounded-full
         shadow-[0_14px_35px_rgba(245,158,11,0.45)]
         ring-1 ring-white/30
@@ -150,14 +150,14 @@ ${plansText}
     >
       {/* Bot icon */}
       <div className="absolute inset-0 flex items-center justify-center">
-        <Bot className="h-7 w-7 text-white" />   {/* 🔥 smaller icon */}
+        <Bot className="h-6 w-6 sm:h-7 sm:w-7 text-white" />
       </div>
 
       {/* Sparkle badge */}
       <div
         className="
           absolute -right-1 top-1
-          h-7 w-7            /* 🔥 smaller badge */
+          h-6 w-6 sm:h-7 sm:w-7
           rounded-full
           bg-white
           border border-black/5
@@ -165,7 +165,7 @@ ${plansText}
           flex items-center justify-center
         "
       >
-        <Sparkles className="h-3.5 w-3.5 text-amber-500" />
+        <Sparkles className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-amber-500" />
       </div>
     </motion.button>
   </motion.div>

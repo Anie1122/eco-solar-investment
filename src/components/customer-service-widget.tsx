@@ -9,7 +9,7 @@ export default function CustomerServiceWidget({ hidden }: { hidden?: boolean }) 
     <motion.div
       className={cn(
         // ✅ PUSHED UP: will not block bottom nav
-        'floating-widget fixed right-5 bottom-[148px] z-[9999]',
+        'floating-widget fixed right-3 bottom-[150px] z-[9999] sm:right-5 sm:bottom-[156px]',
         hidden ? 'hidden' : 'block'
       )}
       initial={{ opacity: 0, y: 10, scale: 0.98 }}
@@ -27,7 +27,7 @@ export default function CustomerServiceWidget({ hidden }: { hidden?: boolean }) 
           {/* Gold app-themed floating support button */}
           <div
             className="
-              h-14 w-14 rounded-full
+              h-12 w-12 sm:h-14 sm:w-14 rounded-full
               bg-gradient-to-br from-amber-400 to-amber-600
               border border-amber-300/60
               shadow-[0_14px_30px_rgba(245,158,11,0.38)]
@@ -39,8 +39,8 @@ export default function CustomerServiceWidget({ hidden }: { hidden?: boolean }) 
           >
             {/* ✅ simple chat bubble icon (same vibe as your image) */}
             <svg
-              width="26"
-              height="26"
+              width="22"
+              height="22"
               viewBox="0 0 24 24"
               fill="none"
               stroke="#ffffff"
