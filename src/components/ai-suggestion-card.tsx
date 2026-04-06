@@ -217,7 +217,7 @@ export default function AiSuggestionCard({
           <Button
             onClick={handleGetSuggestion}
             disabled={loading || !userProfile?.country || !userProfile?.currency}
-            className="w-full"
+            className="w-full rounded-xl py-4 flex items-center justify-center gap-2"
           >
             {loading ? (
               <Loader className="mr-2 h-4 w-4 animate-spin" />

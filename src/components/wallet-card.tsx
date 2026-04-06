@@ -1885,7 +1885,7 @@ export default function WalletCard({ userProfile, isLoading }: WalletCardProps) 
       className="sm:col-span-2"
     >
       <Card>
-        <CardHeader className="pb-2">
+        <CardHeader className="mx-auto w-full max-w-3xl pb-2">
           <CardTitle className="flex items-center gap-2">
             <Wallet className="h-6 w-6" />
             <span>My Wallet</span>
@@ -1893,19 +1893,19 @@ export default function WalletCard({ userProfile, isLoading }: WalletCardProps) 
           <CardDescription>Manage your funds and transactions.</CardDescription>
         </CardHeader>
 
-        <CardContent className="space-y-4">
+        <CardContent className="mx-auto w-full max-w-3xl space-y-4">
           <motion.div
-            className="space-y-2 rounded-xl bg-primary/5 p-4"
+            className="space-y-3 rounded-xl bg-primary/5 p-4 sm:p-5"
             whileHover={{ y: -1 }}
             transition={{ duration: 0.15 }}
           >
-            <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+            <div className="flex flex-col gap-3">
               <div className="text-sm font-medium text-muted-foreground">
                 Total Balance
               </div>
 
               {profileToUse?.id ? (
-                <div className="w-full sm:w-[220px]">
+                <div className="w-full max-w-[220px]">
                   <CurrencySwitcher
                     userId={profileToUse.id}
                     value={currencyCode}
@@ -1920,14 +1920,14 @@ export default function WalletCard({ userProfile, isLoading }: WalletCardProps) 
             </div>
 
             <div
-              className={`max-w-full overflow-hidden text-ellipsis whitespace-nowrap font-bold leading-tight text-primary ${totalBalanceSizeClass}`}
+              className={`max-w-full overflow-hidden text-ellipsis whitespace-nowrap text-center font-bold leading-tight text-primary sm:text-left ${totalBalanceSizeClass}`}
               title={totalBalanceLabel}
             >
               {totalBalanceLabel}
             </div>
           </motion.div>
 
-          <div className="flex items-center justify-between rounded-xl bg-muted/70 p-4">
+          <div className="flex items-center justify-between rounded-xl bg-muted/70 p-4 sm:p-5">
             <div>
               <div className="text-sm font-medium text-muted-foreground">
                 Bonus Balance
@@ -1946,22 +1946,20 @@ export default function WalletCard({ userProfile, isLoading }: WalletCardProps) 
           </div>
         </CardContent>
 
-        <CardContent className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <CardContent className="mx-auto grid w-full max-w-3xl grid-cols-1 gap-3 sm:grid-cols-2">
           <motion.div
-            className="min-w-0"
             whileTap={{ scale: 0.99 }}
             transition={{ duration: 0.1 }}
           >
             <Link href="/deposit/start">
-              <Button className="w-full min-w-0 justify-center gap-2 rounded-xl">
+              <Button className="w-full rounded-xl py-4 flex items-center justify-center gap-2">
                 <ArrowDownToLine className="h-4 w-4 shrink-0" />
-                <span className="truncate">Deposit</span>
+                <span>Deposit</span>
               </Button>
             </Link>
           </motion.div>
 
           <motion.div
-            className="min-w-0"
             whileTap={{ scale: 0.99 }}
             transition={{ duration: 0.1 }}
           >
@@ -1971,16 +1969,16 @@ export default function WalletCard({ userProfile, isLoading }: WalletCardProps) 
             >
               <Button
                 variant="outline"
-                className="w-full min-w-0 justify-center gap-2 rounded-xl"
+                className="w-full rounded-xl py-4 flex items-center justify-center gap-2"
               >
                 <ArrowUpFromLine className="h-4 w-4 shrink-0" />
-                <span className="truncate">Withdraw</span>
+                <span>Withdraw</span>
               </Button>
             </WithdrawalDialog>
           </motion.div>
         </CardContent>
 
-        <CardContent className="space-y-3 pt-0">
+        <CardContent className="mx-auto w-full max-w-3xl space-y-3 pt-0">
           <div className="flex items-center justify-between">
             <div className="text-sm font-medium">Airtime & Data</div>
             <div className="text-xs text-muted-foreground">Top up</div>
@@ -1990,38 +1988,30 @@ export default function WalletCard({ userProfile, isLoading }: WalletCardProps) 
             <motion.div
               whileTap={{ scale: 0.99 }}
               transition={{ duration: 0.1 }}
-              className="min-w-0"
             >
               <Button
                 type="button"
                 variant="outline"
-                className="w-full min-w-0 justify-between rounded-xl py-6"
+                className="w-full rounded-xl py-4 flex items-center justify-start gap-2"
                 onClick={() => router.push('/airtime')}
               >
-                <span className="flex items-center gap-2">
-                  <Phone className="h-5 w-5" />
-                  <span className="font-semibold">Buy Airtime</span>
-                </span>
-                <span className="text-xs text-muted-foreground">Top up</span>
+                <Phone className="h-5 w-5" />
+                <span className="font-semibold">Buy Airtime</span>
               </Button>
             </motion.div>
 
             <motion.div
               whileTap={{ scale: 0.99 }}
               transition={{ duration: 0.1 }}
-              className="min-w-0"
             >
               <Button
                 type="button"
                 variant="outline"
-                className="w-full min-w-0 justify-between rounded-xl py-6"
+                className="w-full rounded-xl py-4 flex items-center justify-start gap-2"
                 onClick={() => router.push('/data')}
               >
-                <span className="flex items-center gap-2">
-                  <Wifi className="h-5 w-5" />
-                  <span className="font-semibold">Buy Data</span>
-                </span>
-                <span className="text-xs text-muted-foreground">Bundles</span>
+                <Wifi className="h-5 w-5" />
+                <span className="font-semibold">Buy Data</span>
               </Button>
             </motion.div>
           </div>
