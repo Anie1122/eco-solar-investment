@@ -19,7 +19,13 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import {
   Form,
   FormControl,
@@ -38,7 +44,10 @@ import { getSignupBonusUsdtToday } from '@/lib/bonus';
 const schema = z.object({
   country: z.string().min(2, 'Select your country'),
   dial: z.string().min(1),
-  phone: z.string().min(6, 'Enter a valid phone number').max(20, 'Enter a valid phone number'),
+  phone: z
+    .string()
+    .min(6, 'Enter a valid phone number')
+    .max(20, 'Enter a valid phone number'),
 });
 
 type UserRowMini = {
@@ -63,7 +72,9 @@ export default function CompleteProfilePage() {
   }, []);
 
   const defaultCountryName = useMemo(() => {
-    const nigeria = COUNTRIES.find((c) => c.code === 'NG' || c.name.toLowerCase() === 'nigeria');
+    const nigeria = COUNTRIES.find(
+      (c) => c.code === 'NG' || c.name.toLowerCase() === 'nigeria'
+    );
     return (nigeria ?? COUNTRIES[0]).name;
   }, [COUNTRIES]);
 
@@ -119,8 +130,12 @@ export default function CompleteProfilePage() {
           }
 
           if (r.country) {
-            const ci = COUNTRIES.find((c) => c.name.toLowerCase() === r.country!.toLowerCase());
-            if (ci) form.setValue('country', ci.name, { shouldValidate: true });
+            const ci = COUNTRIES.find(
+              (c) => c.name.toLowerCase() === r.country!.toLowerCase()
+            );
+            if (ci) {
+              form.setValue('country', ci.name, { shouldValidate: true });
+            }
           }
 
           if (r.phone_number) {
@@ -150,15 +165,17 @@ export default function CompleteProfilePage() {
       const user = authData.user;
 
       if (authErr || !user) {
-        toast({ variant: 'destructive', title: 'Not logged in', description: 'Please login again.' });
+        toast({
+          variant: 'destructive',
+          title: 'Not logged in',
+          description: 'Please login again.',
+        });
         router.replace('/login');
         return;
       }
 
       const currency = BASE_CURRENCY;
-      // Merge-resolution choice: keep live converted bonus in USDT for all users.
       const signupBonusUsdt = await getSignupBonusUsdtToday();
-
       const phone_number = `${values.dial} ${values.phone}`.trim();
 
       const res = await fetch('/api/profile/complete', {
@@ -173,32 +190,6 @@ export default function CompleteProfilePage() {
           currency,
           bonus_balance: signupBonusUsdt,
           profile_completed: true,
-        })
-        .eq('id', user.id);
-
-      // If update fails (row missing), upsert
-      if (updateError) {
-        const { error: upsertError } = await supabase
-          .from('users')
-          .upsert(
-            {
-              id: user.id,
-              email: user.email ?? '',
-              full_name: (user.user_metadata as any)?.full_name ?? '',
-              country: selectedCountry?.name ?? values.country,
-              phone_number,
-              currency,
-              wallet_balance: 0,
-              bonus_balance: signupBonusUsdt,
-              has_invested: false,
-              profile_completed: true,
-              status: 'active',
-              created_at: new Date().toISOString(),
-            },
-            { onConflict: 'id' }
-          );
-
-        if (upsertError) throw upsertError;
         }),
       });
 
@@ -208,7 +199,10 @@ export default function CompleteProfilePage() {
         throw new Error(json?.message || 'Could not save profile.');
       }
 
-      toast({ title: 'Profile saved', description: 'Redirecting to dashboard...' });
+      toast({
+        title: 'Profile saved',
+        description: 'Redirecting to dashboard...',
+      });
       router.replace('/');
     } catch (e: any) {
       console.error(e);
@@ -235,7 +229,9 @@ export default function CompleteProfilePage() {
       <Card className="w-full max-w-md">
         <CardHeader>
           <CardTitle>Complete Your Profile</CardTitle>
-          <CardDescription>Choose your country and add your phone number.</CardDescription>
+          <CardDescription>
+            Choose your country and add your phone number.
+          </CardDescription>
         </CardHeader>
 
         <CardContent className="space-y-4">
@@ -248,13 +244,20 @@ export default function CompleteProfilePage() {
                   <FormItem>
                     <FormLabel>Country</FormLabel>
                     <FormControl>
-                      <Select value={field.value} onValueChange={field.onChange} disabled={loading}>
+                      <Select
+                        value={field.value}
+                        onValueChange={field.onChange}
+                        disabled={loading}
+                      >
                         <SelectTrigger className="rounded-md">
                           <SelectValue placeholder="Select your country" />
                         </SelectTrigger>
                         <SelectContent className="max-h-80 rounded-md">
                           {COUNTRIES.map((c) => (
-                            <SelectItem key={`${c.code}-${c.currency}-${c.dial}`} value={c.name}>
+                            <SelectItem
+                              key={`${c.code}-${c.currency}-${c.dial}`}
+                              value={c.name}
+                            >
                               {c.name} ({c.currency})
                             </SelectItem>
                           ))}
@@ -288,7 +291,11 @@ export default function CompleteProfilePage() {
                     <FormItem className="col-span-2">
                       <FormLabel>Phone Number</FormLabel>
                       <FormControl>
-                        <Input placeholder="e.g. 8012345678" {...field} disabled={loading} />
+                        <Input
+                          placeholder="e.g. 8012345678"
+                          {...field}
+                          disabled={loading}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -296,7 +303,11 @@ export default function CompleteProfilePage() {
                 />
               </div>
 
-              <Button type="submit" className="w-full" disabled={loading || !form.formState.isValid}>
+              <Button
+                type="submit"
+                className="w-full"
+                disabled={loading || !form.formState.isValid}
+              >
                 {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Save and Continue
               </Button>
