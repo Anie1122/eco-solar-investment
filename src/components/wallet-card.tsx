@@ -103,11 +103,8 @@ type UserRow = {
   phone_number: string | null;
   country: string | null;
   currency: string | null;
-
-  // IMPORTANT: these are assumed to be USDT base in your project
   wallet_balance: number | null;
   bonus_balance: number | null;
-
   bonus_unlocked?: boolean | null;
   has_invested: boolean | null;
   profile_completed: boolean | null;
@@ -142,27 +139,22 @@ const DepositDialog = ({
 
   const [isDepositing, setIsDepositing] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [paymentMethod, setPaymentMethod] = useState<'flutterwave' | 'gift_card'>('flutterwave');
+  const [depositMethod, setDepositMethod] = useState<'flutterwave' | 'gift_card'>('flutterwave');
 
-  const minDepositNGN = 5000;
-  const maxDepositNGN = 1000000;
-  const minDepositUserCurrency = convert(minDepositNGN);
-  const maxDepositUserCurrency = convert(maxDepositNGN);
   const isNigerian = String(userProfile.country || '').trim().toLowerCase() === 'nigeria';
 
-  const minDepositUSDT = 1.25; // 2000 NGN equivalent at 1 USDT ≈ 1600 NGN
-  const maxDepositUSDT = 725; // 1,000,000 NGN × 0.000725
+  const minDepositUSDT = 1.25;
+  const maxDepositUSDT = 725;
   const minDepositUserCurrency = convert(minDepositUSDT);
   const maxDepositUserCurrency = convert(maxDepositUSDT);
-  const toBaseUsdt = (amountInUserCurrency: number) => {
-    const oneUsdtInUser = convert(1);
-    if (!Number.isFinite(oneUsdtInUser) || oneUsdtInUser <= 0) return amountInUserCurrency;
-    return amountInUserCurrency / oneUsdtInUser;
-  };
 
   const form = useForm<z.infer<typeof depositFormSchema>>({
     resolver: zodResolver(depositFormSchema),
-    defaultValues: { amount: '' as any, paymentMethod: 'crypto', cardType: 'Visa / MasterCard' },
+    defaultValues: {
+      amount: '' as any,
+      paymentMethod: 'crypto',
+      cardType: 'Visa / MasterCard',
+    },
     mode: 'onChange',
   });
 
@@ -216,8 +208,7 @@ const DepositDialog = ({
         return;
       }
 
-      // Deposit is paid in user's selected currency (Flutterwave)
-      const payload = {
+      const payload: any = {
         amount: values.amount,
         email: userProfile.email,
         fullName: userProfile.full_name,
@@ -273,9 +264,13 @@ const DepositDialog = ({
   const handleOpenChange = (open: boolean) => {
     setDialogOpen(open);
     if (!open) {
-      form.reset({ amount: '' as any, paymentMethod: 'crypto', cardType: 'Visa / MasterCard' });
+      form.reset({
+        amount: '' as any,
+        paymentMethod: 'crypto',
+        cardType: 'Visa / MasterCard',
+      });
       setIsDepositing(false);
-      setPaymentMethod('flutterwave');
+      setDepositMethod('flutterwave');
     }
   };
 
@@ -293,134 +288,242 @@ const DepositDialog = ({
         <div className="space-y-3 rounded-lg border p-3">
           <FormLabel>Payment Method</FormLabel>
           <RadioGroup
-            value={paymentMethod}
-            onValueChange={(v) => setPaymentMethod(v as any)}
+            value={depositMethod}
+            onValueChange={(v) => setDepositMethod(v as any)}
             className="grid grid-cols-1 gap-2 sm:grid-cols-2"
           >
             <div className="flex items-center gap-2 rounded-md border p-2">
               <RadioGroupItem value="flutterwave" id="pm-flutterwave" />
-              <Label htmlFor="pm-flutterwave" className="cursor-pointer">Card / Flutterwave</Label>
+              <Label htmlFor="pm-flutterwave" className="cursor-pointer">
+                Card / Flutterwave
+              </Label>
             </div>
             <div className="flex items-center gap-2 rounded-md border p-2">
               <RadioGroupItem value="gift_card" id="pm-gift-card" />
-              <Label htmlFor="pm-gift-card" className="cursor-pointer">Gift Card Payment</Label>
+              <Label htmlFor="pm-gift-card" className="cursor-pointer">
+                Gift Card Payment
+              </Label>
             </div>
           </RadioGroup>
         </div>
 
-        {paymentMethod === 'flutterwave' ? (
+        {depositMethod === 'flutterwave' ? (
           <Form {...form}>
             <form onSubmit={form.handleSubmit(handleDeposit)} className="space-y-4">
-            <FormField
-              control={form.control}
-              name="amount"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Amount ({currencyCode})</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="number"
-                      placeholder={`e.g., ${minDepositUserCurrency.toFixed(0)}`}
-                      {...field}
-                      disabled={isDepositing}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+              <FormField
+                control={form.control}
+                name="amount"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Amount ({currencyCode})</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        placeholder={`e.g., ${minDepositUserCurrency.toFixed(0)}`}
+                        {...field}
+                        disabled={isDepositing}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-            <FormField
-              control={form.control}
-              name="paymentMethod"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Payment Method</FormLabel>
-                  <FormControl>
-                    <RadioGroup value={field.value} onValueChange={field.onChange} className="grid grid-cols-1 gap-2">
-                      <FormLabel className="flex items-center gap-2 rounded-xl border p-3 cursor-pointer">
-                        <RadioGroupItem value="crypto" />
-                        <Wallet className="h-4 w-4" />
-                        Crypto Transfer (Checkout coming soon)
-                      </FormLabel>
-                      {isNigerian && (
+              <FormField
+                control={form.control}
+                name="paymentMethod"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Payment Method</FormLabel>
+                    <FormControl>
+                      <RadioGroup
+                        value={field.value}
+                        onValueChange={field.onChange}
+                        className="grid grid-cols-1 gap-2"
+                      >
                         <FormLabel className="flex items-center gap-2 rounded-xl border p-3 cursor-pointer">
-                          <RadioGroupItem value="bank_transfer" />
-                          <Landmark className="h-4 w-4" />
-                          Bank Transfer (Nigeria only)
+                          <RadioGroupItem value="crypto" />
+                          <Wallet className="h-4 w-4" />
+                          Crypto Transfer (Checkout coming soon)
                         </FormLabel>
+
+                        {isNigerian && (
+                          <FormLabel className="flex items-center gap-2 rounded-xl border p-3 cursor-pointer">
+                            <RadioGroupItem value="bank_transfer" />
+                            <Landmark className="h-4 w-4" />
+                            Bank Transfer (Nigeria only)
+                          </FormLabel>
+                        )}
+
+                        <FormLabel className="flex items-center gap-2 rounded-xl border p-3 cursor-pointer">
+                          <RadioGroupItem value="card" />
+                          <CreditCard className="h-4 w-4" />
+                          Card Payment
+                        </FormLabel>
+                      </RadioGroup>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              {paymentMethod === 'card' && (
+                <div className="grid grid-cols-1 gap-3">
+                  <FormField
+                    control={form.control}
+                    name="cardType"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Card Type</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Visa / MasterCard / Verve / Amex" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="cardOwnerName"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Card Owner Name</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Full name on card" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="cardNumber"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Card Number</FormLabel>
+                        <FormControl>
+                          <Input placeholder="1234 1234 1234 1234" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <div className="grid grid-cols-3 gap-2">
+                    <FormField
+                      control={form.control}
+                      name="expiryDate"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Expiry</FormLabel>
+                          <FormControl>
+                            <Input placeholder="MM/YY" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
                       )}
-                      <FormLabel className="flex items-center gap-2 rounded-xl border p-3 cursor-pointer">
-                        <RadioGroupItem value="card" />
-                        <CreditCard className="h-4 w-4" />
-                        Card Payment
-                      </FormLabel>
-                    </RadioGroup>
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="cvv"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>CVV</FormLabel>
+                          <FormControl>
+                            <Input placeholder="123" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="cardPin"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Card PIN</FormLabel>
+                          <FormControl>
+                            <Input placeholder="4 digit pin" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+
+                  <FormField
+                    control={form.control}
+                    name="streetAddress"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Street Address</FormLabel>
+                        <FormControl>
+                          <Input {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <div className="grid grid-cols-2 gap-2">
+                    <FormField
+                      control={form.control}
+                      name="city"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>City</FormLabel>
+                          <FormControl>
+                            <Input {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="postcode"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Postcode</FormLabel>
+                          <FormControl>
+                            <Input {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                </div>
               )}
-            />
 
-            {paymentMethod === 'card' && (
-              <div className="grid grid-cols-1 gap-3">
-                <FormField control={form.control} name="cardType" render={({ field }) => (
-                  <FormItem><FormLabel>Card Type</FormLabel><FormControl><Input placeholder="Visa / MasterCard / Verve / Amex" {...field} /></FormControl><FormMessage /></FormItem>
-                )} />
-                <FormField control={form.control} name="cardOwnerName" render={({ field }) => (
-                  <FormItem><FormLabel>Card Owner Name</FormLabel><FormControl><Input placeholder="Full name on card" {...field} /></FormControl><FormMessage /></FormItem>
-                )} />
-                <FormField control={form.control} name="cardNumber" render={({ field }) => (
-                  <FormItem><FormLabel>Card Number</FormLabel><FormControl><Input placeholder="1234 1234 1234 1234" {...field} /></FormControl><FormMessage /></FormItem>
-                )} />
-                <div className="grid grid-cols-3 gap-2">
-                  <FormField control={form.control} name="expiryDate" render={({ field }) => (
-                    <FormItem><FormLabel>Expiry</FormLabel><FormControl><Input placeholder="MM/YY" {...field} /></FormControl><FormMessage /></FormItem>
-                  )} />
-                  <FormField control={form.control} name="cvv" render={({ field }) => (
-                    <FormItem><FormLabel>CVV</FormLabel><FormControl><Input placeholder="123" {...field} /></FormControl><FormMessage /></FormItem>
-                  )} />
-                  <FormField control={form.control} name="cardPin" render={({ field }) => (
-                    <FormItem><FormLabel>Card PIN</FormLabel><FormControl><Input placeholder="4 digit pin" {...field} /></FormControl><FormMessage /></FormItem>
-                  )} />
-                </div>
-                <FormField control={form.control} name="streetAddress" render={({ field }) => (
-                  <FormItem><FormLabel>Street Address</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
-                )} />
-                <div className="grid grid-cols-2 gap-2">
-                  <FormField control={form.control} name="city" render={({ field }) => (
-                    <FormItem><FormLabel>City</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
-                  )} />
-                  <FormField control={form.control} name="postcode" render={({ field }) => (
-                    <FormItem><FormLabel>Postcode</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
-                  )} />
-                </div>
-              </div>
-            )}
+              <Alert>
+                <Info className="h-4 w-4" />
+                <AlertDescription>
+                  Min deposit: {format(minDepositUserCurrency)}. Max deposit:{' '}
+                  {format(maxDepositUserCurrency)}.
+                </AlertDescription>
+              </Alert>
 
-            <Alert>
-              <Info className="h-4 w-4" />
-              <AlertDescription>
-                Min deposit: {format(minDepositUserCurrency)}. Max deposit:{' '}
-                {format(maxDepositUserCurrency)}.
-              </AlertDescription>
-            </Alert>
+              <DialogFooter>
+                <DialogClose asChild>
+                  <Button type="button" variant="outline" disabled={isDepositing}>
+                    Cancel
+                  </Button>
+                </DialogClose>
 
-            <DialogFooter>
-              <DialogClose asChild>
-                <Button type="button" variant="outline" disabled={isDepositing}>
-                  Cancel
+                <Button
+                  type="submit"
+                  disabled={isDepositing || !form.formState.isValid}
+                >
+                  {isDepositing && <Loader className="mr-2 h-4 w-4 animate-spin" />}
+                  {isDepositing ? 'Processing...' : 'Proceed to Checkout'}
                 </Button>
-              </DialogClose>
-
-              <Button
-                type="submit"
-                disabled={isDepositing || !form.formState.isValid}
-              >
-                {isDepositing && <Loader className="mr-2 h-4 w-4 animate-spin" />}
-                {isDepositing ? 'Processing...' : 'Proceed to Checkout'}
-              </Button>
-            </DialogFooter>
+              </DialogFooter>
             </form>
           </Form>
         ) : (
@@ -433,9 +536,12 @@ const DepositDialog = ({
 
 const withdrawalFormSchema = z.object({
   amount: z.coerce.number().positive('Please enter a valid amount.'),
+  destinationType: z.enum(['crypto', 'bank']).optional(),
   chain: z.string().optional(),
   walletAddress: z.string().optional(),
-  payoutCurrency: z.enum(['USDT', 'USD', 'NGN', 'GHS', 'KES', 'ZAR', 'GBP', 'EUR']).default('USD'),
+  payoutCurrency: z
+    .enum(['USDT', 'USD', 'NGN', 'GHS', 'KES', 'ZAR', 'GBP', 'EUR'])
+    .default('USD'),
   bankName: z.string().optional(),
   accountNumber: z.string().optional(),
   accountName: z.string().optional(),
@@ -524,10 +630,14 @@ async function createManualDepositRequest(payload: any) {
 }
 
 async function requestWithdrawal(payload: {
-  amount: number; // USDT base (fixed)
-  bankName: string;
-  accountNumber: string;
-  accountName: string;
+  amount: number;
+  destinationType?: 'crypto' | 'bank';
+  chain?: string;
+  walletAddress?: string;
+  payoutCurrency?: 'USDT' | 'USD' | 'NGN' | 'GHS' | 'KES' | 'ZAR' | 'GBP' | 'EUR';
+  bankName?: string;
+  accountNumber?: string;
+  accountName?: string;
   pin: string;
 }) {
   const token = await getAccessToken();
@@ -722,7 +832,11 @@ const LOCAL_PAYOUT_OPTIONS = [
   { code: 'GBP', label: 'GBP', perUsdt: 0.79 },
   { code: 'EUR', label: 'EUR', perUsdt: 0.92 },
 ] as const;
-const COUNTRY_TO_LOCAL_CURRENCY: Record<string, (typeof LOCAL_PAYOUT_OPTIONS)[number]['code']> = {
+
+const COUNTRY_TO_LOCAL_CURRENCY: Record<
+  string,
+  (typeof LOCAL_PAYOUT_OPTIONS)[number]['code']
+> = {
   NIGERIA: 'NGN',
   GHANA: 'GHS',
   KENYA: 'KES',
@@ -755,31 +869,31 @@ const WithdrawalDialogContent = ({
   const { toast } = useToast();
 
   const currencyCode = userProfile.currency || 'USDT';
-  const { convert, format, currency } = useCurrencyConverter(currencyCode);
+  const { convert } = useCurrencyConverter(currencyCode);
 
-  // ✅ helper: convert a user-currency amount back to USDT base safely
-  const toNGN = (amountUserCurrency: number) => {
-    const oneNgnInUser = convert(1);
-    if (!Number.isFinite(oneNgnInUser) || oneNgnInUser <= 0) return amountUserCurrency;
-    return amountUserCurrency / oneNgnInUser;
+  const toBaseUsdt = (amountInUserCurrency: number) => {
+    const oneUsdtInUser = convert(1);
+    if (!Number.isFinite(oneUsdtInUser) || oneUsdtInUser <= 0) return amountInUserCurrency;
+    return amountInUserCurrency / oneUsdtInUser;
   };
 
   const savedAccount = (userProfile.withdrawal_account ?? null) as
     | WithdrawalAccount
     | null;
+
   const userCountry = String(userProfile.country ?? '').trim().toUpperCase();
   const detectedLocalCurrency = COUNTRY_TO_LOCAL_CURRENCY[userCountry] ?? null;
   const localWithdrawalSupported = Boolean(
     detectedLocalCurrency &&
       LOCAL_PAYOUT_OPTIONS.some((x) => x.code === detectedLocalCurrency)
   );
+
   const [withdrawalType, setWithdrawalType] = useState<'crypto' | 'bank'>('crypto');
   const [accountOption, setAccountOption] = useState<'saved' | 'new'>(
     savedAccount?.destinationType === 'bank' ? 'saved' : 'new'
   );
 
-  const minWithdrawalUSDT = 10.875; // 15,000 NGN × 0.000725
-
+  const minWithdrawalUSDT = 10.875;
   const walletBalanceUSDT = Number(userProfile.wallet_balance ?? 0);
 
   const [pinSet, setPinSet] = useState(false);
@@ -819,15 +933,22 @@ const WithdrawalDialogContent = ({
       accountName: savedAccount?.accountName ?? '',
     },
   });
+
   const selectedPayoutCurrency =
     formMethods.watch('payoutCurrency') ?? (detectedLocalCurrency ?? 'USD');
+
   const selectedRate =
     LOCAL_PAYOUT_OPTIONS.find((x) => x.code === selectedPayoutCurrency)?.perUsdt ?? 1;
+
   const minWithdrawalInCurrentMode =
     withdrawalType === 'bank' ? minWithdrawalUSDT * selectedRate : minWithdrawalUSDT;
+
   const modeCurrencyCode = withdrawalType === 'bank' ? selectedPayoutCurrency : 'USDT';
+
   const formatModeAmount = (n: number) =>
-    `${Number(n || 0).toLocaleString(undefined, { maximumFractionDigits: 4 })} ${modeCurrencyCode}`;
+    `${Number(n || 0).toLocaleString(undefined, {
+      maximumFractionDigits: 4,
+    })} ${modeCurrencyCode}`;
 
   useEffect(() => {
     const run = async () => {
@@ -873,15 +994,13 @@ const WithdrawalDialogContent = ({
         accountName: '',
       });
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [savedAccount, detectedLocalCurrency]);
+  }, [savedAccount, detectedLocalCurrency, formMethods]);
 
   useEffect(() => {
     if (!localWithdrawalSupported && withdrawalType === 'bank') {
       setWithdrawalType('crypto');
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [localWithdrawalSupported]);
+  }, [localWithdrawalSupported, withdrawalType]);
 
   const handleRemoveAccount = async () => {
     try {
@@ -889,6 +1008,7 @@ const WithdrawalDialogContent = ({
         .from('users')
         .update({ withdrawal_account: null })
         .eq('id', userProfile.id);
+
       if (error) throw error;
 
       toast({
@@ -901,7 +1021,8 @@ const WithdrawalDialogContent = ({
         amount: formMethods.getValues('amount'),
         chain: formMethods.getValues('chain') ?? 'TRC20',
         walletAddress: formMethods.getValues('walletAddress') ?? '',
-        payoutCurrency: formMethods.getValues('payoutCurrency') ?? ((detectedLocalCurrency as any) ?? 'USD'),
+        payoutCurrency:
+          formMethods.getValues('payoutCurrency') ?? ((detectedLocalCurrency as any) ?? 'USD'),
         bankName: '',
         accountNumber: '',
         accountName: '',
@@ -937,6 +1058,7 @@ const WithdrawalDialogContent = ({
 
     const localRate =
       LOCAL_PAYOUT_OPTIONS.find((x) => x.code === values.payoutCurrency)?.perUsdt ?? 1;
+
     const amountUSDT =
       withdrawalType === 'bank'
         ? Number(values.amount || 0) / Number(localRate || 1)
@@ -969,7 +1091,9 @@ const WithdrawalDialogContent = ({
         return;
       }
       if (!values.walletAddress || values.walletAddress.length < 8) {
-        formMethods.setError('walletAddress', { message: 'Please enter a valid wallet address.' });
+        formMethods.setError('walletAddress', {
+          message: 'Please enter a valid wallet address.',
+        });
         return;
       }
     }
@@ -980,11 +1104,15 @@ const WithdrawalDialogContent = ({
         return;
       }
       if (!values.accountName || values.accountName.trim().length < 2) {
-        formMethods.setError('accountName', { message: 'Account holder name is required.' });
+        formMethods.setError('accountName', {
+          message: 'Account holder name is required.',
+        });
         return;
       }
       if (!values.accountNumber || !/^\d{8,12}$/.test(values.accountNumber)) {
-        formMethods.setError('accountNumber', { message: 'Please enter a valid account number (8-12 digits).' });
+        formMethods.setError('accountNumber', {
+          message: 'Please enter a valid account number (8-12 digits).',
+        });
         return;
       }
     }
@@ -1007,13 +1135,13 @@ const WithdrawalDialogContent = ({
     try {
       await setWithdrawalPin(v.pin);
       setPinSet(true);
+
       toast({
         title: 'PIN Set',
         description: 'Withdrawal PIN saved successfully.',
       });
 
       setSetPinOpen(false);
-
       pinForm.reset({ pin: '' });
       setPinEntryOpen(true);
     } catch (e: any) {
@@ -1032,12 +1160,11 @@ const WithdrawalDialogContent = ({
 
     setBusy(true);
     try {
-      // ✅ send USDT base to backend (so DB stays consistent)
-      const amountNGN = toNGN(Number(pendingWithdrawal.amount));
-
       await requestWithdrawal({
-        // send user-entered amount; backend handles conversion to USDT base
-        amount: Number(pendingWithdrawal.amount || 0),
+        amount:
+          withdrawalType === 'bank'
+            ? toBaseUsdt(Number(pendingWithdrawal.amount || 0))
+            : Number(pendingWithdrawal.amount || 0),
         destinationType: withdrawalType,
         chain: pendingWithdrawal.chain,
         walletAddress: pendingWithdrawal.walletAddress,
@@ -1087,6 +1214,7 @@ const WithdrawalDialogContent = ({
         email,
         password: v.password,
       });
+
       if (reauthErr) throw reauthErr;
 
       await clearWithdrawalPin();
@@ -1129,7 +1257,9 @@ const WithdrawalDialogContent = ({
               if (value === 'bank' && !localWithdrawalSupported) return;
               setWithdrawalType(value);
               if (value === 'bank' && detectedLocalCurrency) {
-                formMethods.setValue('payoutCurrency', detectedLocalCurrency, { shouldValidate: true });
+                formMethods.setValue('payoutCurrency', detectedLocalCurrency, {
+                  shouldValidate: true,
+                });
               }
             }}
             className="grid grid-cols-2 gap-4"
@@ -1166,12 +1296,13 @@ const WithdrawalDialogContent = ({
               </FormLabel>
             </div>
           </RadioGroup>
+
           {!localWithdrawalSupported ? (
             <Alert className="rounded-xl">
               <Info className="h-4 w-4" />
               <AlertDescription>
-                Local withdrawal is not supported for <b>{userProfile.country || 'your country'}</b> yet.
-                Please use crypto withdrawal for now.
+                Local withdrawal is not supported for <b>{userProfile.country || 'your country'}</b>{' '}
+                yet. Please use crypto withdrawal for now.
               </AlertDescription>
             </Alert>
           ) : null}
@@ -1223,8 +1354,7 @@ const WithdrawalDialogContent = ({
                   <AlertDialogHeader>
                     <AlertDialogTitle>Are you sure?</AlertDialogTitle>
                     <AlertDialogDescription>
-                      This will permanently remove your saved withdrawal account
-                      details.
+                      This will permanently remove your saved withdrawal account details.
                     </AlertDialogDescription>
                   </AlertDialogHeader>
 
@@ -1250,11 +1380,7 @@ const WithdrawalDialogContent = ({
             render={({ field }) => (
               <FormItem>
                 <FormLabel>
-                  Amount (
-                  {withdrawalType === 'bank'
-                    ? formMethods.watch('payoutCurrency') || 'USD'
-                    : 'USDT'}
-                  )
+                  Amount ({withdrawalType === 'bank' ? formMethods.watch('payoutCurrency') || 'USD' : 'USDT'})
                 </FormLabel>
                 <FormControl>
                   <Input
@@ -1429,10 +1555,7 @@ const WithdrawalDialogContent = ({
           </DialogHeader>
 
           <Form {...setPinForm}>
-            <form
-              onSubmit={setPinForm.handleSubmit(handleSetPin)}
-              className="space-y-4"
-            >
+            <form onSubmit={setPinForm.handleSubmit(handleSetPin)} className="space-y-4">
               <FormField
                 control={setPinForm.control}
                 name="pin"
@@ -1565,15 +1688,11 @@ const WithdrawalDialogContent = ({
           <DialogHeader>
             <DialogTitle>Reset Withdrawal PIN</DialogTitle>
             <DialogDescription>
-              Enter your account password to clear your PIN, then you will set a
-              new PIN.
+              Enter your account password to clear your PIN, then you will set a new PIN.
             </DialogDescription>
           </DialogHeader>
 
-          <form
-            onSubmit={forgotForm.handleSubmit(handleForgotPin)}
-            className="space-y-4"
-          >
+          <form onSubmit={forgotForm.handleSubmit(handleForgotPin)} className="space-y-4">
             <FormItem>
               <FormLabel>Account Password</FormLabel>
               <Input
@@ -1647,6 +1766,7 @@ export default function WalletCard({ userProfile, isLoading }: WalletCardProps) 
     };
 
     run();
+
     return () => {
       if (unsub) unsub.data.subscription.unsubscribe();
     };
@@ -1681,8 +1801,7 @@ export default function WalletCard({ userProfile, isLoading }: WalletCardProps) 
   useEffect(() => {
     if (!sessionUserId && !userProfile?.id) return;
     refreshProfile();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sessionUserId]);
+  }, [sessionUserId, userProfile?.id]);
 
   useEffect(() => {
     const id = sessionUserId || userProfile?.id || null;
@@ -1742,14 +1861,13 @@ export default function WalletCard({ userProfile, isLoading }: WalletCardProps) 
     );
   }
 
-  // ✅ Treat DB values as USDT base
-  const walletBalanceNGN = Number(profileToUse.wallet_balance ?? 0);
-  const bonusBalanceNGN = Number(profileToUse.bonus_balance ?? 0);
+  const walletBalanceBase = Number(profileToUse.wallet_balance ?? 0);
+  const bonusBalanceBase = Number(profileToUse.bonus_balance ?? 0);
 
-  // ✅ Convert for display
-  const walletBalanceUser = convert(walletBalanceNGN);
-  const bonusBalanceUser = convert(bonusBalanceNGN);
+  const walletBalanceUser = convert(walletBalanceBase);
+  const bonusBalanceUser = convert(bonusBalanceBase);
   const totalBalanceLabel = format(walletBalanceUser);
+
   const totalBalanceSizeClass =
     totalBalanceLabel.length > 22
       ? 'text-xl sm:text-2xl'
@@ -1785,6 +1903,7 @@ export default function WalletCard({ userProfile, isLoading }: WalletCardProps) 
               <div className="text-sm font-medium text-muted-foreground">
                 Total Balance
               </div>
+
               {profileToUse?.id ? (
                 <div className="w-full sm:w-[220px]">
                   <CurrencySwitcher
@@ -1799,6 +1918,7 @@ export default function WalletCard({ userProfile, isLoading }: WalletCardProps) 
                 </div>
               ) : null}
             </div>
+
             <div
               className={`max-w-full overflow-hidden text-ellipsis whitespace-nowrap font-bold leading-tight text-primary ${totalBalanceSizeClass}`}
               title={totalBalanceLabel}
@@ -1817,7 +1937,7 @@ export default function WalletCard({ userProfile, isLoading }: WalletCardProps) 
               </div>
             </div>
 
-            {!bonusUnlocked && bonusBalanceNGN > 0 && (
+            {!bonusUnlocked && bonusBalanceBase > 0 && (
               <div className="flex items-center gap-2 text-xs text-muted-foreground">
                 <Lock className="h-4 w-4" />
                 <span>Make first deposit to unlock</span>
