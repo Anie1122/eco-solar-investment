@@ -47,7 +47,6 @@ import WalletCard from '@/components/wallet-card';
 import AiSuggestionCard from '@/components/ai-suggestion-card';
 import AuthGuard from '@/components/auth-guard';
 import NotificationBell from '@/components/notification-bell';
-import MarketTicker from '@/components/MarketTicker';
 import FloatingActions from '@/components/floating-actions';
 
 import { supabase } from '@/lib/supabaseClient';
@@ -55,7 +54,6 @@ import type { User as UserEntity } from '@/lib/types';
 
 import PolicyGate from '@/components/policy-gate';
 import LiveCryptoTicker from '@/components/live-crypto-ticker';
-import { SUPPORTED_CRYPTO_CURRENCIES, toSupportedCurrency, type SupportedCryptoCurrency } from '@/lib/crypto-rates';
 // Backward-compatible alias to avoid runtime crashes if older references to MarketTicker remain.
 const MarketTicker = LiveCryptoTicker;
 
@@ -115,14 +113,10 @@ const DashboardSkeleton = () => (
 const DashboardHeader = ({
   userProfile,
   authEmail,
-  userId,
-  onCurrencyChange,
   onLogout,
 }: {
   userProfile: UserEntity | null;
   authEmail: string | null;
-  userId: string | null;
-  onCurrencyChange: (next: SupportedCryptoCurrency) => Promise<void>;
   onLogout: () => Promise<void>;
 }) => {
   const router = useRouter();
@@ -149,7 +143,7 @@ const DashboardHeader = ({
     (authEmail ? `https://avatar.vercel.sh/${authEmail}.png` : undefined);
 
   return (
-    <header className="sticky top-0 z-30 flex h-14 items-center gap-4 border-b bg-background px-4 sm:static sm:h-auto sm:border-0 sm:bg-transparent sm:px-6">
+    <header className="sticky top-0 z-30 flex h-14 w-full min-w-0 items-center gap-2 overflow-x-hidden border-b bg-background px-3 sm:static sm:h-auto sm:gap-4 sm:border-0 sm:bg-transparent sm:px-6">
       <SidebarTrigger className="sm:hidden" />
 
       <motion.div
@@ -166,39 +160,25 @@ const DashboardHeader = ({
         ))}
       </motion.div>
 
-      <div className="flex items-center gap-2 text-lg font-bold md:hidden">
-        <Sun className="h-5 w-5 text-primary" />
-        <span>Eco Solar Investment</span>
+      <div className="flex min-w-0 items-center gap-2 text-base font-bold md:hidden">
+        <Sun className="h-5 w-5 shrink-0 text-primary" />
+        <span className="truncate">Eco Solar Investment</span>
       </div>
 
       <div className="relative ml-auto flex-1 md:grow-0" />
-
-      {userId ? (
-        <select
-          className="h-8 rounded-md border border-input bg-background px-2 text-xs"
-          value={toSupportedCurrency(userProfile?.currency)}
-          onChange={(e) => void onCurrencyChange(toSupportedCurrency(e.target.value))}
-        >
-          {SUPPORTED_CRYPTO_CURRENCIES.map((code) => (
-            <option key={code} value={code}>
-              {code}
-            </option>
-          ))}
-        </select>
-      ) : null}
 
       <NotificationBell />
 
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="ghost" className="relative flex items-center gap-2">
+          <Button variant="ghost" className="relative flex min-w-0 items-center gap-2 px-2 sm:px-3">
             <Avatar className="h-8 w-8">
               <AvatarImage src={avatarSrc} alt="User avatar" />
               <AvatarFallback>
                 {(authEmail || 'U').charAt(0).toUpperCase()}
               </AvatarFallback>
             </Avatar>
-            <span className="hidden sm:inline-block">{displayName}</span>
+            <span className="hidden max-w-[140px] truncate sm:inline-block">{displayName}</span>
             <ChevronDown className="hidden h-4 w-4 sm:inline-block" />
           </Button>
         </DropdownMenuTrigger>
@@ -490,19 +470,6 @@ const Home: NextPage = () => {
     router.push('/login');
   };
 
-  const handleCurrencyChange = async (nextCurrency: SupportedCryptoCurrency) => {
-    if (!sessionUserId) return;
-    const { error } = await supabase
-      .from('users')
-      .update({ currency: nextCurrency })
-      .eq('id', sessionUserId);
-    if (error) {
-      console.error('Failed to update currency:', error);
-      return;
-    }
-    setUserProfile((prev) => (prev ? { ...prev, currency: nextCurrency } : prev));
-  };
-
   const isLoading = authLoading || profileLoading;
 
   const shouldShowPolicy =
@@ -511,7 +478,7 @@ const Home: NextPage = () => {
   return (
     <AuthGuard>
       <SidebarProvider>
-        <div className="flex min-h-screen w-full flex-col">
+        <div className="flex min-h-screen w-full flex-col overflow-x-hidden">
           {shouldShowPolicy && sessionUserId && (
             <PolicyGate
               userId={sessionUserId}
@@ -545,8 +512,6 @@ const Home: NextPage = () => {
             <DashboardHeader
               userProfile={userProfile}
               authEmail={authEmail}
-              userId={sessionUserId}
-              onCurrencyChange={handleCurrencyChange}
               onLogout={handleLogout}
             />
 
