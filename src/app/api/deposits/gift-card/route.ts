@@ -89,11 +89,6 @@ export async function POST(req: Request) {
 
     const now = new Date().toISOString();
 
-    const { data: giftPayment, error: paymentErr } = await admin
-      .from('gift_card_payments')
-      .insert({
-        user_id: user.id,
-        full_name: displayName || null,
     const { data, error } = await admin
       .from('gift_card_payments')
       .insert({
