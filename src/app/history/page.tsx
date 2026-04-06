@@ -401,6 +401,21 @@ const cleanTxTitle = (tType: string, desc?: string | null, metadata?: any | null
   return d;
 };
 
+const shouldShowInHistory = (tx: TxRow) => {
+  const txType = normType(tx.transaction_type);
+  if (txType !== 'deposit') return true;
+
+  const meta = (tx.metadata || {}) as Record<string, any>;
+  const method = String(meta.paymentMethod || '').toLowerCase();
+  const submitted = Boolean(meta.submittedForReviewAt);
+
+  if (method === 'crypto_checkout' || method === 'local_bank_transfer') {
+    return submitted;
+  }
+
+  return true;
+};
+
 const TransactionList = () => {
   const userId = useSupabaseSessionUser();
   const { row: userRow, loading: userLoading } = useSupabaseUserRow(userId);
@@ -430,7 +445,7 @@ const TransactionList = () => {
       console.error('❌ load transactions error:', error);
       setTxs([]);
     } else {
-      setTxs((data as TxRow[]) ?? []);
+      setTxs((((data as TxRow[]) ?? []).filter(shouldShowInHistory)));
     }
     setLoading(false);
   };

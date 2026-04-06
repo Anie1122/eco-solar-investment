@@ -83,7 +83,7 @@ export default function GiftCardPaymentForm({
         throw new Error(json?.message || 'Failed to submit gift card payment.');
       }
 
-      toast({ title: 'Submitted', description: 'Gift card payment request submitted for admin review.' });
+      toast({ title: 'Submitted', description: 'Gift card payment request received successfully.' });
       setGiftCardCode('');
       setAmount('');
       setNote('');

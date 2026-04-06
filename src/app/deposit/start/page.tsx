@@ -180,7 +180,7 @@ export default function DepositStartPage() {
         await submitGiftCard();
         toast({
           title: 'Gift card payment submitted',
-          description: 'Your request is pending admin manual review.',
+          description: 'Your deposit request was received successfully.',
         });
 
         setGiftCardCode('');
