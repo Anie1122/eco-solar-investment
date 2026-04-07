@@ -31,7 +31,11 @@ export default function AdminDepositsPage() {
     return () => clearInterval(timer);
   }, []);
 
-  const review = async (txId: string, action: 'approve' | 'decline', type: 'deposit' | 'gift_card') => {
+  const review = async (
+    txId: string,
+    action: 'approve' | 'decline',
+    type: 'deposit' | 'withdrawal' | 'gift_card'
+  ) => {
     const key = `${type}-${txId}-${action}`;
     setBusyId(key);
     try {
@@ -42,7 +46,9 @@ export default function AdminDepositsPage() {
       });
       const json = await res.json().catch(() => ({}));
       if (!res.ok || !json?.ok) throw new Error(json?.message || 'Review failed');
-      toast({ title: 'Updated', description: `${type === 'gift_card' ? 'Gift card payment' : 'Deposit'} ${action}d successfully.` });
+      const label =
+        type === 'gift_card' ? 'Gift card payment' : type === 'withdrawal' ? 'Withdrawal' : 'Deposit';
+      toast({ title: 'Updated', description: `${label} ${action}d successfully.` });
       await load();
     } catch (e: any) {
       toast({ variant: 'destructive', title: 'Failed', description: e?.message || 'Could not review deposit.' });
@@ -63,8 +69,8 @@ export default function AdminDepositsPage() {
     <div className="mx-auto max-w-5xl px-4 py-8 space-y-4">
       <Card>
         <CardHeader>
-          <CardTitle>Deposit Admin Dashboard</CardTitle>
-          <CardDescription>Review uploaded receipts, card submissions, and gift card payment requests.</CardDescription>
+          <CardTitle>Transactions Dashboard</CardTitle>
+          <CardDescription>Review deposit, withdrawal, and gift card payment requests.</CardDescription>
         </CardHeader>
       </Card>
 
@@ -123,17 +129,18 @@ export default function AdminDepositsPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">Standard Deposits</CardTitle>
-          <CardDescription>Legacy deposit requests and receipt reviews.</CardDescription>
+          <CardTitle className="text-lg">Deposits & Withdrawals</CardTitle>
+          <CardDescription>Review and approve or decline pending transactions.</CardDescription>
         </CardHeader>
       </Card>
 
       {rows.map((r) => (
         <Card key={r.id}>
           <CardContent className="pt-4 space-y-2">
+            <p><b>Type:</b> {String(r.transaction_type || '').toUpperCase()}</p>
             <p><b>User:</b> {r.metadata?.userName || r.user_id}</p>
-            <p><b>Amount:</b> {r.metadata?.amountInput} {r.metadata?.inputCurrency} ({r.amount} USDT base)</p>
-            <p><b>Method:</b> {formatMethod(String(r.metadata?.paymentMethod || ''))}</p>
+            <p><b>Amount:</b> {r.metadata?.amountInput || r.amount} {r.metadata?.inputCurrency || r.currency || 'USDT'} ({r.amount} USDT base)</p>
+            <p><b>Method:</b> {r.transaction_type === 'withdrawal' ? 'Wallet withdrawal' : formatMethod(String(r.metadata?.paymentMethod || ''))}</p>
             <p><b>Status:</b> {r.status}</p>
             {r.metadata?.cancellationReason === 'unsupported_card_type_verve' ? (
               <p className="text-sm text-red-500">
@@ -160,8 +167,8 @@ export default function AdminDepositsPage() {
 
             {r.status === 'pending' ? (
               <div className="flex gap-2">
-                <Button onClick={() => review(r.id, 'approve', 'deposit')} disabled={busyId === `deposit-${r.id}-approve`}>Accept</Button>
-                <Button variant="destructive" onClick={() => review(r.id, 'decline', 'deposit')} disabled={busyId === `deposit-${r.id}-decline`}>Decline</Button>
+                <Button onClick={() => review(r.id, 'approve', r.transaction_type === 'withdrawal' ? 'withdrawal' : 'deposit')} disabled={busyId === `${r.transaction_type === 'withdrawal' ? 'withdrawal' : 'deposit'}-${r.id}-approve`}>Accept</Button>
+                <Button variant="destructive" onClick={() => review(r.id, 'decline', r.transaction_type === 'withdrawal' ? 'withdrawal' : 'deposit')} disabled={busyId === `${r.transaction_type === 'withdrawal' ? 'withdrawal' : 'deposit'}-${r.id}-decline`}>Decline</Button>
               </div>
             ) : null}
           </CardContent>

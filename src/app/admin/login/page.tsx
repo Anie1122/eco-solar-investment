@@ -26,7 +26,7 @@ export default function AdminLoginPage() {
       if (!res.ok || !json?.ok) throw new Error(json?.message || 'Login failed');
       router.push('/admin/deposits');
     } catch (e: any) {
-      toast({ variant: 'destructive', title: 'Admin Login Failed', description: e?.message || 'Could not login.' });
+      toast({ variant: 'destructive', title: 'Login Failed', description: e?.message || 'Could not login.' });
     } finally {
       setBusy(false);
     }
@@ -36,8 +36,8 @@ export default function AdminLoginPage() {
     <div className="mx-auto max-w-md px-4 py-12">
       <Card>
         <CardHeader>
-          <CardTitle>Admin Login</CardTitle>
-          <CardDescription>Sign in to review deposits.</CardDescription>
+          <CardTitle>Login</CardTitle>
+          <CardDescription>Enter your details to continue.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
           <Input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Email" />

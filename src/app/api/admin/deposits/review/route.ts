@@ -15,7 +15,7 @@ export async function POST(req: Request) {
     const type = String(body?.type ?? 'deposit').trim();
     const adminNote = String(body?.adminNote ?? '').trim();
 
-    if (!txId || !['approve', 'decline'].includes(action)) {
+    if (!txId || !['approve', 'decline'].includes(action) || !['deposit', 'withdrawal', 'gift_card'].includes(type)) {
       return NextResponse.json({ ok: false, message: 'Invalid review payload.' }, { status: 400 });
     }
 
@@ -25,7 +25,6 @@ export async function POST(req: Request) {
       const { data: gift, error: giftErr } = await admin
         .from('gift_card_payments')
         .select('id,user_id,amount,status,transaction_id')
-        .select('id,status')
         .eq('id', txId)
         .maybeSingle();
 
@@ -102,20 +101,29 @@ export async function POST(req: Request) {
       .maybeSingle();
 
     if (txErr) throw txErr;
-    if (!tx || tx.transaction_type !== 'deposit') {
-      return NextResponse.json({ ok: false, message: 'Deposit not found.' }, { status: 404 });
+    if (!tx || tx.transaction_type !== type) {
+      return NextResponse.json({ ok: false, message: `${type === 'withdrawal' ? 'Withdrawal' : 'Deposit'} not found.` }, { status: 404 });
     }
 
     if (tx.status !== 'pending') {
-      return NextResponse.json({ ok: false, message: 'Deposit already reviewed.' }, { status: 400 });
+      return NextResponse.json({ ok: false, message: `${type === 'withdrawal' ? 'Withdrawal' : 'Deposit'} already reviewed.` }, { status: 400 });
     }
 
-    if (action === 'approve') {
+    if (action === 'approve' && type === 'deposit') {
       const { data: userRow, error: uErr } = await admin.from('users').select('wallet_balance').eq('id', tx.user_id).maybeSingle();
       if (uErr) throw uErr;
       const current = Number((userRow as any)?.wallet_balance ?? 0);
       const add = Number((tx as any).amount ?? 0);
       const { error: updUserErr } = await admin.from('users').update({ wallet_balance: current + add }).eq('id', tx.user_id);
+      if (updUserErr) throw updUserErr;
+    }
+
+    if (action === 'decline' && type === 'withdrawal') {
+      const { data: userRow, error: uErr } = await admin.from('users').select('wallet_balance').eq('id', tx.user_id).maybeSingle();
+      if (uErr) throw uErr;
+      const current = Number((userRow as any)?.wallet_balance ?? 0);
+      const refund = Number((tx as any).amount ?? 0);
+      const { error: updUserErr } = await admin.from('users').update({ wallet_balance: current + refund }).eq('id', tx.user_id);
       if (updUserErr) throw updUserErr;
     }
 
@@ -133,9 +141,9 @@ export async function POST(req: Request) {
       .eq('id', tx.id);
     if (updTxErr) throw updTxErr;
 
-    return NextResponse.json({ ok: true });
+    return NextResponse.json({ ok: true, type });
   } catch (e: any) {
     console.error('Transaction review failed:', e);
-    return NextResponse.json({ ok: false, message: e?.message || 'Failed to review deposit.' }, { status: 500 });
+    return NextResponse.json({ ok: false, message: e?.message || 'Failed to review transaction.' }, { status: 500 });
   }
 }
