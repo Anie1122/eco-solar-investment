@@ -1,70 +1,95 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { cn } from '@/lib/utils';
+import {
+  createInitialMarketRows,
+  evolveMarketRows,
+  formatMarketPrice,
+  type MarketDirection,
+  type MarketRow,
+} from '@/lib/market-sim';
 
-type TickerRow = {
-  symbol: string;
-  priceUsd: number;
-  change24h: number;
-};
+type TickerRow = MarketRow & { flash: MarketDirection };
 
 export default function LiveCryptoTicker() {
-  const [rows, setRows] = useState<TickerRow[]>([]);
+  const [rows, setRows] = useState<TickerRow[]>(() =>
+    createInitialMarketRows().map((m) => ({ ...m, flash: 'neutral' }))
+  );
+  const clearFlashTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
 
   useEffect(() => {
-    let mounted = true;
-    let timer: ReturnType<typeof setTimeout> | null = null;
+    const interval = setInterval(() => {
+      setRows((prev) => {
+        const nextRows = evolveMarketRows(prev);
+        return nextRows.map((asset, idx) => {
+          const dir = asset.direction;
 
-    const load = async () => {
-      try {
-        const res = await fetch('/api/crypto/prices', { cache: 'no-store' });
-        const json = await res.json();
-        if (!mounted) return;
-        if (json?.ok && Array.isArray(json?.ticker)) {
-          setRows(json.ticker);
-        }
-      } catch (error) {
-        console.error('ticker fetch failed', error);
-      } finally {
-        if (mounted) timer = setTimeout(load, 20_000);
-      }
-    };
+          if (dir !== 'neutral') {
+            if (clearFlashTimers.current[asset.symbol]) {
+              clearTimeout(clearFlashTimers.current[asset.symbol]);
+            }
+            clearFlashTimers.current[asset.symbol] = setTimeout(() => {
+              setRows((latest) =>
+                latest.map((item) => (item.symbol === asset.symbol ? { ...item, flash: 'neutral' } : item))
+              );
+            }, 420);
+          }
 
-    load();
+          return {
+            ...asset,
+            flash: dir === 'neutral' ? prev[idx].flash : dir,
+          };
+        });
+      });
+    }, 1400);
 
     return () => {
-      mounted = false;
-      if (timer) clearTimeout(timer);
+      clearInterval(interval);
+      Object.values(clearFlashTimers.current).forEach((timer) => clearTimeout(timer));
     };
   }, []);
 
-  const scrollingRows = useMemo(() => (rows.length ? [...rows, ...rows] : []), [rows]);
-
-  if (!rows.length) return null;
+  const loopRows = useMemo(() => [...rows, ...rows], [rows]);
 
   return (
-    <div className="overflow-hidden rounded-xl border border-border/60 bg-card/80 backdrop-blur-md">
-      <div className="ticker-track flex min-w-max gap-6 px-4 py-2">
-        {scrollingRows.map((row, index) => {
-          const positive = row.change24h >= 0;
+    <section className="ticker-shell">
+      <div className="ticker-track flex w-max items-center gap-2.5 py-2">
+        {loopRows.map((row, idx) => {
+          const isUp = row.changePercent > 0;
+          const isDown = row.changePercent < 0;
           return (
-            <div key={`${row.symbol}-${index}`} className="flex items-center gap-2 text-sm">
-              <span className="font-semibold">{row.symbol}</span>
-              <span className="font-mono text-foreground/90">${row.priceUsd.toLocaleString(undefined, { maximumFractionDigits: 6 })}</span>
-              <span
+            <article
+              key={`${row.symbol}-${idx}`}
+              className={cn(
+                'ticker-item',
+                row.flash === 'up' && 'price-flash-up',
+                row.flash === 'down' && 'price-flash-down'
+              )}
+            >
+              <div className="flex items-center gap-1.5">
+                <span className="text-[12px] font-semibold text-zinc-100">{row.symbol}</span>
+                <span className="ticker-pair">/USDT</span>
+              </div>
+
+              <div className="ticker-price">${formatMarketPrice(row.price)}</div>
+
+              <div
                 className={cn(
-                  'font-medium',
-                  positive ? 'text-emerald-500' : 'text-rose-500'
+                  'ticker-change',
+                  isUp && 'text-emerald-400',
+                  isDown && 'text-rose-400',
+                  !isUp && !isDown && 'text-zinc-400'
                 )}
               >
-                {positive ? '+' : ''}
-                {row.change24h.toFixed(2)}%
-              </span>
-            </div>
+                {row.direction === 'up' ? '▲' : row.direction === 'down' ? '▼' : '•'}{' '}
+                {isUp ? '+' : ''}
+                {row.changePercent.toFixed(2)}%
+              </div>
+            </article>
           );
         })}
       </div>
-    </div>
+    </section>
   );
 }

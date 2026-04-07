@@ -54,6 +54,7 @@ import type { User as UserEntity } from '@/lib/types';
 
 import PolicyGate from '@/components/policy-gate';
 import LiveCryptoTicker from '@/components/live-crypto-ticker';
+import LiveMarketBoard from '@/components/live-market-board';
 // Backward-compatible alias to avoid runtime crashes if older references to MarketTicker remain.
 const MarketTicker = LiveCryptoTicker;
 
@@ -531,6 +532,9 @@ const Home: NextPage = () => {
                       <WalletCard userProfile={userProfile} isLoading={isLoading} />
                       <AiSuggestionCard userProfile={userProfile} isLoading={isLoading} />
                     </motion.div>
+                    <section aria-label="live-market-board-lower">
+                      <LiveMarketBoard />
+                    </section>
                   </div>
                 </div>
               )}
