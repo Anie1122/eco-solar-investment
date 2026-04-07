@@ -81,7 +81,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: false, message: 'Could not find user profile.' }, { status: 404 });
     }
 
-    const currency = userRow.currency || 'USDT';
+    const currency = 'USDT';
 
     const investAmount = Number(plan.amount);
     const firstProfit = Number(plan.dailyProfit);
