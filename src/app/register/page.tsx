@@ -22,7 +22,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { Loader } from 'lucide-react';
+import { CheckCircle2, Circle, Eye, EyeOff, Loader } from 'lucide-react';
 import Link from 'next/link';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -30,11 +30,19 @@ import AuthGuard from '@/components/auth-guard';
 import { motion } from 'framer-motion';
 import { supabase } from '@/lib/supabaseClient';
 import AppLogo from '@/components/app-logo';
+import {
+  getPasswordChecks,
+  getPasswordStrength,
+  isPasswordValid,
+  PASSWORD_RULES_MESSAGE,
+} from '@/lib/password-rules';
 
 const formSchema = z.object({
   fullName: z.string().min(2, { message: 'Full name is required.' }),
   email: z.string().email({ message: 'Invalid email address.' }),
-  password: z.string().min(6, { message: 'Password must be at least 6 characters.' }),
+  password: z.string().refine((value) => isPasswordValid(value), {
+    message: PASSWORD_RULES_MESSAGE,
+  }),
   inviteCode: z.string().optional(),
 });
 
@@ -74,6 +82,7 @@ function RollingTape() {
 
 export default function RegisterPage() {
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const { toast } = useToast();
   const router = useRouter();
 
@@ -94,6 +103,16 @@ export default function RegisterPage() {
     if (refFromLink) form.setValue('inviteCode', refFromLink);
   }, [refFromLink, form]);
 
+  const passwordValue = form.watch('password') ?? '';
+  const passwordChecks = getPasswordChecks(passwordValue);
+  const passwordStrength = getPasswordStrength(passwordValue);
+  const requirementItems = [
+    { label: 'At least 6 characters', met: passwordChecks.minLength },
+    { label: '1 uppercase letter', met: passwordChecks.hasUppercase },
+    { label: '1 lowercase letter', met: passwordChecks.hasLowercase },
+    { label: '1 number', met: passwordChecks.hasNumber },
+  ];
+
   async function onEmailSubmit(values: z.infer<typeof formSchema>) {
     setLoading(true);
 
@@ -101,6 +120,10 @@ export default function RegisterPage() {
       const email = values.email.trim().toLowerCase();
       const fullName = values.fullName.trim();
       const inviteCode = (values.inviteCode ?? '').trim().toUpperCase() || null;
+      if (!isPasswordValid(values.password)) {
+        form.setError('password', { message: PASSWORD_RULES_MESSAGE });
+        return;
+      }
 
       const { data, error } = await supabase.auth.signUp({
         email,
@@ -246,13 +269,65 @@ export default function RegisterPage() {
                       <FormItem>
                         <FormLabel>Password</FormLabel>
                         <FormControl>
-                          <Input
-                            type="password"
-                            placeholder="••••••••"
-                            {...field}
-                            disabled={loading}
-                          />
+                          <div className="relative">
+                            <Input
+                              type={showPassword ? 'text' : 'password'}
+                              placeholder="••••••••"
+                              {...field}
+                              disabled={loading}
+                              className="pr-10"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => setShowPassword((prev) => !prev)}
+                              className="absolute inset-y-0 right-0 flex items-center px-3 text-muted-foreground"
+                              aria-label={showPassword ? 'Hide password' : 'Show password'}
+                            >
+                              {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                            </button>
+                          </div>
                         </FormControl>
+                        <div className="space-y-2 rounded-md border bg-muted/20 p-3">
+                          <div className="flex items-center justify-between text-xs">
+                            <span className="text-muted-foreground">Password strength</span>
+                            <span
+                              className={
+                                passwordValue
+                                  ? passwordStrength.label === 'Strong'
+                                    ? 'text-emerald-600'
+                                    : passwordStrength.label === 'Medium'
+                                      ? 'text-amber-600'
+                                      : 'text-red-600'
+                                  : 'text-muted-foreground'
+                              }
+                            >
+                              {passwordValue ? passwordStrength.label : '—'}
+                            </span>
+                          </div>
+                          <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
+                            <div
+                              className={`h-full transition-all ${passwordStrength.colorClass}`}
+                              style={{ width: `${passwordStrength.progress}%` }}
+                            />
+                          </div>
+                          <ul className="space-y-1 text-xs">
+                            {requirementItems.map((item) => (
+                              <li
+                                key={item.label}
+                                className={`flex items-center gap-2 ${
+                                  item.met ? 'text-emerald-600' : 'text-muted-foreground'
+                                }`}
+                              >
+                                {item.met ? (
+                                  <CheckCircle2 className="h-3.5 w-3.5" />
+                                ) : (
+                                  <Circle className="h-3.5 w-3.5" />
+                                )}
+                                <span>{item.label}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
                         <FormMessage />
                       </FormItem>
                     )}
