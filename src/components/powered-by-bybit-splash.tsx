@@ -3,6 +3,7 @@
 import { useEffect } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
 import { STARTUP_SPLASH_DURATION_MS } from '@/lib/startup-transition';
+import { useTheme } from 'next-themes';
 
 type PoweredByBybitSplashProps = {
   onComplete?: () => void;
@@ -43,6 +44,8 @@ function playStartupTone() {
 
 export default function PoweredByBybitSplash({ onComplete, playSound = false }: PoweredByBybitSplashProps) {
   const prefersReducedMotion = useReducedMotion();
+  const { resolvedTheme } = useTheme();
+  const isDark = resolvedTheme !== 'light';
 
   useEffect(() => {
     const timeout = window.setTimeout(() => {
@@ -60,7 +63,9 @@ export default function PoweredByBybitSplash({ onComplete, playSound = false }: 
 
   return (
     <motion.div
-      className="fixed inset-0 z-[1000] flex items-center justify-center overflow-hidden bg-black"
+      className={`fixed inset-0 z-[1000] flex items-center justify-center overflow-hidden ${
+        isDark ? 'bg-black' : 'bg-zinc-100'
+      }`}
       initial={{ opacity: 1 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
@@ -69,7 +74,9 @@ export default function PoweredByBybitSplash({ onComplete, playSound = false }: 
       aria-label="Startup splash"
     >
       <motion.div
-        className="pointer-events-none absolute left-1/2 top-1/2 h-64 w-64 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#f7a600]/25 blur-3xl"
+        className={`pointer-events-none absolute left-1/2 top-1/2 h-64 w-64 -translate-x-1/2 -translate-y-1/2 rounded-full blur-3xl ${
+          isDark ? 'bg-[#f7a600]/25' : 'bg-[#f7a600]/18'
+        }`}
         initial={{ scale: 0.6, opacity: 0 }}
         animate={{ scale: reduced ? 1 : 1.3, opacity: reduced ? 0.25 : [0, 0.35, 0.2] }}
         transition={{ duration: reduced ? 0.4 : 1.2, ease: 'easeOut' }}
@@ -84,7 +91,9 @@ export default function PoweredByBybitSplash({ onComplete, playSound = false }: 
 
       <div className="relative flex flex-col items-center px-6 text-center select-none">
         <motion.p
-          className="mb-4 text-[11px] tracking-[0.35em] text-white/80 sm:text-xs"
+          className={`mb-4 text-[11px] tracking-[0.35em] sm:text-xs ${
+            isDark ? 'text-white/80' : 'text-zinc-700'
+          }`}
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: reduced ? 0.2 : 0.45, delay: reduced ? 0 : 0.55 }}
@@ -93,7 +102,11 @@ export default function PoweredByBybitSplash({ onComplete, playSound = false }: 
         </motion.p>
 
         <motion.h1
-          className="relative text-5xl font-extrabold tracking-[0.15em] text-white drop-shadow-[0_0_30px_rgba(255,255,255,0.15)] sm:text-6xl"
+          className={`relative text-5xl font-extrabold tracking-[0.15em] sm:text-6xl ${
+            isDark
+              ? 'text-white drop-shadow-[0_0_30px_rgba(255,255,255,0.15)]'
+              : 'text-zinc-900 drop-shadow-[0_0_24px_rgba(0,0,0,0.12)]'
+          }`}
           initial={{ opacity: 0, y: 10, scale: 0.96 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
           transition={{ duration: reduced ? 0.2 : 0.7, delay: reduced ? 0.1 : 1.0, ease: 'easeOut' }}
