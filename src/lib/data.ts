@@ -5,71 +5,66 @@ import { serverTimestamp } from 'firebase/firestore';
 // NOTE: The 'transactions' array is now just for type reference and examples.
 // The actual transaction data will be fetched from Firestore.
 
-type PlanSeed = Omit<InvestmentPlan, 'totalReturn'>;
+type PlanSeed = Omit<InvestmentPlan, 'dailyProfit' | 'totalReturn'>;
 
 const toMoney = (value: number) =>
-  Number((Number.isFinite(value) ? value : 0).toFixed(6));
+  Number((Number.isFinite(value) ? value : 0).toFixed(2));
 
-const withComputedReturn = (plan: PlanSeed): InvestmentPlan => {
-  const totalReturn = plan.dailyProfit * plan.duration;
-  return { ...plan, totalReturn: toMoney(totalReturn) };
+const withComputedProfit = (plan: PlanSeed): InvestmentPlan => {
+  const dailyProfit = toMoney(plan.amount * 0.2);
+  const totalProfit = toMoney(dailyProfit * plan.duration);
+  const totalReturn = toMoney(plan.amount + totalProfit);
+  return { ...plan, dailyProfit, totalReturn };
 };
 
 export const investmentPlans: InvestmentPlan[] = [
-  withComputedReturn({
+  withComputedProfit({
     id: 'plan-1',
     name: 'Starter Solar Kit',
-    amount: 10,
-    duration: 30,
-    dailyProfit: 1,
+    amount: 500,
+    duration: 15,
     image: 'solar-panel-1',
   }),
-  withComputedReturn({
+  withComputedProfit({
     id: 'plan-2',
     name: 'Home Power Solution',
-    amount: 30.45,
-    duration: 30,
-    dailyProfit: 3.29875,
+    amount: 1000,
+    duration: 15,
     image: 'solar-panel-2',
   }),
-  withComputedReturn({
+  withComputedProfit({
     id: 'plan-3',
     name: 'Business Basic',
-    amount: 63.4375,
-    duration: 30,
-    dailyProfit: 6.34375,
+    amount: 2500,
+    duration: 15,
     image: 'solar-panel-3',
   }),
-  withComputedReturn({
+  withComputedProfit({
     id: 'plan-4',
     name: 'Commercial Power',
-    amount: 126.875,
-    duration: 30,
-    dailyProfit: 11.41875,
+    amount: 5000,
+    duration: 15,
     image: 'solar-panel-4',
   }),
-  withComputedReturn({
+  withComputedProfit({
     id: 'plan-5',
     name: 'Industrial Unit',
-    amount: 329.875,
-    duration: 30,
-    dailyProfit: 30.45,
+    amount: 10000,
+    duration: 15,
     image: 'solar-panel-5',
   }),
-  withComputedReturn({
+  withComputedProfit({
     id: 'plan-6',
     name: 'Power Grid',
-    amount: 659.75,
-    duration: 20,
-    dailyProfit: 68.5125,
+    amount: 20000,
+    duration: 15,
     image: 'solar-panel-6',
   }),
-  withComputedReturn({
+  withComputedProfit({
     id: 'plan-7',
     name: 'Solar Farm',
-    amount: 1268.75,
-    duration: 20,
-    dailyProfit: 121.8,
+    amount: 50000,
+    duration: 15,
     image: 'solar-panel-7',
   }),
 ];
