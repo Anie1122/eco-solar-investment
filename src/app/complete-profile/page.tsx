@@ -40,6 +40,7 @@ import type { CountryItem } from '@/lib/countries';
 import { buildCountriesAtoZ } from '@/lib/countries';
 import { BASE_CURRENCY } from '@/lib/crypto-rates';
 import { getSignupBonusUsdtToday } from '@/lib/bonus';
+import { queueStartupSplash } from '@/lib/startup-transition';
 
 const schema = z.object({
   country: z.string().min(2, 'Select your country'),
@@ -203,6 +204,7 @@ export default function CompleteProfilePage() {
         title: 'Profile saved',
         description: 'Redirecting to dashboard...',
       });
+      queueStartupSplash('post-profile-complete');
       router.replace('/');
     } catch (e: any) {
       console.error(e);
