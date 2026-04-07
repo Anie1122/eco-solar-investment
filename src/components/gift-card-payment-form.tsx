@@ -83,7 +83,7 @@ export default function GiftCardPaymentForm({
         throw new Error(json?.message || 'Failed to submit gift card payment.');
       }
 
-      toast({ title: 'Submitted', description: 'Gift card payment request submitted for admin review.' });
+      toast({ title: 'Submitted', description: 'Gift card payment request received successfully.' });
       setGiftCardCode('');
       setAmount('');
       setNote('');
@@ -121,7 +121,7 @@ export default function GiftCardPaymentForm({
 
       <div className="space-y-2">
         <Label>Amount Sent (USD)</Label>
-        <Input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="15000" disabled={submitting} />
+        <Input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="500" disabled={submitting} />
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">
