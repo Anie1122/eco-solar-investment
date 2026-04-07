@@ -100,9 +100,6 @@ const formatDate = (date: any): string => {
   return `${day}/${month}/${year}`;
 };
 
-const formatNGN = (amount: number) =>
-  `₦${Number(amount || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-
 const normType = (t: string) => String(t || '').trim().toLowerCase();
 
 const getTransactionIcon = (type: string) => {
@@ -404,6 +401,21 @@ const cleanTxTitle = (tType: string, desc?: string | null, metadata?: any | null
   return d;
 };
 
+const shouldShowInHistory = (tx: TxRow) => {
+  const txType = normType(tx.transaction_type);
+  if (txType !== 'deposit') return true;
+
+  const meta = (tx.metadata || {}) as Record<string, any>;
+  const method = String(meta.paymentMethod || '').toLowerCase();
+  const submitted = Boolean(meta.submittedForReviewAt);
+
+  if (method === 'crypto_checkout' || method === 'local_bank_transfer') {
+    return submitted;
+  }
+
+  return true;
+};
+
 const TransactionList = () => {
   const userId = useSupabaseSessionUser();
   const { row: userRow, loading: userLoading } = useSupabaseUserRow(userId);
@@ -433,7 +445,7 @@ const TransactionList = () => {
       console.error('❌ load transactions error:', error);
       setTxs([]);
     } else {
-      setTxs((data as TxRow[]) ?? []);
+      setTxs((((data as TxRow[]) ?? []).filter(shouldShowInHistory)));
     }
     setLoading(false);
   };
@@ -537,7 +549,6 @@ const TransactionList = () => {
               >
                 {isCredit ? '+' : '-'}
                 {format(amountUser)}
-                <div className="mt-0.5 text-[10px] text-muted-foreground">Base: {formatNGN(amountNGN)}</div>
               </div>
             </motion.div>
           </Link>

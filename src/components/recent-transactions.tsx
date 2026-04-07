@@ -27,6 +27,7 @@ type TxRow = {
   amount: number; // USDT base
   currency: string | null;
   description: string | null;
+  metadata?: Record<string, any> | null;
   created_at: string;
 };
 
@@ -95,6 +96,17 @@ export default function RecentTransactions() {
 
   const { format, convert } = useCurrencyConverter(userRow?.currency || 'USDT');
 
+  const shouldShowInRecent = (tx: TxRow) => {
+    const t = normType(tx.transaction_type);
+    if (t !== 'deposit') return true;
+    const method = String(tx.metadata?.paymentMethod || '').toLowerCase();
+    const submitted = Boolean(tx.metadata?.submittedForReviewAt);
+    if (method === 'crypto_checkout' || method === 'local_bank_transfer') {
+      return submitted;
+    }
+    return true;
+  };
+
   useEffect(() => {
     let unsub: { data: { subscription: { unsubscribe: () => void } } } | null = null;
 
@@ -150,17 +162,17 @@ export default function RecentTransactions() {
     const { data, error } = await supabase
       .schema('public')
       .from('transactions')
-      .select('id,user_id,transaction_type,status,amount,currency,description,created_at')
+      .select('id,user_id,transaction_type,status,amount,currency,description,metadata,created_at')
       .eq('user_id', userId)
       .order('created_at', { ascending: false })
-      .limit(3);
+      .limit(10);
 
     if (error) {
       console.error('❌ load recent tx error:', error);
       setLoadError(error.message);
       setTxs([]);
     } else {
-      setTxs((data as TxRow[]) ?? []);
+      setTxs((((data as TxRow[]) ?? []).filter(shouldShowInRecent).slice(0, 3)));
     }
 
     setLoading(false);
