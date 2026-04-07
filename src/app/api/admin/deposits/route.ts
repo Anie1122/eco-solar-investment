@@ -29,8 +29,8 @@ export async function GET() {
     const [{ data: txRows, error: txErr }, { data: giftRows, error: giftErr }] = await Promise.all([
       admin
         .from('transactions')
-        .select('id,user_id,amount,currency,status,created_at,metadata')
-        .eq('transaction_type', 'deposit')
+        .select('id,user_id,transaction_type,amount,currency,status,created_at,metadata')
+        .in('transaction_type', ['deposit', 'withdrawal'])
         .order('created_at', { ascending: false })
         .limit(200),
       admin

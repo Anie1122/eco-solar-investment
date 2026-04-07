@@ -74,8 +74,29 @@
 }
 
 @layer utilities {
+  .ticker-shell {
+    @apply w-full max-w-full overflow-hidden rounded-2xl border border-white/10 bg-[#0b1018] px-2 shadow-[0_14px_35px_rgba(0,0,0,0.35)];
+  }
+
   .ticker-track {
     animation: ticker-scroll 28s linear infinite;
+    will-change: transform;
+  }
+
+  .ticker-item {
+    @apply flex min-w-[148px] shrink-0 flex-col gap-0.5 rounded-xl border border-white/10 bg-[#111826] px-2.5 py-1.5 transition-colors duration-300;
+  }
+
+  .ticker-pair {
+    @apply text-[10px] font-medium text-zinc-400;
+  }
+
+  .ticker-price {
+    @apply font-mono text-[12px] font-semibold text-zinc-100;
+  }
+
+  .ticker-change {
+    @apply text-[11px] font-semibold tabular-nums;
   }
 
   .price-flash-up {
