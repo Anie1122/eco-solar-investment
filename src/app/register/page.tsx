@@ -36,6 +36,7 @@ import {
   isPasswordValid,
   PASSWORD_RULES_MESSAGE,
 } from '@/lib/password-rules';
+import PoweredByBybitInline from '@/components/powered-by-bybit-inline';
 
 const formSchema = z.object({
   fullName: z.string().min(2, { message: 'Full name is required.' }),
@@ -224,6 +225,8 @@ export default function RegisterPage() {
               <RollingTape />
             </div>
           </div>
+
+          <PoweredByBybitInline />
 
           <Card className="w-full">
             <CardHeader>

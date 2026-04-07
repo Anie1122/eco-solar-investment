@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/lib/supabaseClient';
 import { AlertTriangle, Copy } from 'lucide-react';
+import PoweredByBybitInline from '@/components/powered-by-bybit-inline';
 
 type CryptoChain = {
   key: 'erc20' | 'trc20' | 'bep20' | 'polygon' | 'sol' | 'ton';
@@ -168,6 +169,7 @@ export default function DepositCheckoutPage() {
   if (mode === 'crypto_checkout' || mode === 'crypto') {
     return (
       <div className="mx-auto max-w-xl px-4 py-8 space-y-4">
+        <PoweredByBybitInline />
         <Card>
           <CardHeader>
             <CardTitle>Deposit USDT (Crypto Checkout)</CardTitle>
@@ -245,7 +247,8 @@ export default function DepositCheckoutPage() {
   }
 
   return (
-    <div className="mx-auto max-w-xl px-4 py-8">
+    <div className="mx-auto max-w-xl px-4 py-8 space-y-4">
+      <PoweredByBybitInline />
       <Card className="rounded-2xl">
         <CardHeader>
           <CardTitle>PALMPAY CHECKOUT</CardTitle>

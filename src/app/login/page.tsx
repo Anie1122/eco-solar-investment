@@ -12,6 +12,7 @@ import { Loader, Lock, Mail, Sparkles } from 'lucide-react';
 import { supabase } from '@/lib/supabaseClient';
 import { useToast } from '@/hooks/use-toast';
 import AppLogo from '@/components/app-logo';
+import PoweredByBybitInline from '@/components/powered-by-bybit-inline';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -240,6 +241,8 @@ export default function LoginPage() {
             <RollingTape />
           </div>
         </motion.div>
+
+        <PoweredByBybitInline className="mb-4" />
 
         <Card className="border-primary/15 shadow-xl rounded-2xl overflow-hidden">
           <div className="h-1 w-full bg-gradient-to-r from-primary/70 via-primary to-primary/60" />

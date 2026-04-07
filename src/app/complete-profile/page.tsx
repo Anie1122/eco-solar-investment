@@ -41,6 +41,7 @@ import { buildCountriesAtoZ } from '@/lib/countries';
 import { BASE_CURRENCY } from '@/lib/crypto-rates';
 import { getSignupBonusUsdtToday } from '@/lib/bonus';
 import { queueStartupSplash } from '@/lib/startup-transition';
+import PoweredByBybitInline from '@/components/powered-by-bybit-inline';
 
 const schema = z.object({
   country: z.string().min(2, 'Select your country'),
@@ -228,7 +229,9 @@ export default function CompleteProfilePage() {
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background p-4">
-      <Card className="w-full max-w-md">
+      <div className="w-full max-w-md space-y-3">
+        <PoweredByBybitInline />
+        <Card className="w-full">
         <CardHeader>
           <CardTitle>Complete Your Profile</CardTitle>
           <CardDescription>
@@ -316,7 +319,8 @@ export default function CompleteProfilePage() {
             </form>
           </Form>
         </CardContent>
-      </Card>
+        </Card>
+      </div>
     </div>
   );
 }
