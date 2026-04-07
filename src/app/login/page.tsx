@@ -125,8 +125,22 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
+      const normalizedEmail = values.email.trim().toLowerCase();
+
+      // Attempt admin login first so admins can use the same login form/button.
+      const adminRes = await fetch('/api/admin/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: normalizedEmail, password: values.password }),
+      });
+
+      if (adminRes.ok) {
+        router.push('/admin/deposits');
+        return;
+      }
+
       const { error } = await supabase.auth.signInWithPassword({
-        email: values.email.trim(),
+        email: normalizedEmail,
         password: values.password,
       });
 
@@ -383,17 +397,6 @@ export default function LoginPage() {
                     Login
                   </Button>
                 </motion.div>
-
-                <div className="flex justify-end">
-                  <Link href="/admin/login" className="block">
-                    <Button
-                      type="button"
-                      className="h-8 w-8 rounded-full p-0 bg-amber-500 hover:bg-amber-600 border border-white/35 shadow-[inset_0_1px_0_rgba(255,255,255,0.45)] opacity-80"
-                    >
-                      <span className="sr-only">Admin Access</span>
-                    </Button>
-                  </Link>
-                </div>
               </form>
             </Form>
 
