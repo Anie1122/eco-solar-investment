@@ -11,6 +11,7 @@ import NotificationBell from '@/components/notification-bell';
 import { supabase } from '@/lib/supabaseClient';
 import { useCurrencyConverter } from '@/lib/currency';
 import { cn } from '@/lib/utils';
+import { queueStartupSplash } from '@/lib/startup-transition';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
@@ -330,6 +331,7 @@ const MyInvestmentsPage: NextPage = () => {
     await supabase.auth.signOut();
     sessionStorage.clear();
     localStorage.clear();
+    queueStartupSplash('logout');
     router.push('/login');
   };
 
