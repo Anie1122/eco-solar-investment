@@ -51,6 +51,7 @@ import FloatingActions from '@/components/floating-actions';
 
 import { supabase } from '@/lib/supabaseClient';
 import type { User as UserEntity } from '@/lib/types';
+import { queueStartupSplash } from '@/lib/startup-transition';
 
 import PolicyGate from '@/components/policy-gate';
 import LiveCryptoTicker from '@/components/live-crypto-ticker';
@@ -468,6 +469,7 @@ const Home: NextPage = () => {
       // no-op for restricted storage environments
     }
 
+    queueStartupSplash('logout');
     router.push('/login');
   };
 
