@@ -52,6 +52,7 @@ import { useTheme } from 'next-themes';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { supabase } from '@/lib/supabaseClient';
+import { queueStartupSplash } from '@/lib/startup-transition';
 
 type UserRow = {
   id: string;
@@ -135,6 +136,7 @@ const DashboardHeader = () => {
     await supabase.auth.signOut();
     sessionStorage.clear();
     localStorage.clear();
+    queueStartupSplash('logout');
     router.push('/login');
   };
 
@@ -213,6 +215,7 @@ const SidebarNav = () => {
     await supabase.auth.signOut();
     sessionStorage.clear();
     localStorage.clear();
+    queueStartupSplash('logout');
     router.push('/login');
   };
 
