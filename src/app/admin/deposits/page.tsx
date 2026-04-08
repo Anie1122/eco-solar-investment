@@ -7,11 +7,9 @@ import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 
 type DepositRow = any;
-type GiftCardRow = any;
 
 export default function AdminDepositsPage() {
   const [rows, setRows] = useState<DepositRow[]>([]);
-  const [giftRows, setGiftRows] = useState<GiftCardRow[]>([]);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [adminNotes, setAdminNotes] = useState<Record<string, string>>({});
   const { toast } = useToast();
@@ -21,21 +19,16 @@ export default function AdminDepositsPage() {
     const json = await res.json().catch(() => ({}));
     if (res.ok && json?.ok) {
       setRows(json.rows || []);
-      setGiftRows(json.giftCards || []);
     }
   };
 
   useEffect(() => {
     load();
-    const timer = setInterval(load, 5000);
+    const timer = setInterval(load, 1500);
     return () => clearInterval(timer);
   }, []);
 
-  const review = async (
-    txId: string,
-    action: 'approve' | 'decline',
-    type: 'deposit' | 'withdrawal' | 'gift_card'
-  ) => {
+  const review = async (txId: string, action: 'approve' | 'decline', type: 'deposit' | 'withdrawal') => {
     const key = `${type}-${txId}-${action}`;
     setBusyId(key);
     try {
@@ -46,8 +39,7 @@ export default function AdminDepositsPage() {
       });
       const json = await res.json().catch(() => ({}));
       if (!res.ok || !json?.ok) throw new Error(json?.message || 'Review failed');
-      const label =
-        type === 'gift_card' ? 'Gift card payment' : type === 'withdrawal' ? 'Withdrawal' : 'Deposit';
+      const label = type === 'withdrawal' ? 'Withdrawal' : 'Deposit';
       toast({ title: 'Updated', description: `${label} ${action}d successfully.` });
       await load();
     } catch (e: any) {
@@ -70,67 +62,9 @@ export default function AdminDepositsPage() {
       <Card>
         <CardHeader>
           <CardTitle>Transactions Dashboard</CardTitle>
-          <CardDescription>Review deposit, withdrawal, and gift card payment requests.</CardDescription>
-        </CardHeader>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">Gift Card Payments</CardTitle>
-          <CardDescription>All gift card requests are manually reviewed here.</CardDescription>
-        </CardHeader>
-      </Card>
-
-      {giftRows.map((r) => (
-        <Card key={r.id}>
-          <CardContent className="pt-4 space-y-2">
-            <p><b>User:</b> {r.full_name || r.email || r.user_id}</p>
-            <p><b>Email:</b> {r.email || '-'}</p>
-            <p><b>Gift Card Type:</b> {r.gift_card_type}</p>
-            <p><b>Gift Card Code:</b> {r.gift_card_code}</p>
-            <p><b>Amount:</b> {Number(r.amount || 0).toLocaleString()} {r.currency || 'USD'}</p>
-            <p><b>Note:</b> {r.note || '-'}</p>
-            <p><b>Status:</b> {r.status}</p>
-            <p><b>Date Submitted:</b> {r.created_at ? new Date(r.created_at).toLocaleString() : '-'}</p>
-
-            <div className="grid gap-3 md:grid-cols-2">
-              {r.front_preview_url ? (
-                <a href={r.front_preview_url} target="_blank" rel="noreferrer" className="space-y-1">
-                  <p className="text-xs font-medium text-muted-foreground">Front image</p>
-                  <img src={r.front_preview_url} alt="gift card front" className="max-h-48 w-full rounded border object-cover cursor-zoom-in" />
-                </a>
-              ) : null}
-              {r.back_preview_url ? (
-                <a href={r.back_preview_url} target="_blank" rel="noreferrer" className="space-y-1">
-                  <p className="text-xs font-medium text-muted-foreground">Back image</p>
-                  <img src={r.back_preview_url} alt="gift card back" className="max-h-48 w-full rounded border object-cover cursor-zoom-in" />
-                </a>
-              ) : null}
-            </div>
-
-            <div className="space-y-2">
-              <p className="text-xs font-medium text-muted-foreground">Admin note (internal)</p>
-              <Input
-                value={adminNotes[r.id] ?? r.admin_note ?? ''}
-                onChange={(e) => setAdminNotes((prev) => ({ ...prev, [r.id]: e.target.value }))}
-                placeholder="Optional internal note"
-              />
-            </div>
-
-            {r.status === 'pending' ? (
-              <div className="flex gap-2">
-                <Button onClick={() => review(r.id, 'approve', 'gift_card')} disabled={busyId === `gift_card-${r.id}-approve`}>Approve</Button>
-                <Button variant="destructive" onClick={() => review(r.id, 'decline', 'gift_card')} disabled={busyId === `gift_card-${r.id}-decline`}>Decline</Button>
-              </div>
-            ) : null}
-          </CardContent>
-        </Card>
-      ))}
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">Deposits & Withdrawals</CardTitle>
-          <CardDescription>Review and approve or decline pending transactions.</CardDescription>
+          <CardDescription>
+            All deposit and withdrawal requests are shown together below, with each request type clearly labeled.
+          </CardDescription>
         </CardHeader>
       </Card>
 
