@@ -13,6 +13,7 @@ import { useCurrencyConverter } from '@/lib/currency';
 import { supabase } from '@/lib/supabaseClient';
 import { CheckCircle2, ChevronDown, CreditCard, Landmark, Loader2, Wallet } from 'lucide-react';
 import { GIFT_CARD_MAX_AMOUNT, GIFT_CARD_MIN_AMOUNT, GIFT_CARD_TYPES, type GiftCardType } from '@/lib/gift-card';
+import PoweredByBybitInline from '@/components/powered-by-bybit-inline';
 
 type Method = 'card_payment' | 'local_bank_transfer' | 'crypto_checkout' | 'gift_card_payment';
 
@@ -267,7 +268,8 @@ export default function DepositStartPage() {
   };
 
   return (
-    <div className="mx-auto max-w-5xl p-4">
+    <div className="mx-auto max-w-5xl space-y-3 p-4">
+      <PoweredByBybitInline />
       <Card className="overflow-hidden">
         <div className="grid md:grid-cols-[220px_1fr]">
           <div className="border-r bg-muted/30 p-4 space-y-2">
