@@ -36,7 +36,7 @@ type InvestmentRow = {
   plan_name: string | null;
   duration_days: number | null;
   amount: number | null; // ✅ stored in NGN base
-  daily_profit: number | null; // ✅ stored in NGN base
+  daily_profit: number | null; // monthly profit amount (legacy column name)
   total_return: number | null; // ✅ stored in NGN base
   currency: string | null;
   status: string | null;
@@ -220,20 +220,20 @@ const InvestmentsOnlyList = () => {
   }, [userId]);
 
   const calcProgress = (startedAt?: string | null, endsAt?: string | null) => {
-    if (!startedAt || !endsAt) return { pct: 0, day: 0, total: 0 };
+    if (!startedAt || !endsAt) return { pct: 0, cycle: 0, total: 6 };
 
     const start = new Date(startedAt).getTime();
     const end = new Date(endsAt).getTime();
     const now = Date.now();
 
-    if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start) return { pct: 0, day: 0, total: 0 };
+    if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start) return { pct: 0, cycle: 0, total: 6 };
 
-    const totalDays = Math.max(1, Math.round((end - start) / (1000 * 60 * 60 * 24)));
     const elapsedDays = Math.floor((now - start) / (1000 * 60 * 60 * 24));
-    const clampedElapsed = Math.min(Math.max(elapsedDays, 0), totalDays);
-    const pct = Math.min(100, Math.max(0, (clampedElapsed / totalDays) * 100));
+    const elapsedCycles = Math.floor(Math.max(0, elapsedDays) / 30);
+    const clampedElapsed = Math.min(Math.max(elapsedCycles, 0), 6);
+    const pct = Math.min(100, Math.max(0, (clampedElapsed / 6) * 100));
 
-    return { pct, day: clampedElapsed, total: totalDays };
+    return { pct, cycle: clampedElapsed, total: 6 };
   };
 
   if (loading || userLoading) {
@@ -266,7 +266,7 @@ const InvestmentsOnlyList = () => {
   return (
     <div className="space-y-4">
       {items.map((inv) => {
-        const { pct, day, total } = calcProgress(inv.started_at, inv.ends_at);
+        const { pct, cycle, total } = calcProgress(inv.started_at, inv.ends_at);
 
         const isActive = String(inv.status || '').toLowerCase() === 'active';
         const endMs = inv.ends_at ? new Date(inv.ends_at).getTime() : NaN;
@@ -274,7 +274,7 @@ const InvestmentsOnlyList = () => {
 
         // ✅ convert NGN -> user currency for display
         const investedUser = convert(Number(inv.amount || 0));
-        const dailyUser = convert(Number(inv.daily_profit || 0));
+        const monthlyUser = convert(Number(inv.daily_profit || 0));
 
         return (
           <Card key={inv.id}>
@@ -290,8 +290,8 @@ const InvestmentsOnlyList = () => {
                 <div className="font-semibold">Invested Amount</div>
                 <div className="text-right font-mono">{format(investedUser)}</div>
 
-                <div className="font-semibold">Daily Profit</div>
-                <div className={cn('text-right font-mono', 'text-green-600')}>{format(dailyUser)}</div>
+                <div className="font-semibold">Monthly Profit</div>
+                <div className={cn('text-right font-mono', 'text-green-600')}>{format(monthlyUser)}</div>
 
                 <div className="font-semibold">Started On</div>
                 <div className="text-right">{formatDate(inv.started_at)}</div>
@@ -304,7 +304,7 @@ const InvestmentsOnlyList = () => {
                 <div className="mb-1 flex justify-between text-xs text-muted-foreground">
                   <span>Progress</span>
                   <span>
-                    Day {Math.min(day, total)} of {total}
+                    Month {Math.min(cycle, total)} of {total}
                   </span>
                 </div>
                 <Progress value={pct} className="h-2" />
@@ -338,7 +338,7 @@ const MyInvestmentsPage: NextPage = () => {
   const displayName = userRow?.full_name || userRow?.email || 'Account';
 
   const labelText =
-    'Pending profits are automatically detected and credited daily at 1:00 AM (WAT). If you miss a day, the system automatically catches up.';
+    'Pending profits are automatically detected and credited monthly. If you miss a cycle, the system automatically catches up.';
 
   return (
     <AuthGuard>

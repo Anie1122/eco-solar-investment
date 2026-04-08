@@ -312,7 +312,7 @@ const InvestmentsPage: NextPage = () => {
               <Card>
                 <CardHeader>
                   <CardTitle>Solar Investment Plans</CardTitle>
-                  <p className="text-muted-foreground">Choose a plan to start earning daily profits.</p>
+                  <p className="text-muted-foreground">Choose a plan to start earning monthly profits.</p>
                 </CardHeader>
                 <CardContent>
                   <InvestmentPlans />

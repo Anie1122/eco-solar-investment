@@ -93,9 +93,9 @@ export async function POST(req: NextRequest) {
     const fallbackPlansText = investmentPlans
       .map(
         (p) =>
-          `- ${p.name}: Invest ${formatNGN(p.amount)} for ${p.duration} days, earn ${formatNGN(
-            p.dailyProfit
-          )} daily, total return ${formatNGN(p.totalReturn)}.`
+          `- ${p.name}: Invest ${formatNGN(p.amount)} for ${p.durationMonths} months, earn ${formatNGN(
+            p.monthlyProfit
+          )} monthly, total return ${formatNGN(p.totalReturn)}.`
       )
       .join('\n');
 
