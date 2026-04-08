@@ -5,8 +5,8 @@ export type InvestmentPlan = {
   id: string;
   name: string;
   amount: number;
-  duration: number; // in days
-  dailyProfit: number;
+  durationMonths: number;
+  monthlyProfit: number;
   totalReturn: number;
   image: string;
 };

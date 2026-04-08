@@ -1,7 +1,7 @@
 // src/app/api/invest/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import { investmentPlans } from '@/lib/data';
+import { investmentPlans, PLAN_DURATION_MONTHS } from '@/lib/data';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -15,12 +15,6 @@ function getSupabaseAdmin() {
   }
 
   return createClient(url, serviceRole, { auth: { persistSession: false } });
-}
-
-function addHoursISO(iso: string, hours: number) {
-  const d = new Date(iso);
-  d.setHours(d.getHours() + hours);
-  return d.toISOString();
 }
 
 function addDaysISO(iso: string, days: number) {
@@ -84,7 +78,7 @@ export async function POST(req: NextRequest) {
     const currency = 'USDT';
 
     const investAmount = Number(plan.amount);
-    const firstProfit = Number(plan.dailyProfit);
+    const monthlyProfit = Number(plan.monthlyProfit);
 
     const walletBalance = Number(userRow.wallet_balance ?? 0);
     const bonusBalance = Number(userRow.bonus_balance ?? 0);
@@ -95,13 +89,12 @@ export async function POST(req: NextRequest) {
     }
 
     const nowIso = new Date().toISOString();
-    const endsAtIso = addDaysISO(nowIso, Number(plan.duration));
-    const lastProfitAtIso = nowIso;
-    const nextProfitAtIso = addHoursISO(nowIso, 24);
+    const endsAtIso = addDaysISO(nowIso, PLAN_DURATION_MONTHS * 30);
+    const nextProfitAtIso = addDaysISO(nowIso, 30);
 
     const bonusToUnlock = !hasInvested ? bonusBalance : 0;
 
-    const newWallet = walletBalance - investAmount + firstProfit + bonusToUnlock;
+    const newWallet = walletBalance - investAmount + bonusToUnlock;
 
     const { error: userUpdErr } = await supabaseAdmin
       .from('users')
@@ -120,15 +113,15 @@ export async function POST(req: NextRequest) {
         user_id: userId,
         plan_id: plan.id,
         plan_name: plan.name,
-        duration_days: Number(plan.duration),
+        duration_days: PLAN_DURATION_MONTHS * 30,
         amount: investAmount,
-        daily_profit: firstProfit,
+        daily_profit: monthlyProfit,
         total_return: Number(plan.totalReturn),
         currency,
         status: 'active',
         started_at: nowIso,
         ends_at: endsAtIso,
-        last_profit_at: lastProfitAtIso,
+        last_profit_at: null,
         next_profit_at: nextProfitAtIso,
       })
       .select('id')
@@ -143,17 +136,6 @@ export async function POST(req: NextRequest) {
       amount: investAmount,
       currency,
       description: `Investment in ${plan.name}`,
-      created_at: nowIso,
-      metadata: { investment_id: invInserted?.id ?? null, plan_id: plan.id },
-    } as any);
-
-    await supabaseAdmin.from('transactions').insert({
-      user_id: userId,
-      transaction_type: 'profit',
-      status: 'success',
-      amount: firstProfit,
-      currency,
-      description: `First day profit from ${plan.name}`,
       created_at: nowIso,
       metadata: { investment_id: invInserted?.id ?? null, plan_id: plan.id },
     } as any);
@@ -184,18 +166,6 @@ export async function POST(req: NextRequest) {
       metadata: { plan_id: plan.id, investment_id: invInserted?.id ?? null },
     });
 
-    await safeNotify(supabaseAdmin, {
-      user_id: userId,
-      title: 'Profit Credited',
-      message: `Your first profit from ${plan.name} has been credited.`,
-      type: 'profit',
-      is_read: false,
-      created_at: nowIso,
-      amount: firstProfit,
-      currency: 'USDT',
-      metadata: { plan_id: plan.id, investment_id: invInserted?.id ?? null },
-    });
-
     if (bonusToUnlock > 0) {
       await safeNotify(supabaseAdmin, {
         user_id: userId,
@@ -212,7 +182,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      message: 'Investment successful! First profit credited instantly.',
+      message: 'Investment successful! Profits will now be credited monthly.',
       next_profit_at: nextProfitAtIso,
       ends_at: endsAtIso,
     });
