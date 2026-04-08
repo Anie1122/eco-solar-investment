@@ -51,12 +51,12 @@ export default function AiSuggestionCard({
     return investmentPlans
       .map((plan) => {
         const amount = convert(plan.amount);
-        const daily = convert(plan.dailyProfit);
+        const weekly = convert(plan.weeklyProfit);
         const total = convert(plan.totalReturn);
 
-        return `- ${plan.name}: Invest ${format(amount)} for ${plan.duration} days, earn ${format(
-          daily
-        )} daily, total return ${format(total)}.`;
+        return `- ${plan.name}: Invest ${format(amount)} for ${plan.durationWeeks} weeks, earn ${format(
+          weekly
+        )} weekly, total return ${format(total)}.`;
       })
       .join('\n');
   };

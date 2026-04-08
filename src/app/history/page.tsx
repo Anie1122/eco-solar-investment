@@ -52,6 +52,7 @@ import { useCurrencyConverter } from '@/lib/currency';
 import { useEffect, useMemo, useState } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import { Progress } from '@/components/ui/progress';
+import { queueStartupSplash } from '@/lib/startup-transition';
 
 type UserRow = {
   id: string;
@@ -79,7 +80,7 @@ type InvestmentRow = {
   plan_name: string | null;
   duration_days: number | null;
   amount: number | null; // NGN base
-  daily_profit: number | null; // NGN base
+  daily_profit: number | null; // weekly profit amount (legacy column name)
   total_return: number | null; // NGN base
   currency: string | null;
   status: 'active' | 'completed' | 'cancelled' | string;
@@ -265,6 +266,7 @@ const DashboardHeader = () => {
               await supabase.auth.signOut();
               sessionStorage.clear();
               localStorage.clear();
+              queueStartupSplash('logout');
               router.push('/login');
             }}
           >
@@ -288,6 +290,7 @@ const SidebarNav = () => {
     await supabase.auth.signOut();
     sessionStorage.clear();
     localStorage.clear();
+    queueStartupSplash('logout');
     router.push('/login');
   };
 
@@ -638,12 +641,11 @@ const InvestmentList = () => {
   }, [items]);
 
   const calcProgress = (startedAt?: string | null, endsAt?: string | null) => {
-    if (!startedAt || !endsAt) return { pct: 100, day: 0, total: 0 };
+    if (!startedAt || !endsAt) return { pct: 100, cycle: 6, total: 6 };
     const start = new Date(startedAt).getTime();
     const end = new Date(endsAt).getTime();
-    if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start) return { pct: 100, day: 0, total: 0 };
-    const totalDays = Math.max(1, Math.round((end - start) / (1000 * 60 * 60 * 24)));
-    return { pct: 100, day: totalDays, total: totalDays };
+    if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start) return { pct: 100, cycle: 6, total: 6 };
+    return { pct: 100, cycle: 6, total: 6 };
   };
 
   if (loading || userLoading) {
@@ -678,10 +680,10 @@ const InvestmentList = () => {
       <CompletedOnlyBanner />
       <div className="space-y-3">
         {completedItems.map((inv) => {
-          const { pct, day, total } = calcProgress(inv.started_at, inv.ends_at);
+          const { pct, cycle, total } = calcProgress(inv.started_at, inv.ends_at);
 
           const investedUser = convert(Number(inv.amount || 0));
-          const dailyUser = convert(Number(inv.daily_profit || 0));
+          const weeklyUser = convert(Number(inv.daily_profit || 0));
           const totalReturnUser = convert(Number(inv.total_return || 0));
 
           return (
@@ -698,8 +700,8 @@ const InvestmentList = () => {
                   <div className="font-semibold">Invested</div>
                   <div className="text-right font-mono">{format(investedUser)}</div>
 
-                  <div className="font-semibold">Daily Profit</div>
-                  <div className="text-right font-mono text-green-600">{format(dailyUser)}</div>
+                  <div className="font-semibold">Weekly Profit</div>
+                  <div className="text-right font-mono text-green-600">{format(weeklyUser)}</div>
 
                   <div className="font-semibold">Total Return</div>
                   <div className="text-right font-mono">{format(totalReturnUser)}</div>
@@ -715,7 +717,7 @@ const InvestmentList = () => {
                   <div className="flex justify-between text-[10px] text-muted-foreground">
                     <span>Progress</span>
                     <span>
-                      Day {day} of {total}
+                      Week {cycle} of {total}
                     </span>
                   </div>
                   <Progress value={pct} className="h-2" />
