@@ -23,6 +23,7 @@ type CryptoChain = {
   learnMoreText?: string;
 };
 
+// QR images are static assets mapped per chain (reference screenshots), never runtime-generated.
 const CRYPTO_CHAINS: CryptoChain[] = [
   {
     key: 'erc20',
@@ -31,8 +32,7 @@ const CRYPTO_CHAINS: CryptoChain[] = [
     logo: '/chains/erc20.svg',
     address: '0x2B9230d5fb0D0E8588004F9a67666aC0B474E99A',
     warningLines: [
-      'Only send Tether (ERC20) assets to this address.',
-      'Other assets will be lost forever.',
+      'Only send Tether (ERC20) assets to this address. Other assets will be lost forever.',
     ],
     qrImage: '/qrs/usdt_erc20.png',
   },
@@ -43,8 +43,7 @@ const CRYPTO_CHAINS: CryptoChain[] = [
     logo: '/chains/trc20.svg',
     address: 'TLE1UFkwpXHuDQsV8JCg7Yv2ZZhQzwR27i',
     warningLines: [
-      'Only send Tether (TRC20) assets to this address.',
-      'Other assets will be lost forever.',
+      'Only send Tether (TRC20) assets to this address. Other assets will be lost forever.',
     ],
     memoText: 'No memo required',
     qrImage: '/qrs/usdt_trc20.png',
@@ -56,8 +55,7 @@ const CRYPTO_CHAINS: CryptoChain[] = [
     logo: '/chains/bep20.svg',
     address: '0x2B9230d5fb0D0E8588004F9a67666aC0B474E99A',
     warningLines: [
-      'Only send Tether USD (BEP20) assets to this address.',
-      'Other assets will be lost forever.',
+      'Only send Tether USD (BEP20) assets to this address. Other assets will be lost forever.',
     ],
     qrImage: '/qrs/usdt_bep20.png',
   },
@@ -68,8 +66,7 @@ const CRYPTO_CHAINS: CryptoChain[] = [
     logo: '/chains/polygon.svg',
     address: '0x2B9230d5fb0D0E8588004F9a67666aC0B474E99A',
     warningLines: [
-      'Only send (PoS) Tether USD (POLYGON) assets to this address.',
-      'Other assets will be lost forever.',
+      'Only send (PoS) Tether USD (POLYGON) assets to this address. Other assets will be lost forever.',
     ],
     qrImage: '/qrs/usdt_polygon.png',
   },
@@ -80,8 +77,7 @@ const CRYPTO_CHAINS: CryptoChain[] = [
     logo: '/chains/sol.svg',
     address: 'vqohfmqEYWKwofdzvVJaTFZvLBNvnBZyhKwBqA9UxER',
     warningLines: [
-      'Only send USDT (SPL) assets to this address.',
-      'Other assets will be lost forever.',
+      'Only send USDT (SPL) assets to this address. Other assets will be lost forever.',
     ],
     memoText: 'No memo required',
     qrImage: '/qrs/usdt_spl.png',
@@ -210,9 +206,8 @@ export default function DepositCheckoutPage() {
 
   if (mode === 'crypto_checkout' || mode === 'crypto') {
     return (
-      <div className="mx-auto max-w-xl space-y-4 px-4 py-8">
+      <div className="mx-auto max-w-xl px-4 py-8 space-y-4">
         <PoweredByBybitInline />
-
         <Card>
           <CardHeader>
             <CardTitle>Deposit USDT (Crypto Checkout)</CardTitle>
@@ -248,41 +243,26 @@ export default function DepositCheckoutPage() {
         </Card>
 
         {selectedChain ? (
-          <Card className="border-white/10 bg-black text-white">
-            <CardContent className="space-y-4 pt-6">
+          <Card className="bg-black text-white border-white/10">
+            <CardContent className="pt-6 space-y-4">
               <h3 className="text-3xl font-bold">{selectedChain.receiveLabel}</h3>
-              <p className="text-2xl">
-                <span className="text-zinc-400">Network:</span> {selectedChain.label}
-              </p>
+              <p className="text-2xl"><span className="text-zinc-400">Network:</span> {selectedChain.label}</p>
 
-              <div className="rounded-lg border border-yellow-500/50 bg-yellow-500/10 p-3 text-sm text-yellow-200">
-                <p className="flex items-center gap-2 font-semibold">
-                  <AlertTriangle className="h-4 w-4" />
-                  Important
-                </p>
-
+              <div className="rounded-lg border border-yellow-500/50 bg-yellow-500/10 p-3 text-yellow-200 text-sm">
+                <p className="font-semibold flex items-center gap-2"><AlertTriangle className="h-4 w-4" /> Important</p>
                 {selectedChain.warningLines.map((line) => (
                   <p key={line} className="mt-1">
                     {selectedChain.key === 'ton' ? '• ' : ''}
                     {line}
                   </p>
                 ))}
-
                 {selectedChain.learnMoreText ? (
                   <p className="mt-2 underline underline-offset-2">{selectedChain.learnMoreText}</p>
                 ) : null}
               </div>
 
-              <div className="mx-auto w-full max-w-[560px] rounded-2xl bg-white p-3">
-                <Image
-                  src={selectedChain.qrImage}
-                  alt={`${selectedChain.label} QR`}
-                  width={560}
-                  height={560}
-                  className="h-auto w-full rounded-xl object-contain"
-                  priority
-                  unoptimized
-                />
+              <div className="mx-auto w-fit rounded-2xl bg-white p-3">
+                <img src={selectedChain.qrImage} alt={`${selectedChain.label} QR`} width={280} height={280} />
               </div>
 
               <div>
@@ -292,7 +272,7 @@ export default function DepositCheckoutPage() {
 
               {selectedChain.memoText ? (
                 <div>
-                  <p className="mb-1 text-xl text-zinc-400">Memo</p>
+                  <p className="text-zinc-400 text-xl mb-1">Memo</p>
                   <p className="text-lg font-medium">{selectedChain.memoText}</p>
                 </div>
               ) : null}
@@ -327,9 +307,8 @@ export default function DepositCheckoutPage() {
   }
 
   return (
-    <div className="mx-auto max-w-xl space-y-4 px-4 py-8">
+    <div className="mx-auto max-w-xl px-4 py-8 space-y-4">
       <PoweredByBybitInline />
-
       <Card className="rounded-2xl">
         <CardHeader>
           <CardTitle>PALMPAY CHECKOUT</CardTitle>

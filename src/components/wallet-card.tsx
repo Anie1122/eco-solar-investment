@@ -141,8 +141,8 @@ const DepositDialog = ({
 
   const isNigerian = String(userProfile.country || '').trim().toLowerCase() === 'nigeria';
 
-  const minDepositUSDT = 1.25;
-  const maxDepositUSDT = 725;
+  const minDepositUSDT = 500;
+  const maxDepositUSDT = 2000000;
   const minDepositUserCurrency = convert(minDepositUSDT);
   const maxDepositUserCurrency = convert(maxDepositUSDT);
 
