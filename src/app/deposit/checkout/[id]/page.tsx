@@ -211,25 +211,31 @@ export default function DepositCheckoutPage() {
         <Card>
           <CardHeader>
             <CardTitle>Deposit USDT (Crypto Checkout)</CardTitle>
-            <CardDescription>Select a chain before sending funds. Timer: <b>{timeLabel}</b>.</CardDescription>
+            <CardDescription>
+              Select a chain before sending funds. Timer: <b>{timeLabel}</b>.
+            </CardDescription>
           </CardHeader>
+
           <CardContent className="space-y-3">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
               {CRYPTO_CHAINS.map((chain) => (
                 <button
                   key={chain.key}
                   onClick={() => selectChain(chain)}
                   disabled={chainLoading}
-                  className={`rounded-xl border p-3 text-left flex items-center gap-3 ${selectedChain?.key === chain.key ? 'border-primary bg-primary/10' : 'hover:bg-muted/50'}`}
+                  className={`flex items-center gap-3 rounded-xl border p-3 text-left ${
+                    selectedChain?.key === chain.key ? 'border-primary bg-primary/10' : 'hover:bg-muted/50'
+                  }`}
                 >
                   <Image src={chain.logo} alt={chain.label} width={32} height={32} className="rounded-md" />
                   <span className="font-medium">{chain.label}</span>
                 </button>
               ))}
             </div>
+
             {chainLoading ? (
-              <div className="rounded-xl border p-4 flex items-center gap-3">
-                <div className="h-6 w-6 rounded-full border-2 border-primary/40 border-t-primary animate-spin" />
+              <div className="flex items-center gap-3 rounded-xl border p-4">
+                <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary/40 border-t-primary" />
                 <p className="text-sm">Preparing deposit details for your selected chain...</p>
               </div>
             ) : null}
@@ -260,8 +266,8 @@ export default function DepositCheckoutPage() {
               </div>
 
               <div>
-                <p className="text-zinc-400 text-xl mb-1">Wallet Address</p>
-                <p className="text-3xl break-all font-medium">{selectedChain.address}</p>
+                <p className="mb-1 text-xl text-zinc-400">Wallet Address</p>
+                <p className="break-all text-3xl font-medium">{selectedChain.address}</p>
               </div>
 
               {selectedChain.memoText ? (
@@ -276,8 +282,12 @@ export default function DepositCheckoutPage() {
               </Button>
 
               <div className="flex gap-2">
-                <Button variant="outline" onClick={cancelTx} className="flex-1">Cancel Transaction</Button>
-                <Button onClick={() => setShowUpload(true)} className="flex-1">I&apos;ve made my payment</Button>
+                <Button variant="outline" onClick={cancelTx} className="flex-1">
+                  Cancel Transaction
+                </Button>
+                <Button onClick={() => setShowUpload(true)} className="flex-1">
+                  I&apos;ve made my payment
+                </Button>
               </div>
 
               {showUpload ? (
@@ -304,18 +314,33 @@ export default function DepositCheckoutPage() {
           <CardTitle>PALMPAY CHECKOUT</CardTitle>
           <CardDescription>Send the exact amount to avoid payment failure.</CardDescription>
         </CardHeader>
+
         <CardContent className="space-y-4">
           <Input value={amountText} disabled readOnly />
-          <div className="rounded-xl border p-3 text-sm space-y-1">
-            <div><b>ACCOUNT NUMBER:</b> 8911-594-588</div>
-            <div><b>BANK:</b> palmpay</div>
-            <div><b>NAME:</b> Ndifreke Okon Edet (ECO-SOLAR)</div>
+
+          <div className="space-y-1 rounded-xl border p-3 text-sm">
+            <div>
+              <b>ACCOUNT NUMBER:</b> 8911-594-588
+            </div>
+            <div>
+              <b>BANK:</b> palmpay
+            </div>
+            <div>
+              <b>NAME:</b> Ndifreke Okon Edet (ECO-SOLAR)
+            </div>
           </div>
-          <p className="text-sm">Time left: <b>{timeLabel}</b></p>
+
+          <p className="text-sm">
+            Time left: <b>{timeLabel}</b>
+          </p>
 
           <div className="flex gap-2">
-            <Button variant="outline" onClick={cancelTx} className="flex-1">Cancel Transaction</Button>
-            <Button onClick={() => setShowUpload(true)} className="flex-1">I&apos;ve made my payment</Button>
+            <Button variant="outline" onClick={cancelTx} className="flex-1">
+              Cancel Transaction
+            </Button>
+            <Button onClick={() => setShowUpload(true)} className="flex-1">
+              I&apos;ve made my payment
+            </Button>
           </div>
 
           {showUpload && (
