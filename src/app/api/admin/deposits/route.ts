@@ -38,7 +38,6 @@ export async function GET() {
     ]);
 
     if (txErr) throw txErr;
-    if (giftErr) throw giftErr;
 
     const visibleTransactions = (txRows || []).filter((row: any) => {
       if (row.transaction_type === 'withdrawal') return true;
