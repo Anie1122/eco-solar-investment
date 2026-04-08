@@ -2,6 +2,20 @@ import { NextResponse } from 'next/server';
 import { isAdminSession } from '@/lib/admin-auth';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 
+async function signGiftCardImageUrl(admin: ReturnType<typeof supabaseAdmin>, pathOrUrl: string | null) {
+  const source = String(pathOrUrl || '').trim();
+  if (!source) return null;
+  if (source.startsWith('http://') || source.startsWith('https://')) return source;
+
+  const { data, error } = await admin.storage.from('gift-cards').createSignedUrl(source, 60 * 60);
+  if (error) {
+    console.error('Gift card image signing failed:', error?.message || error);
+    return null;
+  }
+
+  return data?.signedUrl || null;
+}
+
 export async function GET() {
   try {
     if (!(await isAdminSession())) {
@@ -30,22 +44,24 @@ export async function GET() {
       return Boolean(row?.metadata?.submittedForReviewAt);
     });
 
-    const mappedGiftRows = (giftRows || []).map((row: any) => ({
-      ...row,
-      transaction_type: 'gift_card',
-      metadata: {
-        paymentMethod: 'gift_card_payment',
-        userName: row.full_name || row.email || row.user_id,
-        amountInput: row.amount,
-        inputCurrency: row.currency || 'USD',
-        adminNote: row.admin_note || null,
-        giftCardType: row.gift_card_type,
-        giftCardCode: row.gift_card_code,
-        note: row.note || null,
-        frontImageUrl: row.front_image_url || null,
-        backImageUrl: row.back_image_url || null,
-      },
-    }));
+    const mappedGiftRows = await Promise.all(
+      (giftRows || []).map(async (row: any) => ({
+        ...row,
+        transaction_type: 'gift_card',
+        metadata: {
+          paymentMethod: 'gift_card_payment',
+          userName: row.full_name || row.email || row.user_id,
+          amountInput: row.amount,
+          inputCurrency: row.currency || 'USD',
+          adminNote: row.admin_note || null,
+          giftCardType: row.gift_card_type,
+          giftCardCode: row.gift_card_code,
+          note: row.note || null,
+          frontImageUrl: await signGiftCardImageUrl(admin, row.front_image_url),
+          backImageUrl: await signGiftCardImageUrl(admin, row.back_image_url),
+        },
+      }))
+    );
 
     const rows = [...visibleTransactions, ...mappedGiftRows].sort((a: any, b: any) => {
       const at = new Date(a?.created_at || 0).getTime();
