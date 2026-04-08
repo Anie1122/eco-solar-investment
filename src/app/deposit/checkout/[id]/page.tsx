@@ -104,7 +104,7 @@ export default function DepositCheckoutPage() {
   const router = useRouter();
   const { toast } = useToast();
   const id = String(params?.id || '');
-  const mode = String(search.get('mode') || 'local_bank_transfer');
+  const mode = String(search.get('mode') || 'crypto_checkout');
 
   const [amountText, setAmountText] = useState('');
   const [countdown, setCountdown] = useState(20 * 60);
@@ -311,47 +311,17 @@ export default function DepositCheckoutPage() {
       <PoweredByBybitInline />
       <Card className="rounded-2xl">
         <CardHeader>
-          <CardTitle>PALMPAY CHECKOUT</CardTitle>
-          <CardDescription>Send the exact amount to avoid payment failure.</CardDescription>
+          <CardTitle>Deposit Method Unavailable</CardTitle>
+          <CardDescription>NGN bank transfer checkout has been removed. Please use crypto checkout.</CardDescription>
         </CardHeader>
 
         <CardContent className="space-y-4">
           <Input value={amountText} disabled readOnly />
-
-          <div className="space-y-1 rounded-xl border p-3 text-sm">
-            <div>
-              <b>ACCOUNT NUMBER:</b> 8911-594-588
-            </div>
-            <div>
-              <b>BANK:</b> palmpay
-            </div>
-            <div>
-              <b>NAME:</b> Ndifreke Okon Edet (ECO-SOLAR)
-            </div>
-          </div>
-
-          <p className="text-sm">
-            Time left: <b>{timeLabel}</b>
-          </p>
-
+          <p className="text-sm">Time left: <b>{timeLabel}</b></p>
           <div className="flex gap-2">
-            <Button variant="outline" onClick={cancelTx} className="flex-1">
-              Cancel Transaction
-            </Button>
-            <Button onClick={() => setShowUpload(true)} className="flex-1">
-              I&apos;ve made my payment
-            </Button>
+            <Button variant="outline" onClick={cancelTx} className="flex-1">Cancel Transaction</Button>
+            <Button onClick={() => router.push('/deposit/start')} className="flex-1">Back to deposit methods</Button>
           </div>
-
-          {showUpload && (
-            <div className="space-y-2">
-              <p className="text-sm text-muted-foreground">Upload payment receipt photo (max 5MB)</p>
-              <Input type="file" accept="image/*" onChange={(e) => setFile(e.target.files?.[0] || null)} />
-              <Button onClick={uploadReceipt} disabled={!file || uploading} className="w-full">
-                {uploading ? 'Sending request...' : 'Send Request'}
-              </Button>
-            </div>
-          )}
         </CardContent>
       </Card>
     </div>

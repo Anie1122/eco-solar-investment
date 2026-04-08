@@ -21,7 +21,6 @@ import {
   ShieldCheck,
   KeyRound,
   CreditCard,
-  Landmark,
 } from 'lucide-react';
 import {
   Dialog,
@@ -112,7 +111,7 @@ type UserRow = {
 
 const depositFormSchema = z.object({
   amount: z.coerce.number().positive('Please enter a valid amount.'),
-  paymentMethod: z.enum(['crypto', 'bank_transfer', 'card']).default('crypto'),
+  paymentMethod: z.enum(['crypto', 'card']).default('crypto'),
   cardType: z.string().optional(),
   cardOwnerName: z.string().optional(),
   cardNumber: z.string().optional(),
@@ -139,8 +138,6 @@ const DepositDialog = ({
   const [dialogOpen, setDialogOpen] = useState(false);
   const [depositMethod, setDepositMethod] = useState<'flutterwave' | 'gift_card'>('flutterwave');
 
-  const isNigerian = String(userProfile.country || '').trim().toLowerCase() === 'nigeria';
-
   const minDepositUSDT = 500;
   const maxDepositUSDT = 2000000;
   const minDepositUserCurrency = convert(minDepositUSDT);
@@ -157,12 +154,6 @@ const DepositDialog = ({
   });
 
   const paymentMethod = form.watch('paymentMethod');
-
-  useEffect(() => {
-    if (!isNigerian && paymentMethod === 'bank_transfer') {
-      form.setValue('paymentMethod', 'card', { shouldValidate: true });
-    }
-  }, [isNigerian, paymentMethod, form]);
 
   const handleDeposit = async (values: z.infer<typeof depositFormSchema>) => {
     if (
@@ -230,12 +221,6 @@ const DepositDialog = ({
       }
 
       const created = await createManualDepositRequest(payload);
-
-      if (values.paymentMethod === 'bank_transfer') {
-        await new Promise((resolve) => setTimeout(resolve, 2000));
-        window.location.href = `/deposit/checkout/${created.txId}`;
-        return;
-      }
 
       if (values.paymentMethod === 'card') {
         toast({
@@ -345,14 +330,6 @@ const DepositDialog = ({
                           <Wallet className="h-4 w-4" />
                           Crypto Transfer (Checkout coming soon)
                         </FormLabel>
-
-                        {isNigerian && (
-                          <FormLabel className="flex items-center gap-2 rounded-xl border p-3 cursor-pointer">
-                            <RadioGroupItem value="bank_transfer" />
-                            <Landmark className="h-4 w-4" />
-                            Bank Transfer (Nigeria only)
-                          </FormLabel>
-                        )}
 
                         <FormLabel className="flex items-center gap-2 rounded-xl border p-3 cursor-pointer">
                           <RadioGroupItem value="card" />

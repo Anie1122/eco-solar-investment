@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { Card, CardContent } from '@/components/ui/card';
@@ -10,16 +10,14 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/lib/supabaseClient';
-import { CheckCircle2, ChevronDown, CreditCard, Landmark, Loader2, Wallet } from 'lucide-react';
+import { CheckCircle2, ChevronDown, CreditCard, Loader2, Wallet } from 'lucide-react';
 import { GIFT_CARD_MAX_AMOUNT, GIFT_CARD_MIN_AMOUNT, GIFT_CARD_TYPES, type GiftCardType } from '@/lib/gift-card';
 import PoweredByBybitInline from '@/components/powered-by-bybit-inline';
 
-type Method = 'card_payment' | 'local_bank_transfer' | 'crypto_checkout' | 'gift_card_payment';
+type Method = 'card_payment' | 'crypto_checkout' | 'gift_card_payment';
 
-const NGN_PER_USDT = 1600;
 const MIN_DEPOSIT_USDT = 500;
 const MAX_DEPOSIT_USDT = 2000000;
-const MIN_DEPOSIT_NGN_LOCAL = MIN_DEPOSIT_USDT * NGN_PER_USDT;
 
 const CARD_TYPES = [
   { value: 'visa', label: 'Visa', image: '/cards/visa.svg' },
@@ -91,26 +89,12 @@ export default function DepositStartPage() {
   const [frontPreview, setFrontPreview] = useState<string | null>(null);
   const [backPreview, setBackPreview] = useState<string | null>(null);
 
-  const [country, setCountry] = useState('');
   const [userName, setUserName] = useState('');
 
-  const minDepositUser =
-    method === 'local_bank_transfer'
-      ? MIN_DEPOSIT_NGN_LOCAL
-      : method === 'crypto_checkout'
-        ? MIN_DEPOSIT_USDT
-        : MIN_DEPOSIT_USDT * NGN_PER_USDT;
-  const maxDepositUser =
-    method === 'local_bank_transfer'
-      ? MAX_DEPOSIT_USDT * NGN_PER_USDT
-      : method === 'crypto_checkout'
-        ? MAX_DEPOSIT_USDT
-        : MAX_DEPOSIT_USDT * NGN_PER_USDT;
-
-  const isNigerian = useMemo(() => country.trim().toLowerCase() === 'nigeria', [country]);
+  const minDepositUser = MIN_DEPOSIT_USDT;
+  const maxDepositUser = MAX_DEPOSIT_USDT;
   const selectedCard = CARD_TYPES.find((x) => x.value === cardType) || CARD_TYPES[0];
-  const displayCurrency =
-    method === 'crypto_checkout' ? 'USDT' : 'NGN';
+  const displayCurrency = 'USDT';
 
   useEffect(() => {
     return () => {
@@ -124,8 +108,7 @@ export default function DepositStartPage() {
       const { data } = await supabase.auth.getSession();
       const uid = data.session?.user?.id;
       if (!uid) return;
-      const { data: row } = await supabase.from('users').select('country,full_name,email').eq('id', uid).maybeSingle();
-      setCountry(String((row as any)?.country || ''));
+      const { data: row } = await supabase.from('users').select('full_name,email').eq('id', uid).maybeSingle();
       setUserName(
         String((row as any)?.full_name || (row as any)?.email || '').trim()
       );
@@ -203,11 +186,6 @@ export default function DepositStartPage() {
       return;
     }
 
-    if (!isNigerian && method === 'local_bank_transfer') {
-      toast({ variant: 'destructive', title: 'Not available', description: 'Bank transfer is for Nigerian accounts only.' });
-      return;
-    }
-
     setBusy(true);
     try {
       if (method === 'card_payment') {
@@ -216,11 +194,7 @@ export default function DepositStartPage() {
       }
 
       const amountUsdt =
-        method === 'local_bank_transfer'
-          ? amountNum / NGN_PER_USDT
-          : method === 'crypto_checkout'
-            ? amountNum
-            : amountNum / NGN_PER_USDT;
+        amountNum;
 
       const txId = await createDeposit({
         amountInput: amountNum,
@@ -249,12 +223,6 @@ export default function DepositStartPage() {
         return;
       }
 
-      if (method === 'local_bank_transfer') {
-        await new Promise((r) => setTimeout(r, 2000));
-        router.push(`/deposit/checkout/${txId}`);
-        return;
-      }
-
       router.push(`/deposit/checkout/${txId}?mode=${method}`);
     } catch (e: any) {
       toast({ variant: 'destructive', title: 'Deposit failed', description: e?.message || 'Could not continue.' });
@@ -273,11 +241,6 @@ export default function DepositStartPage() {
             <button className={`w-full flex items-center gap-2 rounded-lg p-2 text-left ${method === 'crypto_checkout' ? 'bg-primary/10 text-primary' : ''}`} onClick={() => setMethod('crypto_checkout')}>
               <Wallet className="h-4 w-4" /> Crypto payment checkout (default)
             </button>
-            {isNigerian ? (
-              <button className={`w-full flex items-center gap-2 rounded-lg p-2 text-left ${method === 'local_bank_transfer' ? 'bg-primary/10 text-primary' : ''}`} onClick={() => setMethod('local_bank_transfer')}>
-                <Landmark className="h-4 w-4" /> Local bank transfer (Nigerians only)
-              </button>
-            ) : null}
             <button className={`w-full flex items-center gap-2 rounded-lg p-2 text-left ${method === 'card_payment' ? 'bg-primary/10 text-primary' : ''}`} onClick={() => setMethod('card_payment')}>
               <CreditCard className="h-4 w-4" /> Card payment
             </button>
@@ -288,7 +251,7 @@ export default function DepositStartPage() {
 
           <CardContent className="p-6 space-y-4">
             <div className="flex items-center justify-between">
-              <h3 className="text-xl font-semibold">{method === 'card_payment' ? 'Card payment form' : method === 'local_bank_transfer' ? 'Local bank transfer checkout (NGN)' : method === 'gift_card_payment' ? 'Gift card payment form' : 'Crypto payment checkout'}</h3>
+              <h3 className="text-xl font-semibold">{method === 'card_payment' ? 'Card payment form' : method === 'gift_card_payment' ? 'Gift card payment form' : 'Crypto payment checkout'}</h3>
               <div className="font-semibold">
                 {method === 'gift_card_payment' ? `USD ${Number(giftCardAmount || 0).toLocaleString()}` : `${displayCurrency} ${Number(amount || 0).toLocaleString()}`}
               </div>
@@ -297,13 +260,9 @@ export default function DepositStartPage() {
             {method !== 'gift_card_payment' ? (
               <>
                 <Input placeholder={`Amount (${displayCurrency})`} value={amount} onChange={(e) => setAmount(e.target.value)} type="number" />
-                {method === 'local_bank_transfer' ? (
-                  <p className="text-xs text-muted-foreground">
-                    Rate: 1 USDT = {NGN_PER_USDT.toLocaleString()} NGN. Minimum: {MIN_DEPOSIT_NGN_LOCAL.toLocaleString()} NGN.
-                  </p>
-                ) : (
-                  <p className="text-xs text-muted-foreground">Minimum deposit is {MIN_DEPOSIT_USDT} USDT equivalent ({minDepositUser.toFixed(2)} {displayCurrency}).</p>
-                )}
+                <p className="text-xs text-muted-foreground">
+                  Minimum deposit is {MIN_DEPOSIT_USDT} USDT. Maximum deposit is {MAX_DEPOSIT_USDT} USDT.
+                </p>
               </>
             ) : null}
 
