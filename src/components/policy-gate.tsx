@@ -97,17 +97,17 @@ export default function PolicyGate({ userId, onAccepted, onDismiss }: Props) {
 
               <div className="rounded-lg border bg-muted/30 p-3">
                 <div className="text-xs font-semibold text-muted-foreground">
-                  WhatsApp Community
+                  Telegram Channel
                 </div>
                 <Button
                   type="button"
                   variant="default"
                   className="mt-2 w-full justify-between"
                   onClick={() =>
-                    openLink('https://chat.whatsapp.com/EwXPFIkrqNhGbEVqnhwsW9')
+                    openLink('https://t.me/Eco_Solar_Properties')
                   }
                 >
-                  Join Community
+                  Join Channel
                   <ExternalLink className="h-4 w-4" />
                 </Button>
               </div>
@@ -231,8 +231,8 @@ export default function PolicyGate({ userId, onAccepted, onDismiss }: Props) {
             </section>
 
             <section className="space-y-2">
-              <h3 className="text-base font-bold">7. WHATSAPP GROUP DISCLAIMER</h3>
-              <p>The official WhatsApp group is strictly for updates and community engagement.</p>
+              <h3 className="text-base font-bold">7. TELEGRAM CHANNEL DISCLAIMER</h3>
+              <p>The official Telegram channel is strictly for updates and community engagement.</p>
               <p className="font-semibold">ECO-SOLAR-INVESTMENT is not responsible for:</p>
               <ul className="list-disc space-y-1 pl-5">
                 <li>Private financial arrangements</li>
