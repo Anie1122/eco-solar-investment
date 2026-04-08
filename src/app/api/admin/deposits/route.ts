@@ -18,7 +18,12 @@ export async function GET() {
 
     if (txErr) throw txErr;
 
-    return NextResponse.json({ ok: true, rows: txRows || [] });
+    const visibleRows = (txRows || []).filter((row: any) => {
+      if (row.transaction_type === 'withdrawal') return true;
+      return Boolean(row?.metadata?.submittedForReviewAt);
+    });
+
+    return NextResponse.json({ ok: true, rows: visibleRows });
   } catch (e: any) {
     return NextResponse.json({ ok: false, message: e?.message || 'Failed to fetch deposits.' }, { status: 500 });
   }

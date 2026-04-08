@@ -98,7 +98,7 @@ export default function PoweredByBybitSplash({ onComplete, playSound = false }: 
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: reduced ? 0.2 : 0.45, delay: reduced ? 0 : 0.55 }}
         >
-          POWERED BY
+          PROUDLY SPONSORED BY
         </motion.p>
 
         <motion.h1

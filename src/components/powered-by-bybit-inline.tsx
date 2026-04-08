@@ -20,7 +20,7 @@ export default function PoweredByBybitInline({ className, centered = true }: Pow
         className
       )}
     >
-      <span className="block text-[10px] uppercase tracking-[0.24em] text-white/75">Powered by</span>
+      <span className="block text-[10px] uppercase tracking-[0.24em] text-white/75">Proudly sponsored by</span>
       <span className="relative block text-sm font-bold tracking-[0.18em]">
         BYB<span className="text-[#f7a600]">I</span>T
         <motion.span

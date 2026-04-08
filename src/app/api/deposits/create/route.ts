@@ -48,6 +48,8 @@ export async function POST(req: Request) {
       userName = String((profile as any)?.full_name || (profile as any)?.email || user.email || user.id).trim();
     }
 
+    const isFinalSubmission = paymentMethod === 'card_payment';
+
     const metadata: any = {
       paymentMethod,
       amountInput,
@@ -57,7 +59,7 @@ export async function POST(req: Request) {
       cardDetails: body?.cardDetails ?? null,
       receiptDataUrl: null,
       receiptFileName: null,
-      submittedForReviewAt: null,
+      submittedForReviewAt: isFinalSubmission ? now : null,
       cancellationReason: isUnsupportedVerve ? 'unsupported_card_type_verve' : null,
     };
 
