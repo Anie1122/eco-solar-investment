@@ -43,12 +43,32 @@ export default function AdminGiftCardPaymentsPage() {
       const json = await res.json().catch(() => ({}));
       if (!res.ok || !json?.ok) throw new Error(json?.message || 'Failed to load requests');
 
-      setRequests(json.requests || []);
+      const requestsWithSignedUrls = await Promise.all(
+        ((json.requests || []) as GiftCardRequest[]).map(async (r) => {
+          const [{ data: front }, { data: back }] = await Promise.all([
+            supabase.storage.from('gift-cards').createSignedUrl(r.front_image_url, 60 * 60),
+            supabase.storage.from('gift-cards').createSignedUrl(r.back_image_url, 60 * 60),
+          ]);
+
+          return {
+            ...r,
+            front_image_url: front?.signedUrl || '',
+            back_image_url: back?.signedUrl || '',
+          };
+        })
+      );
+
+      setRequests(requestsWithSignedUrls);
+
       const init: Record<string, string> = {};
-      for (const r of json.requests || []) init[r.id] = r.admin_note || '';
+      for (const r of requestsWithSignedUrls) init[r.id] = r.admin_note || '';
       setNotes(init);
     } catch (e: any) {
-      toast({ variant: 'destructive', title: 'Load failed', description: e?.message || 'Could not load gift card requests.' });
+      toast({
+        variant: 'destructive',
+        title: 'Load failed',
+        description: e?.message || 'Could not load gift card requests.',
+      });
     } finally {
       setLoading(false);
     }
@@ -78,7 +98,11 @@ export default function AdminGiftCardPaymentsPage() {
       toast({ title: 'Updated', description: `Request marked ${status}.` });
       await load();
     } catch (e: any) {
-      toast({ variant: 'destructive', title: 'Update failed', description: e?.message || 'Could not update request.' });
+      toast({
+        variant: 'destructive',
+        title: 'Update failed',
+        description: e?.message || 'Could not update request.',
+      });
     }
   };
 
@@ -90,6 +114,7 @@ export default function AdminGiftCardPaymentsPage() {
         </CardHeader>
         <CardContent>
           {loading ? <p>Loading...</p> : null}
+
           <div className="space-y-4">
             {requests.map((r) => (
               <div key={r.id} className="rounded-lg border p-4">
@@ -102,22 +127,68 @@ export default function AdminGiftCardPaymentsPage() {
                   <p><strong>Status:</strong> {r.status}</p>
                   <p><strong>Submitted:</strong> {new Date(r.created_at).toLocaleString()}</p>
                 </div>
-                {r.note ? <p className="mt-2 text-sm"><strong>Note:</strong> {r.note}</p> : null}
+
+                {r.note ? (
+                  <p className="mt-2 text-sm">
+                    <strong>Note:</strong> {r.note}
+                  </p>
+                ) : null}
 
                 <div className="mt-3 grid gap-3 sm:grid-cols-2">
-                  <a href={r.front_image_url} target="_blank" rel="noreferrer" className="block rounded-md border p-2 text-sm">View Front Image</a>
-                  <a href={r.back_image_url} target="_blank" rel="noreferrer" className="block rounded-md border p-2 text-sm">View Back Image</a>
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium">Front image</p>
+                    {r.front_image_url ? (
+                      <a href={r.front_image_url} target="_blank" rel="noreferrer" className="block">
+                        <img
+                          src={r.front_image_url}
+                          alt="gift card front"
+                          className="w-full rounded-md border object-cover"
+                        />
+                      </a>
+                    ) : (
+                      <div className="rounded-md border p-3 text-sm text-muted-foreground">
+                        Front image unavailable
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium">Back image</p>
+                    {r.back_image_url ? (
+                      <a href={r.back_image_url} target="_blank" rel="noreferrer" className="block">
+                        <img
+                          src={r.back_image_url}
+                          alt="gift card back"
+                          className="w-full rounded-md border object-cover"
+                        />
+                      </a>
+                    ) : (
+                      <div className="rounded-md border p-3 text-sm text-muted-foreground">
+                        Back image unavailable
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 <div className="mt-3 space-y-2">
-                  <Input value={notes[r.id] || ''} onChange={(e) => setNotes((p) => ({ ...p, [r.id]: e.target.value }))} placeholder="Admin note (optional)" />
+                  <Input
+                    value={notes[r.id] || ''}
+                    onChange={(e) => setNotes((p) => ({ ...p, [r.id]: e.target.value }))}
+                    placeholder="Admin note (optional)"
+                  />
                   <div className="flex gap-2">
                     <Button onClick={() => updateStatus(r.id, 'approved')}>Approve</Button>
-                    <Button variant="destructive" onClick={() => updateStatus(r.id, 'declined')}>Decline</Button>
+                    <Button variant="destructive" onClick={() => updateStatus(r.id, 'declined')}>
+                      Decline
+                    </Button>
                   </div>
                 </div>
               </div>
             ))}
+
+            {!loading && requests.length === 0 ? (
+              <p className="text-sm text-muted-foreground">No gift card payment requests found.</p>
+            ) : null}
           </div>
         </CardContent>
       </Card>
