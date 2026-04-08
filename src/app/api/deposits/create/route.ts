@@ -3,6 +3,9 @@ import { getUserFromBearer } from '@/lib/getUserFromBearer';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { assertTransactionStatus } from '@/lib/transaction-status';
 
+const MIN_DEPOSIT_USDT = 500;
+const MAX_DEPOSIT_USDT = 2000000;
+
 export async function POST(req: Request) {
   try {
     const user = await getUserFromBearer(req);
@@ -22,6 +25,15 @@ export async function POST(req: Request) {
     }
     if (!Number.isFinite(amountUsdt) || amountUsdt <= 0) {
       return NextResponse.json({ ok: false, message: 'Invalid converted amount.' }, { status: 400 });
+    }
+    if (amountUsdt < MIN_DEPOSIT_USDT || amountUsdt > MAX_DEPOSIT_USDT) {
+      return NextResponse.json(
+        {
+          ok: false,
+          message: `Deposit amount must be between ${MIN_DEPOSIT_USDT} and ${MAX_DEPOSIT_USDT} USDT.`,
+        },
+        { status: 400 }
+      );
     }
 
     const admin = supabaseAdmin();
