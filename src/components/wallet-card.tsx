@@ -73,8 +73,9 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '@/lib/supabaseClient';
 import { cn } from '@/lib/utils';
 import GiftCardPaymentForm from '@/components/gift-card-payment-form';
-import Link from 'next/link';
 import CurrencySwitcher from '@/components/currency-switcher';
+import PoweredByBybitInline from '@/components/powered-by-bybit-inline';
+import PoweredByBybitSplash from '@/components/powered-by-bybit-splash';
 
 interface WalletCardProps {
   userProfile: any | null;
@@ -140,8 +141,8 @@ const DepositDialog = ({
 
   const isNigerian = String(userProfile.country || '').trim().toLowerCase() === 'nigeria';
 
-  const minDepositUSDT = 1.25;
-  const maxDepositUSDT = 725;
+  const minDepositUSDT = 500;
+  const maxDepositUSDT = 2000000;
   const minDepositUserCurrency = convert(minDepositUSDT);
   const maxDepositUserCurrency = convert(maxDepositUSDT);
 
@@ -275,6 +276,7 @@ const DepositDialog = ({
     <Dialog open={dialogOpen} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>{children}</DialogTrigger>
       <DialogContent>
+        <PoweredByBybitInline className="mb-2" />
         <DialogHeader>
           <DialogTitle>Deposit Funds</DialogTitle>
           <DialogDescription>
@@ -1718,20 +1720,27 @@ const WithdrawalDialog = ({
   userProfile,
   children,
   onProfileRefresh,
+  open,
+  onOpenChange,
 }: {
   userProfile: UserRow;
-  children: React.ReactNode;
+  children?: React.ReactNode;
   onProfileRefresh: () => Promise<void>;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }) => {
   const [dialogOpen, setDialogOpen] = useState(false);
+  const dialogState = open ?? dialogOpen;
+  const setDialogState = onOpenChange ?? setDialogOpen;
 
   return (
-    <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-      <DialogTrigger asChild>{children}</DialogTrigger>
+    <Dialog open={dialogState} onOpenChange={setDialogState}>
+      {children ? <DialogTrigger asChild>{children}</DialogTrigger> : null}
       <DialogContent className="max-h-[90vh] overflow-y-auto">
+        <PoweredByBybitInline className="mb-2" />
         <WithdrawalDialogContent
           userProfile={userProfile}
-          setDialogOpen={setDialogOpen}
+          setDialogOpen={setDialogState}
           onProfileRefresh={onProfileRefresh}
         />
       </DialogContent>
@@ -1745,6 +1754,9 @@ export default function WalletCard({ userProfile, isLoading }: WalletCardProps) 
   const [sessionUserId, setSessionUserId] = useState<string | null>(null);
   const [liveProfile, setLiveProfile] = useState<UserRow | null>(null);
   const [loadingProfile, setLoadingProfile] = useState(false);
+  const [showActionSplash, setShowActionSplash] = useState(false);
+  const [pendingAction, setPendingAction] = useState<'deposit' | 'withdraw' | null>(null);
+  const [withdrawDialogOpen, setWithdrawDialogOpen] = useState(false);
 
   useEffect(() => {
     let unsub:
@@ -1873,6 +1885,16 @@ export default function WalletCard({ userProfile, isLoading }: WalletCardProps) 
 
   const bonusUnlocked = Boolean(profileToUse.bonus_unlocked ?? false);
 
+  const startDepositFlow = () => {
+    setPendingAction('deposit');
+    setShowActionSplash(true);
+  };
+
+  const startWithdrawFlow = () => {
+    setPendingAction('withdraw');
+    setShowActionSplash(true);
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 8 }}
@@ -1880,8 +1902,22 @@ export default function WalletCard({ userProfile, isLoading }: WalletCardProps) 
       transition={{ duration: 0.25, ease: 'easeOut' }}
       className="sm:col-span-2"
     >
+      {showActionSplash && (
+        <PoweredByBybitSplash
+          onComplete={() => {
+            setShowActionSplash(false);
+            if (pendingAction === 'deposit') {
+              window.location.href = '/deposit/start';
+            } else if (pendingAction === 'withdraw') {
+              setWithdrawDialogOpen(true);
+            }
+            setPendingAction(null);
+          }}
+        />
+      )}
       <Card>
         <CardHeader className="pb-1.5 sm:pb-2">
+          <PoweredByBybitInline centered={false} className="mb-1 max-w-max" />
           <CardTitle className="flex items-center gap-2">
             <Wallet className="h-6 w-6" />
             <span>My Wallet</span>
@@ -1948,12 +1984,13 @@ export default function WalletCard({ userProfile, isLoading }: WalletCardProps) 
             whileTap={{ scale: 0.99 }}
             transition={{ duration: 0.1 }}
           >
-            <Link href="/deposit/start">
-              <Button className="h-10 w-full min-w-0 justify-center gap-2 rounded-xl px-4">
-                <ArrowDownToLine className="h-4 w-4 shrink-0" />
-                <span className="truncate">Deposit</span>
-              </Button>
-            </Link>
+            <Button
+              onClick={startDepositFlow}
+              className="h-10 w-full min-w-0 justify-center gap-2 rounded-xl px-4"
+            >
+              <ArrowDownToLine className="h-4 w-4 shrink-0" />
+              <span className="truncate">Deposit</span>
+            </Button>
           </motion.div>
 
           <motion.div
@@ -1961,18 +1998,20 @@ export default function WalletCard({ userProfile, isLoading }: WalletCardProps) 
             whileTap={{ scale: 0.99 }}
             transition={{ duration: 0.1 }}
           >
+            <Button
+              onClick={startWithdrawFlow}
+              variant="outline"
+              className="h-10 w-full min-w-0 justify-center gap-2 rounded-xl px-4"
+            >
+              <ArrowUpFromLine className="h-4 w-4 shrink-0" />
+              <span className="truncate">Withdraw</span>
+            </Button>
             <WithdrawalDialog
               userProfile={profileToUse}
               onProfileRefresh={refreshProfile}
-            >
-              <Button
-                variant="outline"
-                className="h-10 w-full min-w-0 justify-center gap-2 rounded-xl px-4"
-              >
-                <ArrowUpFromLine className="h-4 w-4 shrink-0" />
-                <span className="truncate">Withdraw</span>
-              </Button>
-            </WithdrawalDialog>
+              open={withdrawDialogOpen}
+              onOpenChange={setWithdrawDialogOpen}
+            />
           </motion.div>
         </CardContent>
 

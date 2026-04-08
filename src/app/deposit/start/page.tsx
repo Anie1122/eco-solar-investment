@@ -9,17 +9,17 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { useCurrencyConverter } from '@/lib/currency';
 import { supabase } from '@/lib/supabaseClient';
 import { CheckCircle2, ChevronDown, CreditCard, Landmark, Loader2, Wallet } from 'lucide-react';
 import { GIFT_CARD_MAX_AMOUNT, GIFT_CARD_MIN_AMOUNT, GIFT_CARD_TYPES, type GiftCardType } from '@/lib/gift-card';
+import PoweredByBybitInline from '@/components/powered-by-bybit-inline';
 
 type Method = 'card_payment' | 'local_bank_transfer' | 'crypto_checkout' | 'gift_card_payment';
 
 const NGN_PER_USDT = 1600;
-const MIN_DEPOSIT_USDT = 10;
-const MAX_DEPOSIT_USDT = 725;
-const MIN_DEPOSIT_NGN_LOCAL = 10000;
+const MIN_DEPOSIT_USDT = 500;
+const MAX_DEPOSIT_USDT = 2000000;
+const MIN_DEPOSIT_NGN_LOCAL = MIN_DEPOSIT_USDT * NGN_PER_USDT;
 
 const CARD_TYPES = [
   { value: 'visa', label: 'Visa', image: '/cards/visa.svg' },
@@ -92,27 +92,25 @@ export default function DepositStartPage() {
   const [backPreview, setBackPreview] = useState<string | null>(null);
 
   const [country, setCountry] = useState('');
-  const [currencyCode, setCurrencyCode] = useState('USDT');
   const [userName, setUserName] = useState('');
 
-  const { convert, currency: activeCryptoCurrency } = useCurrencyConverter(currencyCode);
   const minDepositUser =
     method === 'local_bank_transfer'
       ? MIN_DEPOSIT_NGN_LOCAL
       : method === 'crypto_checkout'
         ? MIN_DEPOSIT_USDT
-        : convert(MIN_DEPOSIT_USDT);
+        : MIN_DEPOSIT_USDT * NGN_PER_USDT;
   const maxDepositUser =
     method === 'local_bank_transfer'
       ? MAX_DEPOSIT_USDT * NGN_PER_USDT
       : method === 'crypto_checkout'
         ? MAX_DEPOSIT_USDT
-        : convert(MAX_DEPOSIT_USDT);
+        : MAX_DEPOSIT_USDT * NGN_PER_USDT;
 
   const isNigerian = useMemo(() => country.trim().toLowerCase() === 'nigeria', [country]);
   const selectedCard = CARD_TYPES.find((x) => x.value === cardType) || CARD_TYPES[0];
   const displayCurrency =
-    method === 'local_bank_transfer' ? 'NGN' : method === 'crypto_checkout' ? 'USDT' : activeCryptoCurrency;
+    method === 'crypto_checkout' ? 'USDT' : 'NGN';
 
   useEffect(() => {
     return () => {
@@ -126,9 +124,8 @@ export default function DepositStartPage() {
       const { data } = await supabase.auth.getSession();
       const uid = data.session?.user?.id;
       if (!uid) return;
-      const { data: row } = await supabase.from('users').select('country,currency,full_name,email').eq('id', uid).maybeSingle();
+      const { data: row } = await supabase.from('users').select('country,full_name,email').eq('id', uid).maybeSingle();
       setCountry(String((row as any)?.country || ''));
-      setCurrencyCode(String((row as any)?.currency || 'USDT'));
       setUserName(
         String((row as any)?.full_name || (row as any)?.email || '').trim()
       );
@@ -223,7 +220,7 @@ export default function DepositStartPage() {
           ? amountNum / NGN_PER_USDT
           : method === 'crypto_checkout'
             ? amountNum
-          : amountNum / (convert(1) > 0 ? convert(1) : 1);
+            : amountNum / NGN_PER_USDT;
 
       const txId = await createDeposit({
         amountInput: amountNum,
@@ -267,7 +264,8 @@ export default function DepositStartPage() {
   };
 
   return (
-    <div className="mx-auto max-w-5xl p-4">
+    <div className="mx-auto max-w-5xl space-y-3 p-4">
+      <PoweredByBybitInline />
       <Card className="overflow-hidden">
         <div className="grid md:grid-cols-[220px_1fr]">
           <div className="border-r bg-muted/30 p-4 space-y-2">
