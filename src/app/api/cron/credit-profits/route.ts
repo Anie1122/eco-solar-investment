@@ -5,7 +5,7 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 const PROFIT_CYCLES = 6;
-const DAYS_PER_CYCLE = 30;
+const DAYS_PER_CYCLE = 7;
 
 function getSupabaseAdmin() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -44,7 +44,7 @@ async function safeNotify(supabaseAdmin: ReturnType<typeof getSupabaseAdmin>, us
   const first = await supabaseAdmin.from('notifications').insert({
     user_id: userId,
     title: 'Profit Credited',
-    message: 'Your monthly profit has been credited to your wallet.',
+    message: 'Your weekly profit has been credited to your wallet.',
     type: 'profit',
     is_read: false,
     created_at: nowIso,
@@ -58,7 +58,7 @@ async function safeNotify(supabaseAdmin: ReturnType<typeof getSupabaseAdmin>, us
   await supabaseAdmin.from('notifications').insert({
     user_id: userId,
     title: 'Profit Credited',
-    message: 'Your monthly profit has been credited to your wallet.',
+    message: 'Your weekly profit has been credited to your wallet.',
     type: 'profit',
     is_read: false,
     created_at: nowIso,
@@ -136,13 +136,13 @@ export async function GET(req: NextRequest) {
           status: 'success',
           amount: amountPerCycle,
           currency: 'USDT',
-          description: `Monthly profit (${cycleNumber}/6) from ${(inv as any).plan_name || 'investment plan'}`,
+          description: `Weekly profit (${cycleNumber}/6) from ${(inv as any).plan_name || 'investment plan'}`,
           created_at: nowIso,
           metadata: {
             investment_id: (inv as any).id,
             cycle: cycleNumber,
             total_cycles: PROFIT_CYCLES,
-            cadence: 'monthly',
+            cadence: 'weekly',
           },
         };
       });
@@ -169,7 +169,7 @@ export async function GET(req: NextRequest) {
       for (let i = 0; i < creditsToApply; i += 1) {
         await safeNotify(supabaseAdmin, String((inv as any).user_id), amountPerCycle, {
           investment_id: (inv as any).id,
-          cadence: 'monthly',
+          cadence: 'weekly',
           cycle: paidCycles + i + 1,
           total_cycles: PROFIT_CYCLES,
         });
@@ -181,7 +181,7 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({
       ok: true,
-      cadence: 'monthly',
+      cadence: 'weekly',
       cycle_days: DAYS_PER_CYCLE,
       max_cycles: PROFIT_CYCLES,
       credited,

@@ -1,7 +1,7 @@
 // src/app/api/invest/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import { investmentPlans, PLAN_DURATION_MONTHS } from '@/lib/data';
+import { investmentPlans, PLAN_DURATION_WEEKS } from '@/lib/data';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -78,7 +78,7 @@ export async function POST(req: NextRequest) {
     const currency = 'USDT';
 
     const investAmount = Number(plan.amount);
-    const monthlyProfit = Number(plan.monthlyProfit);
+    const weeklyProfit = Number(plan.weeklyProfit);
 
     const walletBalance = Number(userRow.wallet_balance ?? 0);
     const bonusBalance = Number(userRow.bonus_balance ?? 0);
@@ -89,8 +89,8 @@ export async function POST(req: NextRequest) {
     }
 
     const nowIso = new Date().toISOString();
-    const endsAtIso = addDaysISO(nowIso, PLAN_DURATION_MONTHS * 30);
-    const nextProfitAtIso = addDaysISO(nowIso, 30);
+    const endsAtIso = addDaysISO(nowIso, PLAN_DURATION_WEEKS * 7);
+    const nextProfitAtIso = addDaysISO(nowIso, 7);
 
     const bonusToUnlock = !hasInvested ? bonusBalance : 0;
 
@@ -113,9 +113,9 @@ export async function POST(req: NextRequest) {
         user_id: userId,
         plan_id: plan.id,
         plan_name: plan.name,
-        duration_days: PLAN_DURATION_MONTHS * 30,
+        duration_days: PLAN_DURATION_WEEKS * 7,
         amount: investAmount,
-        daily_profit: monthlyProfit,
+        daily_profit: weeklyProfit,
         total_return: Number(plan.totalReturn),
         currency,
         status: 'active',
@@ -182,7 +182,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      message: 'Investment successful! Profits will now be credited monthly.',
+      message: 'Investment successful! Profits will now be credited weekly.',
       next_profit_at: nextProfitAtIso,
       ends_at: endsAtIso,
     });

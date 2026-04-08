@@ -53,9 +53,9 @@ export async function POST(req: NextRequest) {
         : investmentPlans
             .map(
               (p) =>
-                `- ${p.name}: Invest ${formatNGN(p.amount)} for ${p.durationMonths} months, earn ${formatNGN(
-                  p.monthlyProfit
-                )} monthly, total return ${formatNGN(p.totalReturn)}`
+                `- ${p.name}: Invest ${formatNGN(p.amount)} for ${p.durationWeeks} weeks, earn ${formatNGN(
+                  p.weeklyProfit
+                )} weekly, total return ${formatNGN(p.totalReturn)}`
             )
             .join('\n');
 

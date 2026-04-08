@@ -80,7 +80,7 @@ type InvestmentRow = {
   plan_name: string | null;
   duration_days: number | null;
   amount: number | null; // NGN base
-  daily_profit: number | null; // monthly profit amount (legacy column name)
+  daily_profit: number | null; // weekly profit amount (legacy column name)
   total_return: number | null; // NGN base
   currency: string | null;
   status: 'active' | 'completed' | 'cancelled' | string;
@@ -683,7 +683,7 @@ const InvestmentList = () => {
           const { pct, cycle, total } = calcProgress(inv.started_at, inv.ends_at);
 
           const investedUser = convert(Number(inv.amount || 0));
-          const monthlyUser = convert(Number(inv.daily_profit || 0));
+          const weeklyUser = convert(Number(inv.daily_profit || 0));
           const totalReturnUser = convert(Number(inv.total_return || 0));
 
           return (
@@ -700,8 +700,8 @@ const InvestmentList = () => {
                   <div className="font-semibold">Invested</div>
                   <div className="text-right font-mono">{format(investedUser)}</div>
 
-                  <div className="font-semibold">Monthly Profit</div>
-                  <div className="text-right font-mono text-green-600">{format(monthlyUser)}</div>
+                  <div className="font-semibold">Weekly Profit</div>
+                  <div className="text-right font-mono text-green-600">{format(weeklyUser)}</div>
 
                   <div className="font-semibold">Total Return</div>
                   <div className="text-right font-mono">{format(totalReturnUser)}</div>
@@ -717,7 +717,7 @@ const InvestmentList = () => {
                   <div className="flex justify-between text-[10px] text-muted-foreground">
                     <span>Progress</span>
                     <span>
-                      Month {cycle} of {total}
+                      Week {cycle} of {total}
                     </span>
                   </div>
                   <Progress value={pct} className="h-2" />

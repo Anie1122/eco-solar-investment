@@ -50,8 +50,8 @@ export default function AIChatWidget({ open, onOpenChange }: AIChatWidgetProps) 
       .map(
         (p) =>
           `- ${p.name}: Invest USDT ${Number(p.amount).toLocaleString()} for ${
-            p.durationMonths
-          } months, earn USDT ${Number(p.monthlyProfit).toLocaleString()} monthly, total return USDT ${Number(
+            p.durationWeeks
+          } weeks, earn USDT ${Number(p.weeklyProfit).toLocaleString()} weekly, total return USDT ${Number(
             p.totalReturn
           ).toLocaleString()}`
       )

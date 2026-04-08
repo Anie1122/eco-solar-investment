@@ -36,7 +36,7 @@ type InvestmentRow = {
   plan_name: string | null;
   duration_days: number | null;
   amount: number | null; // ✅ stored in NGN base
-  daily_profit: number | null; // monthly profit amount (legacy column name)
+  daily_profit: number | null; // weekly profit amount (legacy column name)
   total_return: number | null; // ✅ stored in NGN base
   currency: string | null;
   status: string | null;
@@ -229,7 +229,7 @@ const InvestmentsOnlyList = () => {
     if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start) return { pct: 0, cycle: 0, total: 6 };
 
     const elapsedDays = Math.floor((now - start) / (1000 * 60 * 60 * 24));
-    const elapsedCycles = Math.floor(Math.max(0, elapsedDays) / 30);
+    const elapsedCycles = Math.floor(Math.max(0, elapsedDays) / 7);
     const clampedElapsed = Math.min(Math.max(elapsedCycles, 0), 6);
     const pct = Math.min(100, Math.max(0, (clampedElapsed / 6) * 100));
 
@@ -274,7 +274,7 @@ const InvestmentsOnlyList = () => {
 
         // ✅ convert NGN -> user currency for display
         const investedUser = convert(Number(inv.amount || 0));
-        const monthlyUser = convert(Number(inv.daily_profit || 0));
+        const weeklyUser = convert(Number(inv.daily_profit || 0));
 
         return (
           <Card key={inv.id}>
@@ -290,8 +290,8 @@ const InvestmentsOnlyList = () => {
                 <div className="font-semibold">Invested Amount</div>
                 <div className="text-right font-mono">{format(investedUser)}</div>
 
-                <div className="font-semibold">Monthly Profit</div>
-                <div className={cn('text-right font-mono', 'text-green-600')}>{format(monthlyUser)}</div>
+                <div className="font-semibold">Weekly Profit</div>
+                <div className={cn('text-right font-mono', 'text-green-600')}>{format(weeklyUser)}</div>
 
                 <div className="font-semibold">Started On</div>
                 <div className="text-right">{formatDate(inv.started_at)}</div>
@@ -304,7 +304,7 @@ const InvestmentsOnlyList = () => {
                 <div className="mb-1 flex justify-between text-xs text-muted-foreground">
                   <span>Progress</span>
                   <span>
-                    Month {Math.min(cycle, total)} of {total}
+                    Week {Math.min(cycle, total)} of {total}
                   </span>
                 </div>
                 <Progress value={pct} className="h-2" />
@@ -338,7 +338,7 @@ const MyInvestmentsPage: NextPage = () => {
   const displayName = userRow?.full_name || userRow?.email || 'Account';
 
   const labelText =
-    'Pending profits are automatically detected and credited monthly. If you miss a cycle, the system automatically catches up.';
+    'Pending profits are automatically detected and credited weekly. If you miss a cycle, the system automatically catches up.';
 
   return (
     <AuthGuard>
