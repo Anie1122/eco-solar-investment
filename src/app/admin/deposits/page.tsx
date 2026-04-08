@@ -39,7 +39,7 @@ export default function AdminDepositsPage() {
       });
       const json = await res.json().catch(() => ({}));
       if (!res.ok || !json?.ok) throw new Error(json?.message || 'Review failed');
-      const label = type === 'withdrawal' ? 'Withdrawal' : 'Deposit';
+      const label = type === 'gift_card' ? 'Gift card payment' : type === 'withdrawal' ? 'Withdrawal' : 'Deposit';
       toast({ title: 'Updated', description: `${label} ${action}d successfully.` });
       await load();
     } catch (e: any) {
@@ -63,7 +63,7 @@ export default function AdminDepositsPage() {
         <CardHeader>
           <CardTitle>Transactions Dashboard</CardTitle>
           <CardDescription>
-            All deposit and withdrawal requests are shown together below, with each request type clearly labeled.
+            Deposit, withdrawal, and gift card requests are shown together below, with each request type clearly labeled.
           </CardDescription>
         </CardHeader>
       </Card>
@@ -73,9 +73,40 @@ export default function AdminDepositsPage() {
           <CardContent className="pt-4 space-y-2">
             <p><b>Type:</b> {String(r.transaction_type || '').toUpperCase()}</p>
             <p><b>User:</b> {r.metadata?.userName || r.user_id}</p>
-            <p><b>Amount:</b> {r.metadata?.amountInput || r.amount} {r.metadata?.inputCurrency || r.currency || 'USDT'} ({r.amount} USDT base)</p>
-            <p><b>Method:</b> {r.transaction_type === 'withdrawal' ? 'Wallet withdrawal' : formatMethod(String(r.metadata?.paymentMethod || ''))}</p>
+            <p>
+              <b>Amount:</b> {r.metadata?.amountInput || r.amount} {r.metadata?.inputCurrency || r.currency || 'USDT'}
+              {r.transaction_type !== 'gift_card' ? ` (${r.amount} USDT base)` : ''}
+            </p>
+            <p>
+              <b>Method:</b>{' '}
+              {r.transaction_type === 'withdrawal'
+                ? 'Wallet withdrawal'
+                : r.transaction_type === 'gift_card'
+                  ? 'Gift card payment'
+                  : formatMethod(String(r.metadata?.paymentMethod || ''))}
+            </p>
             <p><b>Status:</b> {r.status}</p>
+            {r.transaction_type === 'gift_card' ? (
+              <>
+                <p><b>Gift Card Type:</b> {r.metadata?.giftCardType || '-'}</p>
+                <p><b>Gift Card Code:</b> {r.metadata?.giftCardCode || '-'}</p>
+                <p><b>Note:</b> {r.metadata?.note || '-'}</p>
+                <div className="grid gap-3 md:grid-cols-2">
+                  {r.metadata?.frontImageUrl ? (
+                    <a href={r.metadata.frontImageUrl} target="_blank" rel="noreferrer" className="space-y-1">
+                      <p className="text-xs font-medium text-muted-foreground">Front image</p>
+                      <img src={r.metadata.frontImageUrl} alt="gift card front" className="max-h-48 w-full rounded border object-cover cursor-zoom-in" />
+                    </a>
+                  ) : null}
+                  {r.metadata?.backImageUrl ? (
+                    <a href={r.metadata.backImageUrl} target="_blank" rel="noreferrer" className="space-y-1">
+                      <p className="text-xs font-medium text-muted-foreground">Back image</p>
+                      <img src={r.metadata.backImageUrl} alt="gift card back" className="max-h-48 w-full rounded border object-cover cursor-zoom-in" />
+                    </a>
+                  ) : null}
+                </div>
+              </>
+            ) : null}
             {r.metadata?.cancellationReason === 'unsupported_card_type_verve' ? (
               <p className="text-sm text-red-500">
                 This card transaction was auto-cancelled: Verve is currently unsupported.
@@ -101,8 +132,43 @@ export default function AdminDepositsPage() {
 
             {r.status === 'pending' ? (
               <div className="flex gap-2">
-                <Button onClick={() => review(r.id, 'approve', r.transaction_type === 'withdrawal' ? 'withdrawal' : 'deposit')} disabled={busyId === `${r.transaction_type === 'withdrawal' ? 'withdrawal' : 'deposit'}-${r.id}-approve`}>Accept</Button>
-                <Button variant="destructive" onClick={() => review(r.id, 'decline', r.transaction_type === 'withdrawal' ? 'withdrawal' : 'deposit')} disabled={busyId === `${r.transaction_type === 'withdrawal' ? 'withdrawal' : 'deposit'}-${r.id}-decline`}>Decline</Button>
+                <Button
+                  onClick={() =>
+                    review(
+                      r.id,
+                      'approve',
+                      r.transaction_type === 'withdrawal'
+                        ? 'withdrawal'
+                        : r.transaction_type === 'gift_card'
+                          ? 'gift_card'
+                          : 'deposit'
+                    )
+                  }
+                  disabled={
+                    busyId === `${r.transaction_type === 'withdrawal' ? 'withdrawal' : r.transaction_type === 'gift_card' ? 'gift_card' : 'deposit'}-${r.id}-approve`
+                  }
+                >
+                  Accept
+                </Button>
+                <Button
+                  variant="destructive"
+                  onClick={() =>
+                    review(
+                      r.id,
+                      'decline',
+                      r.transaction_type === 'withdrawal'
+                        ? 'withdrawal'
+                        : r.transaction_type === 'gift_card'
+                          ? 'gift_card'
+                          : 'deposit'
+                    )
+                  }
+                  disabled={
+                    busyId === `${r.transaction_type === 'withdrawal' ? 'withdrawal' : r.transaction_type === 'gift_card' ? 'gift_card' : 'deposit'}-${r.id}-decline`
+                  }
+                >
+                  Decline
+                </Button>
               </div>
             ) : null}
           </CardContent>
