@@ -60,6 +60,7 @@ import {
 } from '@/components/ui/alert-dialog';
 
 import { supabase } from '@/lib/supabaseClient';
+import { queueStartupSplash } from '@/lib/startup-transition';
 
 type UserRow = {
   id: string;
@@ -177,6 +178,7 @@ const DashboardHeader = () => {
         .filter((key) => key.startsWith('eco_'))
         .forEach((key) => localStorage.removeItem(key));
     } catch {}
+    queueStartupSplash('logout');
     router.push('/login');
   };
 
@@ -276,6 +278,7 @@ const SettingsPage: NextPage = () => {
         .filter((key) => key.startsWith('eco_'))
         .forEach((key) => localStorage.removeItem(key));
     } catch {}
+    queueStartupSplash('logout');
     router.push('/login');
   };
 

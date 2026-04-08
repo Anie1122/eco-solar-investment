@@ -6,6 +6,7 @@ import { ThemeProvider } from '@/components/theme-provider';
 import { FirebaseClientProvider } from '@/firebase/client-provider';
 import { Toaster } from '@/components/ui/toaster';
 import BottomNav from '@/components/bottom-nav';
+import StartupTransitionProvider from '@/components/startup-transition-provider';
 
 export const metadata: Metadata = {
   title: 'Eco Solar Investment',
@@ -35,12 +36,14 @@ export default function RootLayout({
       <body className="font-body antialiased">
         <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false}>
           <FirebaseClientProvider>
-            <div className="min-h-screen pb-24 fintech-shell">
-              <div className="fintech-page-animate">{children}</div>
-            </div>
+            <StartupTransitionProvider>
+              <div className="min-h-screen pb-24 fintech-shell">
+                <div className="fintech-page-animate">{children}</div>
+              </div>
 
-            <BottomNav />
-            <Toaster />
+              <BottomNav />
+              <Toaster />
+            </StartupTransitionProvider>
           </FirebaseClientProvider>
         </ThemeProvider>
       </body>

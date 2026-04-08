@@ -7,11 +7,9 @@ import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 
 type DepositRow = any;
-type GiftCardRow = any;
 
 export default function AdminDepositsPage() {
   const [rows, setRows] = useState<DepositRow[]>([]);
-  const [giftRows, setGiftRows] = useState<GiftCardRow[]>([]);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [adminNotes, setAdminNotes] = useState<Record<string, string>>({});
   const { toast } = useToast();
@@ -21,13 +19,12 @@ export default function AdminDepositsPage() {
     const json = await res.json().catch(() => ({}));
     if (res.ok && json?.ok) {
       setRows(json.rows || []);
-      setGiftRows(json.giftCards || []);
     }
   };
 
   useEffect(() => {
     load();
-    const timer = setInterval(load, 5000);
+    const timer = setInterval(load, 1500);
     return () => clearInterval(timer);
   }, []);
 
@@ -46,8 +43,7 @@ export default function AdminDepositsPage() {
       });
       const json = await res.json().catch(() => ({}));
       if (!res.ok || !json?.ok) throw new Error(json?.message || 'Review failed');
-      const label =
-        type === 'gift_card' ? 'Gift card payment' : type === 'withdrawal' ? 'Withdrawal' : 'Deposit';
+      const label = type === 'gift_card' ? 'Gift card payment' : type === 'withdrawal' ? 'Withdrawal' : 'Deposit';
       toast({ title: 'Updated', description: `${label} ${action}d successfully.` });
       await load();
     } catch (e: any) {
@@ -70,67 +66,9 @@ export default function AdminDepositsPage() {
       <Card>
         <CardHeader>
           <CardTitle>Transactions Dashboard</CardTitle>
-          <CardDescription>Review deposit, withdrawal, and gift card payment requests.</CardDescription>
-        </CardHeader>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">Gift Card Payments</CardTitle>
-          <CardDescription>All gift card requests are manually reviewed here.</CardDescription>
-        </CardHeader>
-      </Card>
-
-      {giftRows.map((r) => (
-        <Card key={r.id}>
-          <CardContent className="pt-4 space-y-2">
-            <p><b>User:</b> {r.full_name || r.email || r.user_id}</p>
-            <p><b>Email:</b> {r.email || '-'}</p>
-            <p><b>Gift Card Type:</b> {r.gift_card_type}</p>
-            <p><b>Gift Card Code:</b> {r.gift_card_code}</p>
-            <p><b>Amount:</b> {Number(r.amount || 0).toLocaleString()} {r.currency || 'USD'}</p>
-            <p><b>Note:</b> {r.note || '-'}</p>
-            <p><b>Status:</b> {r.status}</p>
-            <p><b>Date Submitted:</b> {r.created_at ? new Date(r.created_at).toLocaleString() : '-'}</p>
-
-            <div className="grid gap-3 md:grid-cols-2">
-              {r.front_preview_url ? (
-                <a href={r.front_preview_url} target="_blank" rel="noreferrer" className="space-y-1">
-                  <p className="text-xs font-medium text-muted-foreground">Front image</p>
-                  <img src={r.front_preview_url} alt="gift card front" className="max-h-48 w-full rounded border object-cover cursor-zoom-in" />
-                </a>
-              ) : null}
-              {r.back_preview_url ? (
-                <a href={r.back_preview_url} target="_blank" rel="noreferrer" className="space-y-1">
-                  <p className="text-xs font-medium text-muted-foreground">Back image</p>
-                  <img src={r.back_preview_url} alt="gift card back" className="max-h-48 w-full rounded border object-cover cursor-zoom-in" />
-                </a>
-              ) : null}
-            </div>
-
-            <div className="space-y-2">
-              <p className="text-xs font-medium text-muted-foreground">Admin note (internal)</p>
-              <Input
-                value={adminNotes[r.id] ?? r.admin_note ?? ''}
-                onChange={(e) => setAdminNotes((prev) => ({ ...prev, [r.id]: e.target.value }))}
-                placeholder="Optional internal note"
-              />
-            </div>
-
-            {r.status === 'pending' ? (
-              <div className="flex gap-2">
-                <Button onClick={() => review(r.id, 'approve', 'gift_card')} disabled={busyId === `gift_card-${r.id}-approve`}>Approve</Button>
-                <Button variant="destructive" onClick={() => review(r.id, 'decline', 'gift_card')} disabled={busyId === `gift_card-${r.id}-decline`}>Decline</Button>
-              </div>
-            ) : null}
-          </CardContent>
-        </Card>
-      ))}
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">Deposits & Withdrawals</CardTitle>
-          <CardDescription>Review and approve or decline pending transactions.</CardDescription>
+          <CardDescription>
+            Deposit, withdrawal, and gift card requests are shown together below, with each request type clearly labeled.
+          </CardDescription>
         </CardHeader>
       </Card>
 
@@ -139,9 +77,40 @@ export default function AdminDepositsPage() {
           <CardContent className="pt-4 space-y-2">
             <p><b>Type:</b> {String(r.transaction_type || '').toUpperCase()}</p>
             <p><b>User:</b> {r.metadata?.userName || r.user_id}</p>
-            <p><b>Amount:</b> {r.metadata?.amountInput || r.amount} {r.metadata?.inputCurrency || r.currency || 'USDT'} ({r.amount} USDT base)</p>
-            <p><b>Method:</b> {r.transaction_type === 'withdrawal' ? 'Wallet withdrawal' : formatMethod(String(r.metadata?.paymentMethod || ''))}</p>
+            <p>
+              <b>Amount:</b> {r.metadata?.amountInput || r.amount} {r.metadata?.inputCurrency || r.currency || 'USDT'}
+              {r.transaction_type !== 'gift_card' ? ` (${r.amount} USDT base)` : ''}
+            </p>
+            <p>
+              <b>Method:</b>{' '}
+              {r.transaction_type === 'withdrawal'
+                ? 'Wallet withdrawal'
+                : r.transaction_type === 'gift_card'
+                  ? 'Gift card payment'
+                  : formatMethod(String(r.metadata?.paymentMethod || ''))}
+            </p>
             <p><b>Status:</b> {r.status}</p>
+            {r.transaction_type === 'gift_card' ? (
+              <>
+                <p><b>Gift Card Type:</b> {r.metadata?.giftCardType || '-'}</p>
+                <p><b>Gift Card Code:</b> {r.metadata?.giftCardCode || '-'}</p>
+                <p><b>Note:</b> {r.metadata?.note || '-'}</p>
+                <div className="grid gap-3 md:grid-cols-2">
+                  {r.metadata?.frontImageUrl ? (
+                    <a href={r.metadata.frontImageUrl} target="_blank" rel="noreferrer" className="space-y-1">
+                      <p className="text-xs font-medium text-muted-foreground">Front image</p>
+                      <img src={r.metadata.frontImageUrl} alt="gift card front" className="max-h-48 w-full rounded border object-cover cursor-zoom-in" />
+                    </a>
+                  ) : null}
+                  {r.metadata?.backImageUrl ? (
+                    <a href={r.metadata.backImageUrl} target="_blank" rel="noreferrer" className="space-y-1">
+                      <p className="text-xs font-medium text-muted-foreground">Back image</p>
+                      <img src={r.metadata.backImageUrl} alt="gift card back" className="max-h-48 w-full rounded border object-cover cursor-zoom-in" />
+                    </a>
+                  ) : null}
+                </div>
+              </>
+            ) : null}
             {r.metadata?.cancellationReason === 'unsupported_card_type_verve' ? (
               <p className="text-sm text-red-500">
                 This card transaction was auto-cancelled: Verve is currently unsupported.
@@ -167,8 +136,43 @@ export default function AdminDepositsPage() {
 
             {r.status === 'pending' ? (
               <div className="flex gap-2">
-                <Button onClick={() => review(r.id, 'approve', r.transaction_type === 'withdrawal' ? 'withdrawal' : 'deposit')} disabled={busyId === `${r.transaction_type === 'withdrawal' ? 'withdrawal' : 'deposit'}-${r.id}-approve`}>Accept</Button>
-                <Button variant="destructive" onClick={() => review(r.id, 'decline', r.transaction_type === 'withdrawal' ? 'withdrawal' : 'deposit')} disabled={busyId === `${r.transaction_type === 'withdrawal' ? 'withdrawal' : 'deposit'}-${r.id}-decline`}>Decline</Button>
+                <Button
+                  onClick={() =>
+                    review(
+                      r.id,
+                      'approve',
+                      r.transaction_type === 'withdrawal'
+                        ? 'withdrawal'
+                        : r.transaction_type === 'gift_card'
+                          ? 'gift_card'
+                          : 'deposit'
+                    )
+                  }
+                  disabled={
+                    busyId === `${r.transaction_type === 'withdrawal' ? 'withdrawal' : r.transaction_type === 'gift_card' ? 'gift_card' : 'deposit'}-${r.id}-approve`
+                  }
+                >
+                  Accept
+                </Button>
+                <Button
+                  variant="destructive"
+                  onClick={() =>
+                    review(
+                      r.id,
+                      'decline',
+                      r.transaction_type === 'withdrawal'
+                        ? 'withdrawal'
+                        : r.transaction_type === 'gift_card'
+                          ? 'gift_card'
+                          : 'deposit'
+                    )
+                  }
+                  disabled={
+                    busyId === `${r.transaction_type === 'withdrawal' ? 'withdrawal' : r.transaction_type === 'gift_card' ? 'gift_card' : 'deposit'}-${r.id}-decline`
+                  }
+                >
+                  Decline
+                </Button>
               </div>
             ) : null}
           </CardContent>
