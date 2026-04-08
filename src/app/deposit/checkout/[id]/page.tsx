@@ -31,9 +31,10 @@ const CRYPTO_CHAINS: CryptoChain[] = [
     logo: '/chains/erc20.svg',
     address: '0x2B9230d5fb0D0E8588004F9a67666aC0B474E99A',
     warningLines: [
-      'Only send Tether (ERC20) assets to this address. Other assets will be lost forever.',
+      'Only send Tether (ERC20) assets to this address.',
+      'Other assets will be lost forever.',
     ],
-    qrImage: '/chains/qr-erc20.svg',
+    qrImage: '/qrs/usdt_erc20.png',
   },
   {
     key: 'trc20',
@@ -42,10 +43,11 @@ const CRYPTO_CHAINS: CryptoChain[] = [
     logo: '/chains/trc20.svg',
     address: 'TLE1UFkwpXHuDQsV8JCg7Yv2ZZhQzwR27i',
     warningLines: [
-      'Only send Tether (TRC20) assets to this address. Other assets will be lost forever.',
+      'Only send Tether (TRC20) assets to this address.',
+      'Other assets will be lost forever.',
     ],
     memoText: 'No memo required',
-    qrImage: '/chains/qr-trc20.svg',
+    qrImage: '/qrs/usdt_trc20.png',
   },
   {
     key: 'bep20',
@@ -54,9 +56,10 @@ const CRYPTO_CHAINS: CryptoChain[] = [
     logo: '/chains/bep20.svg',
     address: '0x2B9230d5fb0D0E8588004F9a67666aC0B474E99A',
     warningLines: [
-      'Only send Tether USD (BEP20) assets to this address. Other assets will be lost forever.',
+      'Only send Tether USD (BEP20) assets to this address.',
+      'Other assets will be lost forever.',
     ],
-    qrImage: '/chains/qr-bep20.svg',
+    qrImage: '/qrs/usdt_bep20.png',
   },
   {
     key: 'polygon',
@@ -65,9 +68,10 @@ const CRYPTO_CHAINS: CryptoChain[] = [
     logo: '/chains/polygon.svg',
     address: '0x2B9230d5fb0D0E8588004F9a67666aC0B474E99A',
     warningLines: [
-      'Only send (PoS) Tether USD (POLYGON) assets to this address. Other assets will be lost forever.',
+      'Only send (PoS) Tether USD (POLYGON) assets to this address.',
+      'Other assets will be lost forever.',
     ],
-    qrImage: '/chains/qr-polygon.svg',
+    qrImage: '/qrs/usdt_polygon.png',
   },
   {
     key: 'sol',
@@ -76,10 +80,11 @@ const CRYPTO_CHAINS: CryptoChain[] = [
     logo: '/chains/sol.svg',
     address: 'vqohfmqEYWKwofdzvVJaTFZvLBNvnBZyhKwBqA9UxER',
     warningLines: [
-      'Only send USDT (SPL) assets to this address. Other assets will be lost forever.',
+      'Only send USDT (SPL) assets to this address.',
+      'Other assets will be lost forever.',
     ],
     memoText: 'No memo required',
-    qrImage: '/chains/qr-sol.svg',
+    qrImage: '/qrs/usdt_spl.png',
   },
   {
     key: 'ton',
@@ -92,7 +97,7 @@ const CRYPTO_CHAINS: CryptoChain[] = [
       'TON network now displays wallet address differently. This, however, will not affect the safety of funds stored in your wallet.',
     ],
     memoText: 'No memo required',
-    qrImage: '/chains/qr-ton.svg',
+    qrImage: '/qrs/usdt_jetton.png',
     learnMoreText: 'Learn more',
   },
 ];
@@ -205,30 +210,37 @@ export default function DepositCheckoutPage() {
 
   if (mode === 'crypto_checkout' || mode === 'crypto') {
     return (
-      <div className="mx-auto max-w-xl px-4 py-8 space-y-4">
+      <div className="mx-auto max-w-xl space-y-4 px-4 py-8">
         <PoweredByBybitInline />
+
         <Card>
           <CardHeader>
             <CardTitle>Deposit USDT (Crypto Checkout)</CardTitle>
-            <CardDescription>Select a chain before sending funds. Timer: <b>{timeLabel}</b>.</CardDescription>
+            <CardDescription>
+              Select a chain before sending funds. Timer: <b>{timeLabel}</b>.
+            </CardDescription>
           </CardHeader>
+
           <CardContent className="space-y-3">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
               {CRYPTO_CHAINS.map((chain) => (
                 <button
                   key={chain.key}
                   onClick={() => selectChain(chain)}
                   disabled={chainLoading}
-                  className={`rounded-xl border p-3 text-left flex items-center gap-3 ${selectedChain?.key === chain.key ? 'border-primary bg-primary/10' : 'hover:bg-muted/50'}`}
+                  className={`flex items-center gap-3 rounded-xl border p-3 text-left ${
+                    selectedChain?.key === chain.key ? 'border-primary bg-primary/10' : 'hover:bg-muted/50'
+                  }`}
                 >
                   <Image src={chain.logo} alt={chain.label} width={32} height={32} className="rounded-md" />
                   <span className="font-medium">{chain.label}</span>
                 </button>
               ))}
             </div>
+
             {chainLoading ? (
-              <div className="rounded-xl border p-4 flex items-center gap-3">
-                <div className="h-6 w-6 rounded-full border-2 border-primary/40 border-t-primary animate-spin" />
+              <div className="flex items-center gap-3 rounded-xl border p-4">
+                <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary/40 border-t-primary" />
                 <p className="text-sm">Preparing deposit details for your selected chain...</p>
               </div>
             ) : null}
@@ -236,36 +248,51 @@ export default function DepositCheckoutPage() {
         </Card>
 
         {selectedChain ? (
-          <Card className="bg-black text-white border-white/10">
-            <CardContent className="pt-6 space-y-4">
+          <Card className="border-white/10 bg-black text-white">
+            <CardContent className="space-y-4 pt-6">
               <h3 className="text-3xl font-bold">{selectedChain.receiveLabel}</h3>
-              <p className="text-2xl"><span className="text-zinc-400">Network:</span> {selectedChain.label}</p>
+              <p className="text-2xl">
+                <span className="text-zinc-400">Network:</span> {selectedChain.label}
+              </p>
 
-              <div className="rounded-lg border border-yellow-500/50 bg-yellow-500/10 p-3 text-yellow-200 text-sm">
-                <p className="font-semibold flex items-center gap-2"><AlertTriangle className="h-4 w-4" /> Important</p>
+              <div className="rounded-lg border border-yellow-500/50 bg-yellow-500/10 p-3 text-sm text-yellow-200">
+                <p className="flex items-center gap-2 font-semibold">
+                  <AlertTriangle className="h-4 w-4" />
+                  Important
+                </p>
+
                 {selectedChain.warningLines.map((line) => (
                   <p key={line} className="mt-1">
                     {selectedChain.key === 'ton' ? '• ' : ''}
                     {line}
                   </p>
                 ))}
+
                 {selectedChain.learnMoreText ? (
                   <p className="mt-2 underline underline-offset-2">{selectedChain.learnMoreText}</p>
                 ) : null}
               </div>
 
-              <div className="mx-auto w-fit rounded-2xl bg-white p-3">
-                <img src={selectedChain.qrImage} alt={`${selectedChain.label} QR`} width={280} height={280} />
+              <div className="mx-auto w-full max-w-[560px] rounded-2xl bg-white p-3">
+                <Image
+                  src={selectedChain.qrImage}
+                  alt={`${selectedChain.label} QR`}
+                  width={560}
+                  height={560}
+                  className="h-auto w-full rounded-xl object-contain"
+                  priority
+                  unoptimized
+                />
               </div>
 
               <div>
-                <p className="text-zinc-400 text-xl mb-1">Wallet Address</p>
-                <p className="text-3xl break-all font-medium">{selectedChain.address}</p>
+                <p className="mb-1 text-xl text-zinc-400">Wallet Address</p>
+                <p className="break-all text-3xl font-medium">{selectedChain.address}</p>
               </div>
 
               {selectedChain.memoText ? (
                 <div>
-                  <p className="text-zinc-400 text-xl mb-1">Memo</p>
+                  <p className="mb-1 text-xl text-zinc-400">Memo</p>
                   <p className="text-lg font-medium">{selectedChain.memoText}</p>
                 </div>
               ) : null}
@@ -275,8 +302,12 @@ export default function DepositCheckoutPage() {
               </Button>
 
               <div className="flex gap-2">
-                <Button variant="outline" onClick={cancelTx} className="flex-1">Cancel Transaction</Button>
-                <Button onClick={() => setShowUpload(true)} className="flex-1">I&apos;ve made my payment</Button>
+                <Button variant="outline" onClick={cancelTx} className="flex-1">
+                  Cancel Transaction
+                </Button>
+                <Button onClick={() => setShowUpload(true)} className="flex-1">
+                  I&apos;ve made my payment
+                </Button>
               </div>
 
               {showUpload ? (
@@ -296,25 +327,41 @@ export default function DepositCheckoutPage() {
   }
 
   return (
-    <div className="mx-auto max-w-xl px-4 py-8 space-y-4">
+    <div className="mx-auto max-w-xl space-y-4 px-4 py-8">
       <PoweredByBybitInline />
+
       <Card className="rounded-2xl">
         <CardHeader>
           <CardTitle>PALMPAY CHECKOUT</CardTitle>
           <CardDescription>Send the exact amount to avoid payment failure.</CardDescription>
         </CardHeader>
+
         <CardContent className="space-y-4">
           <Input value={amountText} disabled readOnly />
-          <div className="rounded-xl border p-3 text-sm space-y-1">
-            <div><b>ACCOUNT NUMBER:</b> 8911-594-588</div>
-            <div><b>BANK:</b> palmpay</div>
-            <div><b>NAME:</b> Ndifreke Okon Edet (ECO-SOLAR)</div>
+
+          <div className="space-y-1 rounded-xl border p-3 text-sm">
+            <div>
+              <b>ACCOUNT NUMBER:</b> 8911-594-588
+            </div>
+            <div>
+              <b>BANK:</b> palmpay
+            </div>
+            <div>
+              <b>NAME:</b> Ndifreke Okon Edet (ECO-SOLAR)
+            </div>
           </div>
-          <p className="text-sm">Time left: <b>{timeLabel}</b></p>
+
+          <p className="text-sm">
+            Time left: <b>{timeLabel}</b>
+          </p>
 
           <div className="flex gap-2">
-            <Button variant="outline" onClick={cancelTx} className="flex-1">Cancel Transaction</Button>
-            <Button onClick={() => setShowUpload(true)} className="flex-1">I&apos;ve made my payment</Button>
+            <Button variant="outline" onClick={cancelTx} className="flex-1">
+              Cancel Transaction
+            </Button>
+            <Button onClick={() => setShowUpload(true)} className="flex-1">
+              I&apos;ve made my payment
+            </Button>
           </div>
 
           {showUpload && (
