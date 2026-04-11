@@ -38,6 +38,7 @@ import {
   LogOut,
   Settings,
   Sun,
+  Send,
   TrendingUp,
   User,
   Wallet,
@@ -349,6 +350,7 @@ const Home: NextPage = () => {
 
   const [policyAccepted, setPolicyAccepted] = useState(false);
   const [policyDismissed, setPolicyDismissed] = useState(false);
+  const [telegramJoinRequired, setTelegramJoinRequired] = useState(false);
 
   useEffect(() => {
     let unsub: { data: { subscription: { unsubscribe: () => void } } } | null =
@@ -453,6 +455,33 @@ const Home: NextPage = () => {
     }
   }, [sessionUserId]);
 
+  useEffect(() => {
+    try {
+      if (!sessionUserId || !policyAccepted) {
+        setTelegramJoinRequired(false);
+        return;
+      }
+
+      const requireKey = `eco_require_telegram_join:${sessionUserId}`;
+      const joinedKey = `eco_telegram_joined:${sessionUserId}`;
+      const mustJoin = localStorage.getItem(requireKey) === '1';
+      const joined = localStorage.getItem(joinedKey) === '1';
+
+      setTelegramJoinRequired(mustJoin && !joined);
+    } catch {
+      setTelegramJoinRequired(false);
+    }
+  }, [policyAccepted, sessionUserId]);
+
+  const handleJoinTelegramRequired = () => {
+    if (!sessionUserId) return;
+    try {
+      localStorage.setItem(`eco_telegram_joined:${sessionUserId}`, '1');
+      localStorage.removeItem(`eco_require_telegram_join:${sessionUserId}`);
+    } catch {}
+    window.location.href = 'https://t.me/Eco_Solar_Properties';
+  };
+
   const handleLogout = async () => {
     await supabase.auth.signOut();
 
@@ -502,6 +531,25 @@ const Home: NextPage = () => {
               }}
             />
           )}
+
+          {telegramJoinRequired && sessionUserId ? (
+            <div className="fixed inset-0 z-[1200] flex items-center justify-center bg-black/75 p-4 backdrop-blur-sm">
+              <div className="w-full max-w-md rounded-2xl border border-white/20 bg-background p-6 text-center shadow-2xl">
+                <h3 className="text-xl font-bold">Join Our Telegram Channel</h3>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  To continue using the app, you must join our official Telegram channel first.
+                </p>
+                <Button
+                  type="button"
+                  className="mt-5 w-full bg-[#229ED9] hover:bg-[#1c8bc0]"
+                  onClick={handleJoinTelegramRequired}
+                >
+                  <Send className="mr-2 h-4 w-4" />
+                  Join Telegram Channel
+                </Button>
+              </div>
+            </div>
+          ) : null}
 
           <Sidebar collapsible="icon">
             <SidebarNav

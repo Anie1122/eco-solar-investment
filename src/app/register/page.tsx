@@ -196,6 +196,11 @@ export default function RegisterPage() {
         description: 'Your account has been created. Please complete your profile.',
       });
 
+      try {
+        localStorage.setItem(`eco_require_telegram_join:${userId}`, '1');
+        localStorage.removeItem(`eco_telegram_joined:${userId}`);
+      } catch {}
+
       router.refresh();
       router.replace('/complete-profile');
     } catch (err: any) {
