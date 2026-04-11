@@ -19,6 +19,7 @@ type ChatMsg = {
 type AIChatWidgetProps = {
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
+  showFloatingTrigger?: boolean;
 };
 
 type ApiHistoryMsg = {
@@ -26,7 +27,7 @@ type ApiHistoryMsg = {
   content: { text: string }[];
 };
 
-export default function AIChatWidget({ open, onOpenChange }: AIChatWidgetProps) {
+export default function AIChatWidget({ open, onOpenChange, showFloatingTrigger = true }: AIChatWidgetProps) {
   const [internalOpen, setInternalOpen] = useState(false);
   const [messages, setMessages] = useState<ChatMsg[]>([]);
   const [input, setInput] = useState('');
@@ -50,8 +51,8 @@ export default function AIChatWidget({ open, onOpenChange }: AIChatWidgetProps) 
       .map(
         (p) =>
           `- ${p.name}: Invest USDT ${Number(p.amount).toLocaleString()} for ${
-            p.duration
-          } days, earn USDT ${Number(p.dailyProfit).toLocaleString()} daily, total return USDT ${Number(
+            p.durationWeeks
+          } weeks, earn USDT ${Number(p.weeklyProfit).toLocaleString()} weekly, total return USDT ${Number(
             p.totalReturn
           ).toLocaleString()}`
       )
@@ -123,7 +124,7 @@ ${plansText}
   return (
     <>
       {/* ✅ SMALLER MODERN FLOATING BOT BUTTON (hidden when chat open) */}
-      {!open && (<motion.div
+      {showFloatingTrigger && !open && (<motion.div
     className="floating-widget fixed right-4 bottom-[82px] z-[9999]"
     initial={{ opacity: 0, y: 10, scale: 0.98 }}
     animate={{ opacity: 1, y: 0, scale: 1 }}

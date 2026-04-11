@@ -9,53 +9,92 @@ import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/lib/supabaseClient';
 import { AlertTriangle, Copy } from 'lucide-react';
+import PoweredByBybitInline from '@/components/powered-by-bybit-inline';
 
 type CryptoChain = {
   key: 'erc20' | 'trc20' | 'bep20' | 'polygon' | 'sol' | 'ton';
   label: string;
   logo: string;
+  receiveLabel: string;
   address: string;
+  warningLines: string[];
+  memoText?: string;
+  qrImage: string;
+  learnMoreText?: string;
 };
 
-const qrForAddress = (address: string) =>
-  `https://api.qrserver.com/v1/create-qr-code/?size=320x320&ecc=M&data=${encodeURIComponent(address)}`;
-
+// QR images are static assets mapped per chain (reference screenshots), never runtime-generated.
 const CRYPTO_CHAINS: CryptoChain[] = [
   {
     key: 'erc20',
     label: 'Ethereum (ERC20)',
+    receiveLabel: 'USDT ERC20',
     logo: '/chains/erc20.svg',
-    address: '0x97787f5bf12893a27c952eaf8c3adc26155efb59',
+    address: '0x2B9230d5fb0D0E8588004F9a67666aC0B474E99A',
+    warningLines: [
+      'Only send Tether (ERC20) assets to this address. Other assets will be lost forever.',
+    ],
+    qrImage: '/qrs/usdt_erc20.png',
   },
   {
     key: 'trc20',
     label: 'TRON (TRC20)',
+    receiveLabel: 'USDT TRC20',
     logo: '/chains/trc20.svg',
-    address: 'TKzDxo5dE4s9kXKmv1gD7c9KvaX52hhWxg',
+    address: 'TLE1UFkwpXHuDQsV8JCg7Yv2ZZhQzwR27i',
+    warningLines: [
+      'Only send Tether (TRC20) assets to this address. Other assets will be lost forever.',
+    ],
+    memoText: 'No memo required',
+    qrImage: '/qrs/usdt_trc20.png',
   },
   {
     key: 'bep20',
     label: 'BSC (BEP20)',
+    receiveLabel: 'USDT BEP20',
     logo: '/chains/bep20.svg',
-    address: '0x97787f5bf12893a27c952eaf8c3adc26155efb59',
+    address: '0x2B9230d5fb0D0E8588004F9a67666aC0B474E99A',
+    warningLines: [
+      'Only send Tether USD (BEP20) assets to this address. Other assets will be lost forever.',
+    ],
+    qrImage: '/qrs/usdt_bep20.png',
   },
   {
     key: 'polygon',
     label: 'Polygon PoS',
+    receiveLabel: 'USDT POLYGON',
     logo: '/chains/polygon.svg',
-    address: '0x97787f5bf12893a27c952eaf8c3adc26155efb59',
+    address: '0x2B9230d5fb0D0E8588004F9a67666aC0B474E99A',
+    warningLines: [
+      'Only send (PoS) Tether USD (POLYGON) assets to this address. Other assets will be lost forever.',
+    ],
+    qrImage: '/qrs/usdt_polygon.png',
   },
   {
     key: 'sol',
     label: 'SOL',
+    receiveLabel: 'USDT SPL',
     logo: '/chains/sol.svg',
-    address: '9vcKZHJ3LJmGk1tBhSDxikdiSf8yxqgaEwv4rnkuEPTq',
+    address: 'vqohfmqEYWKwofdzvVJaTFZvLBNvnBZyhKwBqA9UxER',
+    warningLines: [
+      'Only send USDT (SPL) assets to this address. Other assets will be lost forever.',
+    ],
+    memoText: 'No memo required',
+    qrImage: '/qrs/usdt_spl.png',
   },
   {
     key: 'ton',
     label: 'TON',
+    receiveLabel: 'USDT JETTON',
     logo: '/chains/ton.svg',
-    address: 'UQA61_9EJ3Zkd45sl7QFycyIlUavcjichdYWhidGlcwJ1G2j',
+    address: 'UQAM_ywutAgLDsOHqXcVWzLes82XpCyBzv4HJlgRM72flgF_',
+    warningLines: [
+      'Only send Tether USD (JETTON) assets to this address. Other assets will be lost forever.',
+      'TON network now displays wallet address differently. This, however, will not affect the safety of funds stored in your wallet.',
+    ],
+    memoText: 'No memo required',
+    qrImage: '/qrs/usdt_jetton.png',
+    learnMoreText: 'Learn more',
   },
 ];
 
@@ -65,7 +104,7 @@ export default function DepositCheckoutPage() {
   const router = useRouter();
   const { toast } = useToast();
   const id = String(params?.id || '');
-  const mode = String(search.get('mode') || 'local_bank_transfer');
+  const mode = String(search.get('mode') || 'crypto_checkout');
 
   const [amountText, setAmountText] = useState('');
   const [countdown, setCountdown] = useState(20 * 60);
@@ -168,6 +207,7 @@ export default function DepositCheckoutPage() {
   if (mode === 'crypto_checkout' || mode === 'crypto') {
     return (
       <div className="mx-auto max-w-xl px-4 py-8 space-y-4">
+        <PoweredByBybitInline />
         <Card>
           <CardHeader>
             <CardTitle>Deposit USDT (Crypto Checkout)</CardTitle>
@@ -199,25 +239,37 @@ export default function DepositCheckoutPage() {
         {selectedChain ? (
           <Card className="bg-black text-white border-white/10">
             <CardContent className="pt-6 space-y-4">
-              <h3 className="text-3xl font-bold">Deposit USDT</h3>
+              <h3 className="text-3xl font-bold">{selectedChain.receiveLabel}</h3>
               <p className="text-2xl"><span className="text-zinc-400">Network:</span> {selectedChain.label}</p>
 
-              {selectedChain.key === 'bep20' ? (
-                <div className="rounded-lg border border-yellow-500/50 bg-yellow-500/10 p-3 text-yellow-200 text-sm">
-                  <p className="font-semibold flex items-center gap-2"><AlertTriangle className="h-4 w-4" /> Caution for BEP20</p>
-                  <p className="mt-1">Do not deposit USDT via opBNB chain. Use BSC (BEP20) only, otherwise funds may be permanently lost.</p>
-                  <p className="mt-1">Ensure your withdrawal chain matches this exact network type before sending.</p>
-                </div>
-              ) : null}
+              <div className="rounded-lg border border-yellow-500/50 bg-yellow-500/10 p-3 text-yellow-200 text-sm">
+                <p className="font-semibold flex items-center gap-2"><AlertTriangle className="h-4 w-4" /> Important</p>
+                {selectedChain.warningLines.map((line) => (
+                  <p key={line} className="mt-1">
+                    {selectedChain.key === 'ton' ? '• ' : ''}
+                    {line}
+                  </p>
+                ))}
+                {selectedChain.learnMoreText ? (
+                  <p className="mt-2 underline underline-offset-2">{selectedChain.learnMoreText}</p>
+                ) : null}
+              </div>
 
               <div className="mx-auto w-fit rounded-2xl bg-white p-3">
-                <img src={qrForAddress(selectedChain.address)} alt={`${selectedChain.label} QR`} width={280} height={280} />
+                <img src={selectedChain.qrImage} alt={`${selectedChain.label} QR`} width={280} height={280} />
               </div>
 
               <div>
                 <p className="text-zinc-400 text-xl mb-1">Wallet Address</p>
                 <p className="text-3xl break-all font-medium">{selectedChain.address}</p>
               </div>
+
+              {selectedChain.memoText ? (
+                <div>
+                  <p className="text-zinc-400 text-xl mb-1">Memo</p>
+                  <p className="text-lg font-medium">{selectedChain.memoText}</p>
+                </div>
+              ) : null}
 
               <Button onClick={copyAddress} className="w-full" variant="secondary">
                 <Copy className="mr-2 h-4 w-4" /> Copy address
@@ -245,35 +297,20 @@ export default function DepositCheckoutPage() {
   }
 
   return (
-    <div className="mx-auto max-w-xl px-4 py-8">
+    <div className="mx-auto max-w-xl px-4 py-8 space-y-4">
+      <PoweredByBybitInline />
       <Card className="rounded-2xl">
         <CardHeader>
-          <CardTitle>PALMPAY CHECKOUT</CardTitle>
-          <CardDescription>Send the exact amount to avoid payment failure.</CardDescription>
+          <CardTitle>Deposit Method Unavailable</CardTitle>
+          <CardDescription>NGN bank transfer checkout has been removed. Please use crypto checkout.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <Input value={amountText} disabled readOnly />
-          <div className="rounded-xl border p-3 text-sm space-y-1">
-            <div><b>ACCOUNT NUMBER:</b> 8911-594-588</div>
-            <div><b>BANK:</b> palmpay</div>
-            <div><b>NAME:</b> Ndifreke Okon Edet (ECO-SOLAR)</div>
-          </div>
           <p className="text-sm">Time left: <b>{timeLabel}</b></p>
-
           <div className="flex gap-2">
             <Button variant="outline" onClick={cancelTx} className="flex-1">Cancel Transaction</Button>
-            <Button onClick={() => setShowUpload(true)} className="flex-1">I&apos;ve made my payment</Button>
+            <Button onClick={() => router.push('/deposit/start')} className="flex-1">Back to deposit methods</Button>
           </div>
-
-          {showUpload && (
-            <div className="space-y-2">
-              <p className="text-sm text-muted-foreground">Upload payment receipt photo (max 5MB)</p>
-              <Input type="file" accept="image/*" onChange={(e) => setFile(e.target.files?.[0] || null)} />
-              <Button onClick={uploadReceipt} disabled={!file || uploading} className="w-full">
-                {uploading ? 'Sending request...' : 'Send Request'}
-              </Button>
-            </div>
-          )}
         </CardContent>
       </Card>
     </div>

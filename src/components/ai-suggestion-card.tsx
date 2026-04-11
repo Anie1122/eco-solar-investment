@@ -10,12 +10,13 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Loader, Sparkles, ThumbsUp, RefreshCw } from 'lucide-react';
+import { Bot, Loader, Sparkles, ThumbsUp } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription, AlertTitle } from './ui/alert';
 import type { User } from '@/lib/types';
 import { Skeleton } from './ui/skeleton';
 import { motion } from 'framer-motion';
+import AIChatWidget from './ai-chat-widget';
 
 // ✅ NEW
 import { useCurrencyConverter } from '@/lib/currency';
@@ -33,6 +34,7 @@ export default function AiSuggestionCard({
   const [suggestion, setSuggestion] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [chatOpen, setChatOpen] = useState(false);
 
   const retryTimer = useRef<any>(null);
   const { toast } = useToast();
@@ -51,12 +53,12 @@ export default function AiSuggestionCard({
     return investmentPlans
       .map((plan) => {
         const amount = convert(plan.amount);
-        const daily = convert(plan.dailyProfit);
+        const weekly = convert(plan.weeklyProfit);
         const total = convert(plan.totalReturn);
 
-        return `- ${plan.name}: Invest ${format(amount)} for ${plan.duration} days, earn ${format(
-          daily
-        )} daily, total return ${format(total)}.`;
+        return `- ${plan.name}: Invest ${format(amount)} for ${plan.durationWeeks} weeks, earn ${format(
+          weekly
+        )} weekly, total return ${format(total)}.`;
       })
       .join('\n');
   };
@@ -229,16 +231,17 @@ export default function AiSuggestionCard({
         </motion.div>
 
         <Button
+          type="button"
           variant="outline"
-          onClick={() => {
-            setError(null);
-            setSuggestion(null);
-          }}
+          onClick={() => setChatOpen(true)}
           disabled={loading}
+          className="h-10 w-10 rounded-full border-amber-400/50 bg-amber-500/10 p-0"
+          aria-label="Open AI bot chat"
         >
-          <RefreshCw className="h-4 w-4" />
+          <Bot className="h-4 w-4 text-amber-600" />
         </Button>
       </CardFooter>
+      <AIChatWidget open={chatOpen} onOpenChange={setChatOpen} showFloatingTrigger={false} />
     </Card>
   );
 }
