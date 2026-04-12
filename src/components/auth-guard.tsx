@@ -27,6 +27,7 @@ type UserRow = {
   invite_code?: string | null;
   referred_by?: string | null;
   referral_awarded?: boolean | null;
+  telegram_join_prompt_completed?: boolean | null;
 };
 
 function makeInviteCode(userId: string) {
@@ -283,6 +284,12 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
     }
 
     if (completed && pathname === '/complete-profile') {
+      safeReplace('/');
+      return;
+    }
+
+    const telegramGateCompleted = profile.telegram_join_prompt_completed !== false;
+    if (completed && !telegramGateCompleted && pathname !== '/') {
       safeReplace('/');
       return;
     }

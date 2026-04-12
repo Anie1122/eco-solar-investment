@@ -196,10 +196,13 @@ export default function RegisterPage() {
         description: 'Your account has been created. Please complete your profile.',
       });
 
-      try {
-        localStorage.setItem(`eco_require_telegram_join:${userId}`, '1');
-        localStorage.removeItem(`eco_telegram_joined:${userId}`);
-      } catch {}
+      const { error: tgFlagErr } = await supabase
+        .from('users')
+        .update({ telegram_join_prompt_completed: false })
+        .eq('id', userId);
+      if (tgFlagErr) {
+        console.warn('Could not set telegram gate flag (continuing):', tgFlagErr.message);
+      }
 
       router.refresh();
       router.replace('/complete-profile');

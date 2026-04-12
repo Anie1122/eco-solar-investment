@@ -42,6 +42,7 @@ export type User = {
   walletBalance: number;
   bonusBalance: number;
   hasInvested: boolean;
+  telegram_join_prompt_completed?: boolean;
   profileCompleted: boolean;
   status: 'active' | 'inactive';
   createdAt: Timestamp;

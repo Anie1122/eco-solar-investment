@@ -75,6 +75,7 @@ type UserRow = {
   has_invested?: boolean | null;
   withdrawal_account?: any | null;
   policy_accepted?: boolean | null;
+  telegram_join_prompt_completed?: boolean | null;
 };
 
 function isRefreshTokenError(message?: string) {
@@ -94,6 +95,7 @@ function mapUserRowToEntity(row: UserRow): UserEntity {
     walletBalance: Number(row.wallet_balance ?? 0),
     bonusBalance: Number(row.bonus_balance ?? 1.5),
     hasInvested: Boolean(row.has_invested ?? false),
+    telegram_join_prompt_completed: Boolean(row.telegram_join_prompt_completed ?? true),
     profileCompleted: Boolean(row.profile_completed ?? false),
     status: (row.status ?? 'active') as any,
     createdAt: row.created_at as any,
@@ -351,6 +353,7 @@ const Home: NextPage = () => {
   const [policyAccepted, setPolicyAccepted] = useState(false);
   const [policyDismissed, setPolicyDismissed] = useState(false);
   const [telegramJoinRequired, setTelegramJoinRequired] = useState(false);
+  const [telegramRedirectStarted, setTelegramRedirectStarted] = useState(false);
 
   useEffect(() => {
     let unsub: { data: { subscription: { unsubscribe: () => void } } } | null =
@@ -456,30 +459,63 @@ const Home: NextPage = () => {
   }, [sessionUserId]);
 
   useEffect(() => {
-    try {
-      if (!sessionUserId || !policyAccepted) {
-        setTelegramJoinRequired(false);
-        return;
-      }
-
-      const requireKey = `eco_require_telegram_join:${sessionUserId}`;
-      const joinedKey = `eco_telegram_joined:${sessionUserId}`;
-      const mustJoin = localStorage.getItem(requireKey) === '1';
-      const joined = localStorage.getItem(joinedKey) === '1';
-
-      setTelegramJoinRequired(mustJoin && !joined);
-    } catch {
+    if (!sessionUserId || !policyAccepted || !userProfile?.profileCompleted) {
       setTelegramJoinRequired(false);
+      return;
     }
-  }, [policyAccepted, sessionUserId]);
+    setTelegramJoinRequired(userProfile?.status !== 'inactive' && userProfile?.telegram_join_prompt_completed === false);
+  }, [policyAccepted, sessionUserId, userProfile]);
+
+  useEffect(() => {
+    if (!sessionUserId || !telegramJoinRequired) return;
+    const key = `eco_telegram_redirect_started:${sessionUserId}`;
+    if (sessionStorage.getItem(key) === '1') setTelegramRedirectStarted(true);
+  }, [sessionUserId, telegramJoinRequired]);
+
+  const completeTelegramGate = async () => {
+    if (!sessionUserId) return;
+    try {
+      const { error } = await supabase
+        .from('users')
+        .update({ telegram_join_prompt_completed: true })
+        .eq('id', sessionUserId);
+      if (error) throw error;
+
+      setUserProfile((prev) => (prev ? { ...prev, telegram_join_prompt_completed: true } as any : prev));
+      setTelegramJoinRequired(false);
+      setTelegramRedirectStarted(false);
+      sessionStorage.removeItem(`eco_telegram_redirect_started:${sessionUserId}`);
+    } catch (e) {
+      console.error('Failed to complete telegram gate:', e);
+    }
+  };
+
+  useEffect(() => {
+    if (!telegramJoinRequired || !telegramRedirectStarted) return;
+
+    const handleReturn = () => {
+      if (document.visibilityState === 'visible') {
+        void completeTelegramGate();
+      }
+    };
+
+    window.addEventListener('focus', handleReturn);
+    document.addEventListener('visibilitychange', handleReturn);
+    return () => {
+      window.removeEventListener('focus', handleReturn);
+      document.removeEventListener('visibilitychange', handleReturn);
+    };
+  }, [telegramJoinRequired, telegramRedirectStarted]);
 
   const handleJoinTelegramRequired = () => {
     if (!sessionUserId) return;
-    try {
-      localStorage.setItem(`eco_telegram_joined:${sessionUserId}`, '1');
-      localStorage.removeItem(`eco_require_telegram_join:${sessionUserId}`);
-    } catch {}
-    window.location.href = 'https://t.me/Eco_Solar_Properties';
+    const key = `eco_telegram_redirect_started:${sessionUserId}`;
+    sessionStorage.setItem(key, '1');
+    setTelegramRedirectStarted(true);
+    const popup = window.open('https://t.me/Eco_Solar_Properties', '_blank', 'noopener,noreferrer');
+    if (!popup) {
+      window.location.href = 'https://t.me/Eco_Solar_Properties';
+    }
   };
 
   const handleLogout = async () => {
