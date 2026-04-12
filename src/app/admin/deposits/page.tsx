@@ -28,11 +28,7 @@ export default function AdminDepositsPage() {
     return () => clearInterval(timer);
   }, []);
 
-  const review = async (
-    txId: string,
-    action: 'approve' | 'decline',
-    type: 'deposit' | 'withdrawal' | 'gift_card'
-  ) => {
+  const review = async (txId: string, action: 'approve' | 'decline', type: 'deposit' | 'withdrawal') => {
     const key = `${type}-${txId}-${action}`;
     setBusyId(key);
     try {
