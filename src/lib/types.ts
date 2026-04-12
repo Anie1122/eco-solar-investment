@@ -5,8 +5,8 @@ export type InvestmentPlan = {
   id: string;
   name: string;
   amount: number;
-  duration: number; // in days
-  dailyProfit: number;
+  durationWeeks: number;
+  weeklyProfit: number;
   totalReturn: number;
   image: string;
 };
@@ -42,6 +42,7 @@ export type User = {
   walletBalance: number;
   bonusBalance: number;
   hasInvested: boolean;
+  telegram_join_prompt_completed?: boolean;
   profileCompleted: boolean;
   status: 'active' | 'inactive';
   createdAt: Timestamp;

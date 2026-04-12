@@ -45,6 +45,7 @@ import WalletCard from '@/components/wallet-card';
 import NotificationBell from '@/components/notification-bell';
 import { motion } from 'framer-motion';
 import { useCurrencyConverter } from '@/lib/currency';
+import { queueStartupSplash } from '@/lib/startup-transition';
 
 const DashboardHeader = () => {
   const { user, firestore } = useFirebase();
@@ -60,6 +61,7 @@ const DashboardHeader = () => {
     await signOut(auth);
     sessionStorage.clear();
     localStorage.clear();
+    queueStartupSplash('logout');
     router.push('/login');
   };
 
@@ -153,6 +155,7 @@ const SidebarNav = () => {
     await signOut(auth);
     sessionStorage.clear();
     localStorage.clear();
+    queueStartupSplash('logout');
     router.push('/login');
   };
 

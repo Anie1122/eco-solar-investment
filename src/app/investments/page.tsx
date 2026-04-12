@@ -42,6 +42,7 @@ import NotificationBell from '@/components/notification-bell';
 import { motion } from 'framer-motion';
 import { useEffect, useMemo, useState } from 'react';
 import { supabase } from '@/lib/supabaseClient';
+import { queueStartupSplash } from '@/lib/startup-transition';
 
 type UserRow = {
   id: string;
@@ -113,6 +114,7 @@ const DashboardHeader = () => {
     await supabase.auth.signOut();
     sessionStorage.clear();
     localStorage.clear();
+    queueStartupSplash('logout');
     router.push('/login');
   };
 
@@ -196,6 +198,7 @@ const SidebarNav = () => {
     await supabase.auth.signOut();
     sessionStorage.clear();
     localStorage.clear();
+    queueStartupSplash('logout');
     router.push('/login');
   };
 
@@ -309,7 +312,7 @@ const InvestmentsPage: NextPage = () => {
               <Card>
                 <CardHeader>
                   <CardTitle>Solar Investment Plans</CardTitle>
-                  <p className="text-muted-foreground">Choose a plan to start earning daily profits.</p>
+                  <p className="text-muted-foreground">Choose a plan to start earning weekly profits.</p>
                 </CardHeader>
                 <CardContent>
                   <InvestmentPlans />

@@ -38,6 +38,7 @@ import {
   LogOut,
   Settings,
   Sun,
+  Send,
   TrendingUp,
   User,
   Wallet,
@@ -51,6 +52,7 @@ import FloatingActions from '@/components/floating-actions';
 
 import { supabase } from '@/lib/supabaseClient';
 import type { User as UserEntity } from '@/lib/types';
+import { queueStartupSplash } from '@/lib/startup-transition';
 
 import PolicyGate from '@/components/policy-gate';
 import LiveCryptoTicker from '@/components/live-crypto-ticker';
@@ -73,6 +75,7 @@ type UserRow = {
   has_invested?: boolean | null;
   withdrawal_account?: any | null;
   policy_accepted?: boolean | null;
+  telegram_join_prompt_completed?: boolean | null;
 };
 
 function isRefreshTokenError(message?: string) {
@@ -92,6 +95,7 @@ function mapUserRowToEntity(row: UserRow): UserEntity {
     walletBalance: Number(row.wallet_balance ?? 0),
     bonusBalance: Number(row.bonus_balance ?? 1.5),
     hasInvested: Boolean(row.has_invested ?? false),
+    telegram_join_prompt_completed: Boolean(row.telegram_join_prompt_completed ?? true),
     profileCompleted: Boolean(row.profile_completed ?? false),
     status: (row.status ?? 'active') as any,
     createdAt: row.created_at as any,
@@ -348,6 +352,8 @@ const Home: NextPage = () => {
 
   const [policyAccepted, setPolicyAccepted] = useState(false);
   const [policyDismissed, setPolicyDismissed] = useState(false);
+  const [telegramJoinRequired, setTelegramJoinRequired] = useState(false);
+  const [telegramRedirectStarted, setTelegramRedirectStarted] = useState(false);
 
   useEffect(() => {
     let unsub: { data: { subscription: { unsubscribe: () => void } } } | null =
@@ -452,6 +458,66 @@ const Home: NextPage = () => {
     }
   }, [sessionUserId]);
 
+  useEffect(() => {
+    if (!sessionUserId || !policyAccepted || !userProfile?.profileCompleted) {
+      setTelegramJoinRequired(false);
+      return;
+    }
+    setTelegramJoinRequired(userProfile?.status !== 'inactive' && userProfile?.telegram_join_prompt_completed === false);
+  }, [policyAccepted, sessionUserId, userProfile]);
+
+  useEffect(() => {
+    if (!sessionUserId || !telegramJoinRequired) return;
+    const key = `eco_telegram_redirect_started:${sessionUserId}`;
+    if (sessionStorage.getItem(key) === '1') setTelegramRedirectStarted(true);
+  }, [sessionUserId, telegramJoinRequired]);
+
+  const completeTelegramGate = async () => {
+    if (!sessionUserId) return;
+    try {
+      const { error } = await supabase
+        .from('users')
+        .update({ telegram_join_prompt_completed: true })
+        .eq('id', sessionUserId);
+      if (error) throw error;
+
+      setUserProfile((prev) => (prev ? { ...prev, telegram_join_prompt_completed: true } as any : prev));
+      setTelegramJoinRequired(false);
+      setTelegramRedirectStarted(false);
+      sessionStorage.removeItem(`eco_telegram_redirect_started:${sessionUserId}`);
+    } catch (e) {
+      console.error('Failed to complete telegram gate:', e);
+    }
+  };
+
+  useEffect(() => {
+    if (!telegramJoinRequired || !telegramRedirectStarted) return;
+
+    const handleReturn = () => {
+      if (document.visibilityState === 'visible') {
+        void completeTelegramGate();
+      }
+    };
+
+    window.addEventListener('focus', handleReturn);
+    document.addEventListener('visibilitychange', handleReturn);
+    return () => {
+      window.removeEventListener('focus', handleReturn);
+      document.removeEventListener('visibilitychange', handleReturn);
+    };
+  }, [telegramJoinRequired, telegramRedirectStarted]);
+
+  const handleJoinTelegramRequired = () => {
+    if (!sessionUserId) return;
+    const key = `eco_telegram_redirect_started:${sessionUserId}`;
+    sessionStorage.setItem(key, '1');
+    setTelegramRedirectStarted(true);
+    const popup = window.open('https://t.me/Eco_Solar_Properties', '_blank', 'noopener,noreferrer');
+    if (!popup) {
+      window.location.href = 'https://t.me/Eco_Solar_Properties';
+    }
+  };
+
   const handleLogout = async () => {
     await supabase.auth.signOut();
 
@@ -468,6 +534,7 @@ const Home: NextPage = () => {
       // no-op for restricted storage environments
     }
 
+    queueStartupSplash('logout');
     router.push('/login');
   };
 
@@ -500,6 +567,25 @@ const Home: NextPage = () => {
               }}
             />
           )}
+
+          {telegramJoinRequired && sessionUserId ? (
+            <div className="fixed inset-0 z-[1200] flex items-center justify-center bg-black/75 p-4 backdrop-blur-sm">
+              <div className="w-full max-w-md rounded-2xl border border-white/20 bg-background p-6 text-center shadow-2xl">
+                <h3 className="text-xl font-bold">Join Our Telegram Channel</h3>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  To continue using the app, you must join our official Telegram channel first.
+                </p>
+                <Button
+                  type="button"
+                  className="mt-5 w-full bg-[#229ED9] hover:bg-[#1c8bc0]"
+                  onClick={handleJoinTelegramRequired}
+                >
+                  <Send className="mr-2 h-4 w-4" />
+                  Join Telegram Channel
+                </Button>
+              </div>
+            </div>
+          ) : null}
 
           <Sidebar collapsible="icon">
             <SidebarNav

@@ -131,6 +131,7 @@ export async function POST(req: Request) {
         bonus_balance: DEFAULT_SIGNUP_BONUS_USDT,
         has_invested: false,
         profile_completed: false,
+        telegram_join_prompt_completed: true,
         status: 'active',
         invite_code,
         created_at: new Date().toISOString(),

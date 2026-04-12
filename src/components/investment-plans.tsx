@@ -259,7 +259,7 @@ export default function InvestmentPlans() {
                   variant="destructive"
                   className="absolute right-4 top-4 bg-accent text-accent-foreground"
                 >
-                  {plan.duration} Days
+                  {plan.durationWeeks} Weeks
                 </Badge>
               </CardHeader>
 
@@ -270,9 +270,9 @@ export default function InvestmentPlans() {
                     {userRow ? format(investmentAmountInUserCurrency) : '...'}
                   </div>
 
-                  <div className="font-semibold">Daily Profit</div>
+                  <div className="font-semibold">Weekly Profit</div>
                   <div className="text-right font-mono text-green-600">
-                    +{userRow ? format(convert(plan.dailyProfit)) : '...'}
+                    +{userRow ? format(convert(plan.weeklyProfit)) : '...'}
                   </div>
 
                   <div className="font-semibold">Total Return</div>
